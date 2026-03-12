@@ -1,0 +1,249 @@
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* styles/theme.css  —  GLOBAL CSS VARIABLES                                  */
+/* Sare software me yahi colors/sizes use karo                                */
+/* Kuch bhi change karna ho: sirf yahan ek jagah karo                         */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Windows XP Background Colors ─────────────────────────────────────── */
+  --bg: #ece9d8; /* window / desktop background (tan) */
+  --bg-panel: #f0f0f0; /* fieldset / panel background */
+  --bg-input: #ffffff; /* input background empty */
+  --bg-filled: #fffff0; /* input background when value is filled (cream) */
+  --bg-readonly: #e8e8e8; /* read-only / disabled input */
+  --bg-header: #d4d0c8; /* table header / toolbar */
+  --bg-stripe: #f5f5f5; /* alternating table row */
+  --bg-hover: #e0ecff; /* row hover */
+
+  /* ── Border Colors ─────────────────────────────────────────────────────── */
+  --border: #919b8c; /* panel / fieldset border */
+  --border-input: #7f9db9; /* input border (blue-grey) */
+  --border-table: #d4d0c8; /* table cell border */
+  --border-focus: #316ac5; /* input border on focus */
+
+  /* ── Text Colors ───────────────────────────────────────────────────────── */
+  --text: #000000;
+  --text-label: #333333;
+  --text-muted: #666666;
+  --text-disabled: #999999;
+  --text-id: #316ac5; /* product IDs, barcode — blue */
+  --text-readonly: #555555;
+
+  /* ── Selection / Highlight ─────────────────────────────────────────────── */
+  --sel-bg: #316ac5; /* selected row background */
+  --sel-text: #ffffff;
+
+  /* ── Button Colors ─────────────────────────────────────────────────────── */
+  --btn-bg: linear-gradient(to bottom, #f5f5f5, #dfdfdf);
+  --btn-bg-hover: linear-gradient(to bottom, #e0ecff, #c5d9f1);
+  --btn-bg-active: linear-gradient(to bottom, #c5d9f1, #e0ecff);
+  --btn-border: #7f9db9;
+  --btn-border-primary: #316ac5;
+
+  /* ── Sale Page (Green) ─────────────────────────────────────────────────── */
+  --sale-dark: #2d7a2d; /* header / bottom bar */
+  --sale-mid: #3a9a3a; /* buttons */
+  --sale-light: #1a5a1a; /* input background in header */
+  --sale-border: #4a9a4a; /* borders in header */
+  --sale-text: #ccffcc; /* light text */
+
+  /* ── Modal / Dialog Title Bar ──────────────────────────────────────────── */
+  --modal-title-from: #0a246a;
+  --modal-title-to: #3a6fc4;
+
+  /* ── Status Colors ─────────────────────────────────────────────────────── */
+  --success-bg: #dff0d8;
+  --success-border: #3c763d;
+  --success-text: #3c763d;
+  --error-bg: #f2dede;
+  --error-border: #a94442;
+  --error-text: #a94442;
+  --danger-bg: #ffe0e0;
+  --danger-border: #8b0000;
+  --danger-text: #8b0000;
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  --font: Tahoma, "Segoe UI", Geneva, Verdana, sans-serif;
+  --font-size: 12px;
+  --font-sm: 11px;
+  --font-lg: 13px;
+
+  /* ── Sizes ─────────────────────────────────────────────────────────────── */
+  --input-h: 22px; /* standard input height */
+  --row-h: 20px; /* table row height */
+  --btn-h: 24px; /* button height */
+  --radius: 1px; /* border-radius — near-square, Windows XP feel */
+  --gap: 6px; /* standard gap */
+  --gap-sm: 4px; /* small gap */
+}
+
+/* ── Global reset / base ───────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--font-size);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Shared fieldset style ─────────────────────────────────────────────────── */
+.xp-fieldset {
+  border: 1px solid var(--border);
+  padding: 8px 10px 6px;
+  background: var(--bg-panel);
+  margin-bottom: 6px;
+}
+.xp-fieldset legend {
+  font-size: var(--font-sm);
+  font-weight: bold;
+  padding: 0 4px;
+  color: #222;
+}
+
+/* ── Shared input style ────────────────────────────────────────────────────── */
+.xp-input {
+  height: var(--input-h);
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: 1px solid var(--border-input);
+  padding: 0 4px;
+  outline: none;
+  background: var(--bg-input);
+  border-radius: var(--radius);
+}
+.xp-input:focus {
+  border-color: var(--border-focus);
+}
+.xp-input.readonly {
+  background: var(--bg-readonly);
+  color: var(--text-readonly);
+  cursor: default;
+}
+.xp-input.filled {
+  background: var(--bg-filled);
+}
+.xp-input.num {
+  text-align: right;
+}
+
+/* ── Shared button style ───────────────────────────────────────────────────── */
+.xp-btn {
+  height: var(--btn-h);
+  padding: 0 10px;
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  border-radius: var(--radius);
+}
+.xp-btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-border-primary);
+}
+.xp-btn:active {
+  background: var(--btn-bg-active);
+}
+.xp-btn.primary {
+  font-weight: bold;
+  border-color: var(--btn-border-primary);
+}
+.xp-btn.danger {
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+.xp-btn.danger:hover {
+  background: var(--btn-bg-hover);
+}
+.xp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Shared table styles ───────────────────────────────────────────────────── */
+.xp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size);
+}
+.xp-table th {
+  background: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 2px 5px;
+  font-weight: normal;
+  white-space: nowrap;
+  text-align: left;
+  font-size: var(--font-sm);
+}
+.xp-table th.num {
+  text-align: right;
+}
+.xp-table td {
+  border: 1px solid var(--border-table);
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+.xp-table td.num {
+  text-align: right;
+}
+.xp-table td.ctr {
+  text-align: center;
+}
+.xp-table td.bold {
+  font-weight: bold;
+}
+.xp-table td.id {
+  font-weight: bold;
+  color: var(--text-id);
+}
+.xp-table tbody tr {
+  cursor: pointer;
+}
+.xp-table tbody tr.even td {
+  background: white;
+}
+.xp-table tbody tr.odd td {
+  background: var(--bg-stripe);
+}
+.xp-table tbody tr:hover td {
+  background: var(--bg-hover);
+}
+.xp-table tbody tr.sel td {
+  background: var(--sel-bg) !important;
+  color: var(--sel-text);
+}
+.xp-table-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 14px !important;
+  font-style: italic;
+}
+
+/* ── Message banner ────────────────────────────────────────────────────────── */
+.xp-msg {
+  padding: 3px 12px;
+  margin: 0 8px 4px;
+  font-size: var(--font-size);
+  border: 1px solid;
+}
+.xp-msg.success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+.xp-msg.error {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
