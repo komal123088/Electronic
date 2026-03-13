@@ -29,6 +29,13 @@ const EP = {
     UPDATE: (id) => `/customers/${id}`,
     DELETE: (id) => `/customers/${id}`,
     SALE_HISTORY: (id) => `/customers/${id}/sales`,
+    GET_ALL: "/customers",
+    GET_CREDIT: (search = "") =>
+      `/customers?type=credit${search ? "&search=" + encodeURIComponent(search) : ""}`,
+    GET_WALKIN: (search = "") =>
+      `/customers?type=walkin${search ? "&search=" + encodeURIComponent(search) : ""}`,
+    GET_WHOLESALE: (search = "") =>
+      `/customers?type=wholesale${search ? "&search=" + encodeURIComponent(search) : ""}`,
   },
 };
 

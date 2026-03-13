@@ -1,8 +1,4 @@
 // components/Layout.jsx
-// Uses React Router — no onNavigate/currentPage props needed
-// MenuBar: dropdown menus (top) — same on all pages
-// ToolBar: icon buttons (below menu) — same on all pages, active page highlighted
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MENU_CONFIG from "./menuConfig.js";
@@ -15,7 +11,6 @@ function MenuBar() {
   const location = useLocation();
   const ref = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const close = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpenIdx(null);
@@ -24,7 +19,6 @@ function MenuBar() {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  // Close dropdown on route change
   useEffect(() => {
     setOpenIdx(null);
   }, [location.pathname]);
@@ -46,7 +40,6 @@ function MenuBar() {
     >
       {MENU_CONFIG.map((menu, idx) => (
         <div key={menu.label} style={{ position: "relative" }}>
-          {/* Top-level menu button */}
           <button
             onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
             onMouseEnter={() => openIdx !== null && setOpenIdx(idx)}
@@ -64,8 +57,6 @@ function MenuBar() {
           >
             {menu.label}
           </button>
-
-          {/* Dropdown */}
           {openIdx === idx && (
             <div
               style={{
@@ -92,9 +83,7 @@ function MenuBar() {
                       }}
                     />
                   );
-
                 const isActive = item.route && location.pathname === item.route;
-
                 return (
                   <div
                     key={i}
@@ -148,16 +137,7 @@ function MenuBar() {
 function ToolBar() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Pick toolbar config for current route, fallback to DEFAULT
   const buttons = TOOLBAR_CONFIG[location.pathname] || TOOLBAR_CONFIG.DEFAULT;
-
-  // Page title from pathname
-  const pageTitle =
-    location.pathname
-      .replace("/", "")
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase()) || "Home";
 
   return (
     <div
@@ -185,9 +165,7 @@ function ToolBar() {
               }}
             />
           );
-
         const isActive = btn.route && location.pathname === btn.route;
-
         return (
           <button
             key={i}
@@ -207,7 +185,7 @@ function ToolBar() {
               fontFamily: "inherit",
               border: isActive ? "1px solid #316ac5" : "1px solid transparent",
               background: isActive
-                ? "linear-gradient(to bottom, #c5d9f1, #e0ecff)"
+                ? "linear-gradient(to bottom,#c5d9f1,#e0ecff)"
                 : "transparent",
               cursor: "pointer",
               padding: "2px 4px",
@@ -241,10 +219,27 @@ function ToolBar() {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 export default function Layout({ children }) {
   return (
-    <div style={{ minHeight: "100vh", background: "#ece9d8" }}>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        background: "#ece9d8",
+      }}
+    >
       <MenuBar />
       <ToolBar />
-      {children}
+      <div
+        style={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

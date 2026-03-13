@@ -1,5 +1,4 @@
-// pages/DebitSalePage.jsx
-// Debit (Cash/Bank) Sale — with CustomerSearchModal (type=walkin, separate from credit)
+// pages/DebitSalePage.jsx — Debit Sale (Cash / Debit Customers)
 import { useState, useEffect, useRef, useCallback } from "react";
 import "../styles/DebitSalePage.css";
 import api from "../api/api.js";
@@ -7,7 +6,7 @@ import EP from "../api/apiEndpoints.js";
 
 const isoDate = () => new Date().toISOString().split("T")[0];
 const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
-
+const SHOP_NAME = "Asim Electric and Electronic Store";
 const EMPTY_ROW = {
   productId: "",
   code: "",
@@ -19,226 +18,123 @@ const EMPTY_ROW = {
   amount: 0,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CUSTOMER SEARCH MODAL — type=walkin (debit/cash customers only)
-// ═══════════════════════════════════════════════════════════════════════════
-function CustomerSearchModal({ searchTerm, onSelect, onAddNew, onClose }) {
-  const [query, setQuery] = useState(searchTerm || "");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+// ═══════ CUSTOMER SELECT MODAL ══════════════════════════════════════════════
+function CustomerSelectModal({ customers, onSelect, onClose }) {
   const [hiIdx, setHiIdx] = useState(0);
-  const inputRef = useRef(null);
   const tbodyRef = useRef(null);
-
   useEffect(() => {
-    inputRef.current?.focus();
-    if (query.trim().length >= 1) doSearch(query);
+    tbodyRef.current?.focus();
   }, []);
+  useEffect(() => {
+    tbodyRef.current?.children[hiIdx]?.scrollIntoView({ block: "nearest" });
+  }, [hiIdx]);
 
-  const doSearch = async (q) => {
-    if (!q.trim()) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      // type=walkin keeps debit customers separate from credit customers
-      const { data } = await api.get(
-        `${EP.CUSTOMERS.GET_ALL}?search=${encodeURIComponent(q.trim())}&type=walkin`,
-      );
-      if (data.success) {
-        setResults(data.data || []);
-        setHiIdx(0);
-      }
-    } catch {
-      setResults([]);
-    }
-    setLoading(false);
-  };
-
-  const handleQueryChange = (e) => {
-    setQuery(e.target.value);
-    doSearch(e.target.value);
-  };
-
-  const inputKeyDown = (e) => {
-    if (e.key === "Escape") {
-      onClose();
-      return;
-    }
+  const onKey = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      if (results.length > 0) {
-        tbodyRef.current?.focus();
-        setHiIdx(0);
-      }
-      return;
-    }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (results.length === 1) {
-        onSelect(results[0]);
-        return;
-      }
-      if (results.length > 1) {
-        tbodyRef.current?.focus();
-        setHiIdx(0);
-      }
-    }
-  };
-
-  const tableKeyDown = (e) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHiIdx((i) => Math.min(i + 1, results.length - 1));
+      setHiIdx((i) => Math.min(i + 1, customers.length - 1));
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      if (hiIdx === 0) {
-        inputRef.current?.focus();
-        return;
-      }
       setHiIdx((i) => Math.max(i - 1, 0));
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      if (results[hiIdx]) onSelect(results[hiIdx]);
+      if (customers[hiIdx]) onSelect(customers[hiIdx]);
     }
     if (e.key === "Escape") {
       onClose();
     }
   };
 
-  useEffect(() => {
-    if (tbodyRef.current && hiIdx >= 0)
-      tbodyRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
-  }, [hiIdx]);
-
   return (
     <div
-      className="ds-overlay"
+      className="csm-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="csm-window">
         <div className="csm-titlebar">
-          <span>👤 Search Customer (Walk-in / Cash)</span>
-          <button className="ds-close-x" onClick={onClose} tabIndex={-1}>
+          <span>Select Debit Customer ({customers.length} found)</span>
+          <button className="sm-close-btn" onClick={onClose} tabIndex={-1}>
             ✕
           </button>
         </div>
-
-        <div className="csm-search-row">
-          <span className="csm-label">Search:</span>
-          <input
-            ref={inputRef}
-            className="csm-input"
-            value={query}
-            onChange={handleQueryChange}
-            onKeyDown={inputKeyDown}
-            placeholder="Name / phone / code… (optional for walk-in)"
-            autoComplete="off"
-          />
-          {loading && <span className="csm-loading">…</span>}
-          <span className="csm-count">{results.length} found</span>
-          <button
-            className="ds-btn ds-btn-primary"
-            onClick={() => onAddNew(query)}
-            tabIndex={-1}
+        <table className="csm-table">
+          <thead>
+            <tr>
+              <th style={{ width: 32 }}>#</th>
+              <th>Name</th>
+              <th style={{ width: 130 }}>Phone</th>
+              <th className="r" style={{ width: 100 }}>
+                Balance
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            ref={tbodyRef}
+            tabIndex={0}
+            onKeyDown={onKey}
+            style={{ outline: "none" }}
           >
-            ➕ Add New
-          </button>
-          <button className="ds-btn" onClick={onClose} tabIndex={-1}>
-            Cancel
-          </button>
-        </div>
-
-        <div className="csm-table-wrap">
-          <table className="csm-table">
-            <thead>
-              <tr>
-                <th style={{ width: 32 }}>#</th>
-                <th>Name</th>
-                <th style={{ width: 120 }}>Phone</th>
-                <th style={{ width: 70 }}>Type</th>
+            {customers.map((c, i) => (
+              <tr
+                key={c._id}
+                className={i === hiIdx ? "hi" : i % 2 === 0 ? "even" : "odd"}
+                onClick={() => setHiIdx(i)}
+                onDoubleClick={() => onSelect(c)}
+              >
+                <td className="c">{i + 1}</td>
+                <td>
+                  <b>{c.name}</b>
+                </td>
+                <td>{c.phone}</td>
+                <td className={`r ${(c.currentBalance || 0) > 0 ? "red" : ""}`}>
+                  <b>{fmt(c.currentBalance || 0)}</b>
+                </td>
               </tr>
-            </thead>
-            <tbody
-              ref={tbodyRef}
-              tabIndex={0}
-              onKeyDown={tableKeyDown}
-              style={{ outline: "none" }}
-            >
-              {!loading && results.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="ds-empty">
-                    No customer found — press ➕ Add New to create, or skip for
-                    walk-in sale
-                  </td>
-                </tr>
-              )}
-              {results.map((c, i) => (
-                <tr
-                  key={c._id}
-                  className={
-                    i === hiIdx ? "csm-hi" : i % 2 === 0 ? "even" : "odd"
-                  }
-                  onClick={() => setHiIdx(i)}
-                  onDoubleClick={() => onSelect(c)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <td className="c">{i + 1}</td>
-                  <td className="bold">{c.name}</td>
-                  <td>{c.phone || "—"}</td>
-                  <td className="c">
-                    <span className="ds-badge walkin">Walk-in</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
+            ))}
+          </tbody>
+        </table>
         <div className="csm-footer">
-          ↑↓ navigate | Enter / Double-click = select | Esc = close (counter
-          sale) | ➕ Add New = create
+          ↑↓ navigate | Enter / Double-click = select | Esc = close
         </div>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SEARCH MODAL — 3 filters: Description | Category | Company
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════ PRODUCT SEARCH MODAL ════════════════════════════════════════════════
 function SearchModal({ allProducts, onSelect, onClose }) {
   const [desc, setDesc] = useState("");
   const [cat, setCat] = useState("");
   const [company, setCompany] = useState("");
   const [rows, setRows] = useState([]);
   const [hiIdx, setHiIdx] = useState(0);
-
-  const rDesc = useRef(null);
-  const rCat = useRef(null);
-  const rCompany = useRef(null);
-  const tbodyRef = useRef(null);
+  const rDesc = useRef(null),
+    rCat = useRef(null),
+    rCompany = useRef(null),
+    tbodyRef = useRef(null);
 
   const buildFlat = useCallback((products, d, c, co) => {
-    const ld = d.trim().toLowerCase();
-    const lc = c.trim().toLowerCase();
-    const lo = co.trim().toLowerCase();
-    const res = [];
+    const ld = d.trim().toLowerCase(),
+      lc = c.trim().toLowerCase(),
+      lo = co.trim().toLowerCase(),
+      res = [];
     products.forEach((p) => {
-      const ok =
-        (!ld ||
-          p.description?.toLowerCase().includes(ld) ||
-          p.code?.toLowerCase().includes(ld)) &&
-        (!lc || p.category?.toLowerCase().includes(lc)) &&
-        (!lo || p.company?.toLowerCase().includes(lo));
-      if (!ok) return;
+      if (
+        !(
+          (!ld ||
+            p.description?.toLowerCase().includes(ld) ||
+            p.code?.toLowerCase().includes(ld)) &&
+          (!lc || p.category?.toLowerCase().includes(lc)) &&
+          (!lo || p.company?.toLowerCase().includes(lo))
+        )
+      )
+        return;
       const _name = [p.category, p.description, p.company]
         .filter(Boolean)
         .join(" ");
-      if (p.packingInfo?.length > 0) {
+      if (p.packingInfo?.length > 0)
         p.packingInfo.forEach((pk, i) =>
           res.push({
             ...p,
@@ -250,7 +146,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
             _name,
           }),
         );
-      } else {
+      else
         res.push({
           ...p,
           _pi: 0,
@@ -260,7 +156,6 @@ function SearchModal({ allProducts, onSelect, onClose }) {
           _stock: 0,
           _name,
         });
-      }
     });
     return res;
   }, []);
@@ -275,25 +170,22 @@ function SearchModal({ allProducts, onSelect, onClose }) {
     setHiIdx(f.length > 0 ? 0 : -1);
   }, [desc, cat, company, allProducts, buildFlat]);
   useEffect(() => {
-    if (tbodyRef.current && hiIdx >= 0)
-      tbodyRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
+    tbodyRef.current?.children[hiIdx]?.scrollIntoView({ block: "nearest" });
   }, [hiIdx]);
 
-  const filterKey = (e, nextRef) => {
+  const fk = (e, nr) => {
     if (e.key === "Escape") {
       onClose();
       return;
     }
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
-      if (nextRef) nextRef.current?.focus();
-      else {
-        tbodyRef.current?.focus();
-        setHiIdx((h) => Math.max(0, h));
-      }
+      nr
+        ? nr.current?.focus()
+        : (tbodyRef.current?.focus(), setHiIdx((h) => Math.max(0, h)));
     }
   };
-  const tableKey = (e) => {
+  const tk = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setHiIdx((i) => Math.min(i + 1, rows.length - 1));
@@ -324,7 +216,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
     >
       <div className="sm-window">
         <div className="sm-titlebar">
-          <span>🔍 Search Products</span>
+          <span>Search Products</span>
           <button className="sm-close-btn" onClick={onClose} tabIndex={-1}>
             ✕
           </button>
@@ -338,7 +230,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               className="sm-filter-input w200"
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
-              onKeyDown={(e) => filterKey(e, rCat)}
+              onKeyDown={(e) => fk(e, rCat)}
               placeholder="Name / code…"
               autoComplete="off"
             />
@@ -351,7 +243,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               className="sm-filter-input w140"
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              onKeyDown={(e) => filterKey(e, rCompany)}
+              onKeyDown={(e) => fk(e, rCompany)}
               placeholder="e.g. SMALL"
               autoComplete="off"
             />
@@ -364,7 +256,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               className="sm-filter-input w130"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              onKeyDown={(e) => filterKey(e, null)}
+              onKeyDown={(e) => fk(e, null)}
               placeholder="e.g. LUX"
               autoComplete="off"
             />
@@ -400,7 +292,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               <tbody
                 ref={tbodyRef}
                 tabIndex={0}
-                onKeyDown={tableKey}
+                onKeyDown={tk}
                 style={{ outline: "none" }}
               >
                 {rows.length === 0 && (
@@ -441,39 +333,340 @@ function SearchModal({ allProducts, onSelect, onClose }) {
   );
 }
 
-// ─── Invoice Modal ────────────────────────────────────────────────────────────
-function InvoiceModal({ sale, shopName, onClose }) {
-  const printInvoice = (size) => {
-    const win = window.open("", "_blank", "width=900,height=700");
-    win.document.write(
-      size === "thermal"
-        ? buildThermal(sale, shopName)
-        : buildA4(sale, shopName),
-    );
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 400);
+// ═══════ DEBIT CUSTOMERS MANAGEMENT MODAL ═══════════════════════════════════
+// Shows ONLY type=walkin customers
+function DebitCustomersModal({ onClose }) {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selCust, setSelCust] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [payAmt, setPayAmt] = useState("");
+  const [payNote, setPayNote] = useState("");
+  const [paying, setPaying] = useState(false);
+  const [msg, setMsg] = useState({ text: "", type: "" });
+  const payRef = useRef(null);
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+  useEffect(() => {
+    if (selCust) loadHistory(selCust._id);
+  }, [selCust?._id]);
+
+  const showMsg = (text, type = "success") => {
+    setMsg({ text, type });
+    setTimeout(() => setMsg({ text: "", type: "" }), 3000);
   };
-  const shareWhatsApp = () => {
+
+  const loadCustomers = async () => {
+    setLoading(true);
+    try {
+      // ONLY walkin type customers
+      const { data } = await api.get(EP.CUSTOMERS.GET_WALKIN());
+      if (data.success)
+        setCustomers((data.data || []).filter((c) => c.type === "walkin"));
+    } catch {}
+    setLoading(false);
+  };
+
+  const loadHistory = async (id) => {
+    try {
+      const { data } = await api.get(EP.CUSTOMERS.SALE_HISTORY(id));
+      if (data.success) setHistory(data.data);
+    } catch {
+      setHistory([]);
+    }
+  };
+
+  const filtered = customers.filter(
+    (c) =>
+      !search ||
+      c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.phone?.includes(search),
+  );
+
+  const totalDue = customers.reduce((s, c) => s + (c.currentBalance || 0), 0);
+  const dueCount = customers.filter((c) => (c.currentBalance || 0) > 0).length;
+
+  const recordPayment = async () => {
+    if (!selCust || !payAmt || Number(payAmt) <= 0) return;
+    setPaying(true);
+    try {
+      const newBal = Math.max(
+        0,
+        (selCust.currentBalance || 0) - Number(payAmt),
+      );
+      await api.put(EP.CUSTOMERS.UPDATE(selCust._id), {
+        currentBalance: newBal,
+      });
+      showMsg(`Payment of Rs.${fmt(payAmt)} recorded`);
+      setPayAmt("");
+      setPayNote("");
+      setSelCust((p) => ({ ...p, currentBalance: newBal }));
+      loadCustomers();
+    } catch {
+      showMsg("Payment failed", "error");
+    }
+    setPaying(false);
+  };
+
+  const sendReminder = (cust) => {
+    const text = `Assalam o Alaikum *${cust.name}*,\n\nYour outstanding balance is *Rs. ${fmt(cust.currentBalance)}* at ${SHOP_NAME}.\n\nKindly clear your dues.\n\nThank you!`;
     window.open(
-      `https://wa.me/?text=${encodeURIComponent(buildWhatsAppText(sale, shopName))}`,
+      `https://wa.me/${cust.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
       "_blank",
     );
   };
+
   return (
     <div
-      className="ds-overlay"
+      className="dcm-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="dcm-modal">
+        <div className="dcm-titlebar">
+          <span>Debit Customers Management</span>
+          <button className="dcm-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        {msg.text && <div className={`dcm-msg ${msg.type}`}>{msg.text}</div>}
+        <div className="dcm-summary">
+          <div className="dcm-scard">
+            <span>Total Debit Customers</span>
+            <b>{customers.length}</b>
+          </div>
+          <div className="dcm-scard danger">
+            <span>Customers with Due</span>
+            <b className="red">{dueCount}</b>
+          </div>
+          <div className="dcm-scard danger">
+            <span>Total Outstanding</span>
+            <b className="red">Rs. {fmt(totalDue)}</b>
+          </div>
+        </div>
+        <div className="dcm-body">
+          {/* Left: list */}
+          <div className="dcm-left">
+            <input
+              className="dcm-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name or phone…"
+              autoFocus
+            />
+            <div className="dcm-list-wrap">
+              <table className="dcm-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th className="r">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading && (
+                    <tr>
+                      <td colSpan={4} className="dcm-empty">
+                        Loading…
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="dcm-empty">
+                        No debit customers found
+                      </td>
+                    </tr>
+                  )}
+                  {filtered.map((c, i) => (
+                    <tr
+                      key={c._id}
+                      className={`dcm-row ${selCust?._id === c._id ? "sel" : i % 2 === 0 ? "even" : "odd"}`}
+                      onClick={() => {
+                        setSelCust(c);
+                        setTimeout(() => payRef.current?.focus(), 100);
+                      }}
+                    >
+                      <td className="c">{i + 1}</td>
+                      <td className="bold">{c.name}</td>
+                      <td>{c.phone || "—"}</td>
+                      <td
+                        className={`r ${(c.currentBalance || 0) > 0 ? "red" : ""}`}
+                      >
+                        <b>{fmt(c.currentBalance || 0)}</b>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Right: detail */}
+          <div className="dcm-right">
+            {!selCust ? (
+              <div className="dcm-no-sel">
+                ← Click a debit customer to see details
+              </div>
+            ) : (
+              <>
+                <div className="dcm-cust-header">
+                  <div className="dcm-cust-name">{selCust.name}</div>
+                  {selCust.phone && (
+                    <div className="dcm-cust-phone">{selCust.phone}</div>
+                  )}
+                  <div
+                    className={`dcm-cust-bal ${(selCust.currentBalance || 0) > 0 ? "red" : ""}`}
+                  >
+                    Balance: <b>Rs. {fmt(selCust.currentBalance || 0)}</b>
+                  </div>
+                </div>
+                <div className="dcm-pay-section">
+                  <div className="dcm-pay-title">Record Payment</div>
+                  <div className="dcm-pay-row">
+                    <input
+                      ref={payRef}
+                      type="number"
+                      className="dcm-pay-in"
+                      value={payAmt}
+                      onChange={(e) => setPayAmt(e.target.value)}
+                      placeholder="Amount"
+                      onKeyDown={(e) => e.key === "Enter" && recordPayment()}
+                    />
+                    <input
+                      className="dcm-pay-in wide"
+                      value={payNote}
+                      onChange={(e) => setPayNote(e.target.value)}
+                      placeholder="Note (optional)"
+                    />
+                    <button
+                      className="ds-btn ds-btn-primary"
+                      onClick={recordPayment}
+                      disabled={paying || !payAmt}
+                    >
+                      {paying ? "Saving…" : "Pay"}
+                    </button>
+                    {selCust.phone && (
+                      <button
+                        className="ds-btn ds-btn-wa"
+                        onClick={() => sendReminder(selCust)}
+                      >
+                        WA Remind
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="dcm-hist-label">
+                  Transaction History ({history.length})
+                </div>
+                <div className="dcm-hist-wrap">
+                  <table className="dcm-hist-table">
+                    <thead>
+                      <tr>
+                        <th>Invoice</th>
+                        <th>Date</th>
+                        <th className="r">Amount</th>
+                        <th className="r">Paid</th>
+                        <th className="r">Balance</th>
+                        <th>Mode</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="dcm-empty">
+                            No transactions yet
+                          </td>
+                        </tr>
+                      )}
+                      {history.map((s, i) => (
+                        <tr
+                          key={s._id}
+                          className={i % 2 === 0 ? "even" : "odd"}
+                        >
+                          <td className="blue">{s.invoiceNo}</td>
+                          <td>{s.invoiceDate}</td>
+                          <td className="r bold">{fmt(s.netTotal)}</td>
+                          <td className="r">{fmt(s.paidAmount)}</td>
+                          <td className={`r ${s.balance > 0 ? "red" : ""}`}>
+                            {fmt(s.balance)}
+                          </td>
+                          <td>{s.paymentMode}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════ INVOICE MODAL ═══════════════════════════════════════════════════════
+function InvoiceModal({ sale, shopName, onClose }) {
+  const printA4 = () => {
+    const trs = sale.items
+      .map(
+        (it, i) =>
+          `<tr><td>${i + 1}</td><td>${it.description}</td><td>${it.measurement || ""}</td><td align="right">${it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right">${it.disc || 0}%</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+      )
+      .join("");
+    const w = window.open("", "_blank", "width=900,height=700");
+    w.document.write(
+      `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}h2{text-align:center;font-size:20px;margin:0}.c{text-align:center;font-size:11px;color:#555;margin-bottom:8px}.meta{display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px 10px;margin:8px 0;flex-wrap:wrap;gap:4px}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e0e0e0;border:1px solid #ccc;padding:4px 6px;text-align:left}td{border:1px solid #ddd;padding:3px 6px}.tots{float:right;min-width:220px;margin-top:10px}.tr{display:flex;justify-content:space-between;padding:2px 0}.tr.b{font-weight:bold;font-size:14px;border-top:1px solid #000;margin-top:4px}.tr.red{color:red}.tr.g{color:green}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888}@media print{body{margin:5mm}}</style></head><body><h2>${shopName}</h2><div class="c">DEBIT SALE INVOICE</div><div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Payment:</b> ${sale.paymentMode}</span>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<span><b>Customer:</b> ${sale.customerName}${sale.customerPhone ? " | " + sale.customerPhone : ""}</span>` : ""}</div><table><thead><tr><th>#</th><th>Description</th><th>Meas.</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead><tbody>${trs}</tbody></table><div class="tots"><div class="tr"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="tr"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="tr g"><span>Cash Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>${(sale.balance || 0) > 0 ? `<div class="tr red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}</div><br style="clear:both"><div class="thanks">Thank you for your business! — ${shopName}</div></body></html>`,
+    );
+    w.document.close();
+    setTimeout(() => w.print(), 400);
+  };
+
+  const printThermal = () => {
+    const trs = sale.items
+      .map(
+        (it, i) =>
+          `<tr><td style="padding:2px 0">${i + 1}. ${it.description}</td><td align="right" style="padding:2px 0">${it.qty}×${Number(it.rate).toLocaleString()}</td><td align="right" style="padding:2px 0"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+      )
+      .join("");
+    const w = window.open("", "_blank", "width=400,height=600");
+    w.document.write(
+      `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px;border-collapse:collapse}.t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.t.b{font-weight:bold;font-size:12px;border-top:1px dashed #000;padding-top:3px;margin-top:2px}.t.red{color:red}.t.g{color:green}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body><h3>${shopName}</h3><div class="c">DEBIT SALE RECEIPT</div><hr><div class="c">Invoice: <b>${sale.invoiceNo}</b> | ${sale.invoiceDate}</div>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<div class="c"><b>${sale.customerName}</b> ${sale.customerPhone || ""}</div>` : ""}<hr><table><tbody>${trs}</tbody></table><hr><div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="t"><span>Disc</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="t b"><span>TOTAL</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="t g"><span>Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>${(sale.balance || 0) > 0 ? `<div class="t red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}<div style="text-align:center;margin-top:8px;font-size:10px">Thank you!</div></body></html>`,
+    );
+    w.document.close();
+    setTimeout(() => w.print(), 400);
+  };
+
+  const shareWhatsApp = () => {
+    const lines = sale.items
+      .map(
+        (it, i) =>
+          `${i + 1}. ${it.description} | ${it.qty}×${Number(it.rate).toLocaleString()} = *${Number(it.amount).toLocaleString()}*`,
+      )
+      .join("\n");
+    const text = `*${shopName}*\nInvoice #${sale.invoiceNo}\n${sale.invoiceDate}\n${sale.customerName !== "COUNTER SALE" ? "Customer: " + sale.customerName : ""}\n${"─".repeat(26)}\n${lines}\n${"─".repeat(26)}\nNet Total: *${Number(sale.netTotal).toLocaleString()}*\nPaid: ${Number(sale.paidAmount || 0).toLocaleString()}${(sale.balance || 0) > 0 ? "\nBalance: *" + Number(sale.balance).toLocaleString() + "*" : ""}\n_Thank you!_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  return (
+    <div
+      className="cs-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="ds-inv-modal">
-        <div className="ds-modal-title">
-          🧾 Invoice #{sale.invoiceNo}
-          <button className="ds-close-x" onClick={onClose}>
+        <div className="ds-inv-title">
+          Invoice #{sale.invoiceNo} — {sale.customerName || "Counter Sale"}
+          <button className="cs-close-x" onClick={onClose}>
             ✕
           </button>
         </div>
         <div className="ds-inv-preview">
           <div className="ds-inv-shop">{shopName}</div>
+          <div className="ds-inv-sub">DEBIT SALE INVOICE</div>
           <div className="ds-inv-meta">
             <span>
               Invoice: <b>{sale.invoiceNo}</b>
@@ -482,16 +675,15 @@ function InvoiceModal({ sale, shopName, onClose }) {
               Date: <b>{sale.invoiceDate}</b>
             </span>
             <span>
-              Payment: <b>{sale.paymentMode}</b>
+              Mode: <b>{sale.paymentMode}</b>
             </span>
+            {sale.customerName && sale.customerName !== "COUNTER SALE" && (
+              <span>
+                Customer: <b>{sale.customerName}</b> {sale.customerPhone}
+              </span>
+            )}
           </div>
-          {sale.customerName && sale.customerName !== "COUNTER SALE" && (
-            <div className="ds-inv-cust">
-              Customer: <b>{sale.customerName}</b>
-              {sale.customerPhone && ` | 📞 ${sale.customerPhone}`}
-            </div>
-          )}
-          <table className="ds-inv-table">
+          <table className="cs-inv-table">
             <thead>
               <tr>
                 <th>#</th>
@@ -517,46 +709,45 @@ function InvoiceModal({ sale, shopName, onClose }) {
               ))}
             </tbody>
           </table>
-          <div className="ds-inv-totals">
-            <div className="ds-inv-row">
+          <div className="cs-inv-totals">
+            <div className="cs-inv-tr">
               <span>Sub Total</span>
               <span>{fmt(sale.subTotal)}</span>
             </div>
             {sale.discAmount > 0 && (
-              <div className="ds-inv-row">
+              <div className="cs-inv-tr">
                 <span>Discount</span>
                 <span>-{fmt(sale.discAmount)}</span>
               </div>
             )}
-            <div className="ds-inv-row bold">
+            <div className="cs-inv-tr bold">
               <span>Net Total</span>
               <span>{fmt(sale.netTotal)}</span>
             </div>
-            <div className="ds-inv-row">
-              <span>Paid</span>
-              <span>{fmt(sale.paidAmount)}</span>
+            <div className="cs-inv-tr green">
+              <span>Cash Paid</span>
+              <span>{fmt(sale.paidAmount || 0)}</span>
             </div>
-            {sale.balance > 0 && (
-              <div className="ds-inv-row red">
+            {(sale.balance || 0) > 0 && (
+              <div className="cs-inv-tr bold red">
                 <span>Balance</span>
                 <span>{fmt(sale.balance)}</span>
               </div>
             )}
           </div>
-          <div className="ds-inv-thanks">Thank you for your business!</div>
         </div>
-        <div className="ds-inv-actions">
-          <button className="ds-btn" onClick={() => printInvoice("thermal")}>
-            🖨 Thermal
+        <div className="cs-inv-actions">
+          <button className="ds-btn" onClick={printThermal}>
+            Thermal Print
           </button>
-          <button className="ds-btn" onClick={() => printInvoice("a4")}>
-            📄 A4 Print
+          <button className="ds-btn" onClick={printA4}>
+            A4 Print / PDF
           </button>
-          <button className="ds-btn ds-btn-whatsapp" onClick={shareWhatsApp}>
-            📱 WhatsApp
+          <button className="ds-btn ds-btn-wa" onClick={shareWhatsApp}>
+            WhatsApp
           </button>
           <button className="ds-btn" onClick={onClose}>
-            ✕ Close
+            Close
           </button>
         </div>
       </div>
@@ -564,83 +755,51 @@ function InvoiceModal({ sale, shopName, onClose }) {
   );
 }
 
-function buildA4(sale, shopName) {
-  const rows = sale.items
-    .map(
-      (it, i) =>
-        `<tr><td>${i + 1}</td><td>${it.description}</td><td>${it.measurement || ""}</td><td align="right">${it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right">${it.disc || 0}%</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
-    )
-    .join("");
-  return `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}h2{text-align:center;font-size:20px;margin:0}.meta{display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px 10px;margin:8px 0}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e0e0e0;border:1px solid #ccc;padding:4px 6px;text-align:left}td{border:1px solid #ddd;padding:3px 6px}.tots{float:right;min-width:220px;margin-top:10px}.tr{display:flex;justify-content:space-between;padding:2px 0}.tr.bold{font-weight:bold;font-size:14px;border-top:1px solid #000;margin-top:4px}.tr.red{color:red}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888}@media print{body{margin:5mm}}</style></head><body><h2>${shopName}</h2><div style="text-align:center;font-size:11px;color:#555;margin-bottom:10px">SALE INVOICE</div><div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Payment:</b> ${sale.paymentMode}</span>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<span><b>Customer:</b> ${sale.customerName}</span>` : ""}</div><table><thead><tr><th>#</th><th>Description</th><th>Meas.</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table><div class="tots"><div class="tr"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="tr"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="tr bold"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="tr"><span>Paid</span><span>${Number(sale.paidAmount).toLocaleString()}</span></div>${sale.balance > 0 ? `<div class="tr red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}</div><br style="clear:both"><div class="thanks">Thank you!</div></body></html>`;
-}
-
-function buildThermal(sale, shopName) {
-  const rows = sale.items
-    .map(
-      (it, i) =>
-        `<tr><td>${i + 1}. ${it.description}</td><td align="right">${it.qty}x${Number(it.rate).toLocaleString()}</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
-    )
-    .join("");
-  return `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px}td{vertical-align:top;padding:1px 0}.t{display:flex;justify-content:space-between;font-size:11px}.t.b{font-weight:bold;font-size:13px;border-top:1px dashed #000;margin-top:2px}.t.red{color:red}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body><h3>${shopName}</h3><div class="c">SALE RECEIPT</div><hr><div class="c">Invoice: ${sale.invoiceNo} | ${sale.invoiceDate}</div>${sale.customerName !== "COUNTER SALE" ? `<div class="c">${sale.customerName}</div>` : ""}<hr><table><tbody>${rows}</tbody></table><hr><div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="t"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="t b"><span>TOTAL</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="t"><span>Paid</span><span>${Number(sale.paidAmount).toLocaleString()}</span></div>${sale.balance > 0 ? `<div class="t red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}<div style="text-align:center;margin-top:8px;font-size:10px">Thank you!</div></body></html>`;
-}
-
-function buildWhatsAppText(sale, shopName) {
-  const lines = sale.items
-    .map(
-      (it, i) =>
-        `${i + 1}. ${it.description} | ${it.qty}x${Number(it.rate).toLocaleString()} = *${Number(it.amount).toLocaleString()}*`,
-    )
-    .join("\n");
-  return `*${shopName}*\n🧾 *Invoice #${sale.invoiceNo}*\n📅 ${sale.invoiceDate}\n💳 ${sale.paymentMode}\n${"─".repeat(30)}\n${lines}\n${"─".repeat(30)}\nSub Total: ${Number(sale.subTotal).toLocaleString()}\n*Net Total: ${Number(sale.netTotal).toLocaleString()}*\nPaid: ${Number(sale.paidAmount).toLocaleString()}\n${sale.balance > 0 ? `⚠️ Balance: ${Number(sale.balance).toLocaleString()}` : "✅ Paid in Full"}\n${"─".repeat(30)}\n_Thank you!_`;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════ MAIN PAGE ═══════════════════════════════════════════════════════════
 export default function DebitSalePage() {
-  const SHOP_NAME = "Asim Electric and Electronic Store";
-
   const [invoiceNo, setInvoiceNo] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(isoDate());
   const [phone, setPhone] = useState("");
   const [customer, setCustomer] = useState(null);
+  const [custHistory, setCustHistory] = useState([]);
+  const [histLoading, setHistLoading] = useState(false);
   const [rows, setRows] = useState([{ ...EMPTY_ROW }]);
   const [activeRow, setActiveRow] = useState(0);
-  const [extraDisc, setExtraDisc] = useState(0);
-  const [paid, setPaid] = useState(0);
-  const [payMode, setPayMode] = useState("Cash");
-  const [remarks, setRemarks] = useState("");
-  const [products, setProducts] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [savedSale, setSavedSale] = useState(null);
+  const [custMatches, setCustMatches] = useState([]);
+  const [showCustSel, setShowCustSel] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [payMode, setPayMode] = useState("Cash");
+  const [cashPaid, setCashPaid] = useState(0);
+  const [extraDisc, setExtraDisc] = useState(0);
+  const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
+  const [phoneLoading, setPhoneLoading] = useState(false);
   const [msg, setMsg] = useState({ text: "", type: "" });
   const [holds, setHolds] = useState([]);
-  const [searchText, setSearchText] = useState("");
-
-  // ── Customer Search Modal state ───────────────────────────────────────────
-  const [showCustSearch, setShowCustSearch] = useState(false);
+  const [showCustMgmt, setShowCustMgmt] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [savedSale, setSavedSale] = useState(null);
 
   const phoneRef = useRef(null);
   const searchRef = useRef(null);
-  const paidRef = useRef(null);
+  const cashRef = useRef(null);
   const saveRef = useRef(null);
   const rowRefs = useRef([]);
 
-  // Totals
   const subTotal = rows.reduce((s, r) => s + (r.amount || 0), 0);
   const discAmt = Math.round((subTotal * (extraDisc || 0)) / 100);
   const netTotal = subTotal - discAmt;
-  const balance = netTotal - (Number(paid) || 0);
+  const cashAmt = Math.min(Number(cashPaid) || 0, netTotal);
+  const creditAmt = Math.max(netTotal - cashAmt, 0);
 
   useEffect(() => {
     fetchInvoiceNo();
     fetchProducts();
   }, []);
-
   useEffect(() => {
-    const handler = (e) => {
+    const h = (e) => {
       if (e.key === "F3") {
         e.preventDefault();
         setShowSearch(true);
@@ -658,9 +817,9 @@ export default function DebitSalePage() {
         resetForm();
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [rows, customer, paid, extraDisc]);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [rows, customer, cashPaid, extraDisc]);
 
   const fetchInvoiceNo = async () => {
     try {
@@ -668,86 +827,99 @@ export default function DebitSalePage() {
       if (data.success) setInvoiceNo(data.data.invoiceNo);
     } catch {}
   };
-
   const fetchProducts = async () => {
     try {
       const { data } = await api.get(EP.PRODUCTS.GET_ALL);
       if (data.success) setProducts(data.data);
     } catch {}
   };
-
   const showMsg = (text, type = "success") => {
     setMsg({ text, type });
     setTimeout(() => setMsg({ text: "", type: "" }), 3500);
   };
 
-  // ── Customer search — open modal ──────────────────────────────────────────
-  const handlePhoneSearch = () => {
-    setShowCustSearch(true);
-  };
-
-  // Customer selected from modal
-  const handleCustomerSelect = (c) => {
-    setCustomer({
-      _id: c._id,
-      name: c.name,
-      phone: c.phone,
-      currentBalance: c.currentBalance || 0,
-    });
-    setPhone(c.phone || "");
-    setShowCustSearch(false);
-    showMsg(`✅ Customer: ${c.name}`);
-  };
-
-  // Add new walkin customer from modal
-  const handleAddNewCustomer = async (nameOrPhone) => {
-    const trimmed = nameOrPhone.trim();
-    const isPhone = /^[0-9+\-\s]{7,}$/.test(trimmed);
+  // Phone search — ONLY walkin customers
+  const handlePhoneSearch = async () => {
+    if (!phone.trim() || phone.length < 3) return;
+    setPhoneLoading(true);
     try {
-      const payload = isPhone
-        ? { name: "Walk-in Customer", phone: trimmed, type: "walkin" }
-        : {
-            name: trimmed || "Walk-in Customer",
-            phone: phone.trim(),
-            type: "walkin",
-          };
-      const { data } = await api.post(EP.CUSTOMERS.CREATE, payload);
-      if (data.success) {
-        const c = data.data;
-        setCustomer({
-          _id: c._id,
-          name: c.name,
-          phone: c.phone,
-          currentBalance: 0,
-        });
-        setPhone(c.phone || phone.trim());
-        setShowCustSearch(false);
-        showMsg(`✅ Customer added: ${c.name}`);
+      const { data } = await api.get(EP.CUSTOMERS.GET_WALKIN(phone.trim()));
+      if (data.success && data.data.length > 0) {
+        const list = data.data.filter((c) => c.type === "walkin"); // double filter
+        const exact = list.find((c) => c.phone === phone.trim());
+        if (exact) {
+          selectCustomer(exact);
+        } else if (list.length === 1) {
+          selectCustomer(list[0]);
+        } else if (list.length > 1) {
+          setCustMatches(list);
+          setShowCustSel(true);
+        } else {
+          promptNewCustomer();
+        }
       } else {
-        showMsg(data.message || "Add failed", "error");
+        promptNewCustomer();
       }
     } catch {
-      showMsg("Add failed", "error");
+      showMsg("Search failed", "error");
+    }
+    setPhoneLoading(false);
+  };
+
+  const promptNewCustomer = async () => {
+    // Quick-create debit customer with phone
+    const name = prompt(
+      `No debit customer found for "${phone}"\n\nEnter customer name to create new:`,
+    );
+    if (!name?.trim()) return;
+    try {
+      const { data } = await api.post(EP.CUSTOMERS.CREATE, {
+        name: name.trim(),
+        phone: phone.trim(),
+        type: "walkin",
+      });
+      if (data.success) {
+        selectCustomer(data.data);
+        showMsg(`New debit customer created: ${data.data.name}`);
+      }
+    } catch {
+      showMsg("Create failed", "error");
     }
   };
 
-  // ── Product selected from SearchModal ────────────────────────────────────
+  const selectCustomer = (c) => {
+    setCustomer(c);
+    loadCustHistory(c._id);
+    setShowCustSel(false);
+    setCustMatches([]);
+    showMsg(`${c.name} loaded`);
+  };
+
+  const loadCustHistory = async (id) => {
+    setHistLoading(true);
+    try {
+      const { data } = await api.get(EP.CUSTOMERS.SALE_HISTORY(id));
+      if (data.success) setCustHistory(data.data);
+    } catch {}
+    setHistLoading(false);
+  };
+
   const handleProductSelect = (product) => {
-    const qty = rows[activeRow]?.qty || 1;
-    const rate = product._rate || 0;
-    const item = {
-      productId: product._id || "",
-      code: product.code || "",
-      description: product._name || product.description || "",
-      measurement: product._meas || "",
-      qty,
-      rate,
-      disc: rows[activeRow]?.disc || 0,
-      amount: qty * rate,
-    };
+    const qty = rows[activeRow]?.qty || 1,
+      rate = product._rate || 0;
     setRows((prev) => {
       const next = [...prev];
-      next[activeRow] = { ...next[activeRow], ...item };
+      next[activeRow] = {
+        ...next[activeRow],
+        productId: product._id || "",
+        code: product.code || "",
+        description: product._name || product.description || "",
+        measurement: product._meas || "",
+        qty,
+        rate,
+        disc: next[activeRow]?.disc || 0,
+        amount: qty * rate,
+      };
       return next;
     });
     setSearchText(product._name || product.description || "");
@@ -755,41 +927,37 @@ export default function DebitSalePage() {
     setTimeout(() => rowRefs.current[activeRow]?.qty?.focus(), 30);
   };
 
-  // ── Row management ────────────────────────────────────────────────────────
   const updateRow = (i, field, val) => {
     setRows((prev) => {
-      const next = [...prev];
-      const r = { ...next[i], [field]: val };
+      const next = [...prev],
+        r = { ...next[i], [field]: val };
       if (["qty", "rate", "disc"].includes(field)) {
-        const q = field === "qty" ? Number(val) : Number(r.qty);
-        const rt = field === "rate" ? Number(val) : Number(r.rate);
-        const d = field === "disc" ? Number(val) : Number(r.disc);
+        const q = field === "qty" ? Number(val) : Number(r.qty),
+          rt = field === "rate" ? Number(val) : Number(r.rate),
+          d = field === "disc" ? Number(val) : Number(r.disc);
         r.amount = Math.round(q * rt * (1 - d / 100));
       }
       next[i] = r;
       return next;
     });
   };
-
   const addRowAfter = (i) => {
-    setRows((prev) => {
-      const n = [...prev];
+    setRows((p) => {
+      const n = [...p];
       n.splice(i + 1, 0, { ...EMPTY_ROW });
       return n;
     });
     setActiveRow(i + 1);
-    setTimeout(() => rowRefs.current[i + 1]?.code?.focus(), 30);
+    setTimeout(() => setShowSearch(true), 30);
   };
-
   const deleteRow = (i) => {
     if (rows.length === 1) {
       setRows([{ ...EMPTY_ROW }]);
       return;
     }
-    setRows((prev) => prev.filter((_, idx) => idx !== i));
+    setRows((p) => p.filter((_, idx) => idx !== i));
     setActiveRow(Math.max(0, i - 1));
   };
-
   const onRowKeyDown = (e, i, field) => {
     if (e.key === "F3") {
       e.preventDefault();
@@ -818,7 +986,6 @@ export default function DebitSalePage() {
       else rowRefs.current[i + 1]?.code?.focus();
     }
   };
-
   const onCodeBlur = async (i, code) => {
     if (!code.trim()) return;
     const found = products.find(
@@ -845,7 +1012,19 @@ export default function DebitSalePage() {
     }
   };
 
-  // ── Hold Bill ─────────────────────────────────────────────────────────────
+  const setPayFull = () => {
+    setCashPaid(netTotal);
+    setPayMode("Cash");
+  };
+  const setPayCredit = () => {
+    setCashPaid(0);
+    setPayMode("Credit");
+  };
+  const setPayPartial = () => {
+    setCashPaid(Math.floor(netTotal / 2));
+    setPayMode("Credit");
+  };
+
   const holdBill = () => {
     if (!rows.some((r) => r.description)) {
       showMsg("Nothing to hold", "error");
@@ -859,7 +1038,7 @@ export default function DebitSalePage() {
         customer,
         phone,
         extraDisc,
-        paid,
+        cashPaid,
         payMode,
         remarks,
       },
@@ -867,7 +1046,6 @@ export default function DebitSalePage() {
     resetForm();
     showMsg("Bill held (F8)");
   };
-
   const resumeHold = (id) => {
     const h = holds.find((x) => x.id === id);
     if (!h) return;
@@ -875,19 +1053,18 @@ export default function DebitSalePage() {
     setCustomer(h.customer);
     setPhone(h.phone);
     setExtraDisc(h.extraDisc);
-    setPaid(h.paid);
+    setCashPaid(h.cashPaid);
     setPayMode(h.payMode);
     setRemarks(h.remarks);
     setHolds((p) => p.filter((x) => x.id !== id));
   };
-
-  // ── Reset ─────────────────────────────────────────────────────────────────
   const resetForm = () => {
     setRows([{ ...EMPTY_ROW }]);
     setCustomer(null);
+    setCustHistory([]);
     setPhone("");
     setExtraDisc(0);
-    setPaid(0);
+    setCashPaid(0);
     setPayMode("Cash");
     setRemarks("");
     setSearchText("");
@@ -895,7 +1072,6 @@ export default function DebitSalePage() {
     setTimeout(() => phoneRef.current?.focus(), 30);
   };
 
-  // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     const validRows = rows.filter((r) => r.description && r.qty > 0);
     if (!validRows.length) {
@@ -904,10 +1080,12 @@ export default function DebitSalePage() {
     }
     setSaving(true);
     try {
+      const actualMode =
+        cashAmt <= 0 ? "Credit" : cashAmt >= netTotal ? "Cash" : "Partial";
       const payload = {
         invoiceDate,
         saleType: "sale",
-        paymentMode: payMode,
+        paymentMode: actualMode,
         customerId: customer?._id || undefined,
         customerName: customer?.name || "COUNTER SALE",
         customerPhone: customer?.phone || phone || "",
@@ -916,8 +1094,8 @@ export default function DebitSalePage() {
         extraDisc: Number(extraDisc),
         discAmount: discAmt,
         netTotal,
-        paidAmount: Number(paid),
-        balance,
+        paidAmount: cashAmt,
+        balance: creditAmt,
         remarks,
       };
       const { data } = await api.post(EP.SALES.CREATE, payload);
@@ -928,11 +1106,11 @@ export default function DebitSalePage() {
           subTotal,
           discAmount: discAmt,
           netTotal,
-          paidAmount: Number(paid),
-          balance,
+          paidAmount: cashAmt,
+          balance: creditAmt,
         });
         setShowInvoice(true);
-        showMsg(`✅ Sale saved — ${data.data.invoiceNo}`);
+        showMsg(`Saved: ${data.data.invoiceNo}`);
         resetForm();
       } else showMsg(data.message, "error");
     } catch (e) {
@@ -940,6 +1118,10 @@ export default function DebitSalePage() {
     }
     setSaving(false);
   };
+
+  const histTotal = custHistory.reduce((s, x) => s + (x.netTotal || 0), 0);
+  const histPaid = custHistory.reduce((s, x) => s + (x.paidAmount || 0), 0);
+  const currentDue = customer?.currentBalance || 0;
 
   return (
     <div className="ds-page">
@@ -950,17 +1132,16 @@ export default function DebitSalePage() {
           onClose={() => setShowSearch(false)}
         />
       )}
-
-      {/* ══ Customer Search Modal (walkin type) ══ */}
-      {showCustSearch && (
-        <CustomerSearchModal
-          searchTerm={phone}
-          onSelect={handleCustomerSelect}
-          onAddNew={handleAddNewCustomer}
-          onClose={() => setShowCustSearch(false)}
+      {showCustMgmt && (
+        <DebitCustomersModal onClose={() => setShowCustMgmt(false)} />
+      )}
+      {showCustSel && (
+        <CustomerSelectModal
+          customers={custMatches}
+          onSelect={selectCustomer}
+          onClose={() => setShowCustSel(false)}
         />
       )}
-
       {showInvoice && savedSale && (
         <InvoiceModal
           sale={savedSale}
@@ -972,16 +1153,15 @@ export default function DebitSalePage() {
         />
       )}
 
-      {/* Shortcuts bar */}
       <div className="ds-shortcuts">
         F2=New | F3=Search | F5=Save | F8=Hold | Ctrl+Del=Remove row |
         Enter=Next field
       </div>
       {msg.text && <div className={`ds-msg ${msg.type}`}>{msg.text}</div>}
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="ds-header-bar">
-        <div className="ds-header-title">💵 Debit Sale</div>
+        <div className="ds-header-title">Debit Sale</div>
         <div className="ds-header-fields">
           <div className="ds-hf">
             <span>Invoice #</span>
@@ -1002,64 +1182,70 @@ export default function DebitSalePage() {
               tabIndex={-1}
             />
           </div>
-          <div className="ds-hf">
-            <span>Payment</span>
-            <select
-              className="ds-hselect"
-              value={payMode}
-              onChange={(e) => setPayMode(e.target.value)}
-              tabIndex={-1}
-            >
-              <option>Cash</option>
-              <option>Bank</option>
-              <option>Cheque</option>
-              <option>Card</option>
-              <option>JazzCash</option>
-              <option>EasyPaisa</option>
-            </select>
-          </div>
         </div>
+        <button
+          className="ds-btn ds-btn-mgmt"
+          onClick={() => setShowCustMgmt(true)}
+          tabIndex={-1}
+        >
+          Manage Debit Customers
+        </button>
       </div>
 
-      {/* ── Customer row ── */}
-      <div className="ds-cust-bar">
-        <span className="ds-cust-label">📞 Phone</span>
-        <input
-          ref={phoneRef}
-          className="ds-cust-phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handlePhoneSearch();
-          }}
-          placeholder="Type name/phone → Enter (optional for walk-in)"
-          tabIndex={1}
-        />
-        <button className="ds-btn" onClick={handlePhoneSearch} tabIndex={-1}>
-          🔍 Search
-        </button>
-        {customer ? (
-          <div className="ds-cust-info">
-            <span className="ds-cust-name">👤 {customer.name}</span>
-            {customer.phone && (
-              <span className="ds-cust-phone-tag">{customer.phone}</span>
-            )}
-            <button
-              className="ds-cust-clear"
-              onClick={() => {
-                setCustomer(null);
-                setPhone("");
+      {/* Layout */}
+      <div className="ds-layout">
+        {/* ═══ LEFT ════════════════════════════════════════════ */}
+        <div className="ds-left">
+          {/* Customer bar */}
+          <div className="ds-cust-bar">
+            <span className="ds-cust-label">Phone</span>
+            <input
+              ref={phoneRef}
+              className="ds-cust-phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handlePhoneSearch();
               }}
+              placeholder="Phone → Enter to find debit customer"
+              tabIndex={1}
+            />
+            <button
+              className="ds-btn ds-btn-sm"
+              onClick={handlePhoneSearch}
+              disabled={phoneLoading}
               tabIndex={-1}
             >
-              ✕
+              {phoneLoading ? "…" : "Search"}
             </button>
-          </div>
-        ) : (
-          <span className="ds-cust-none">Walk-in / Counter Sale</span>
-        )}
-        {holds.length > 0 && (
-          <div className="ds-holds">
+            {customer ? (
+              <div className="ds-cust-info">
+                <span className="ds-cust-name">{customer.name}</span>
+                {customer.phone && (
+                  <span className="ds-cust-phone-tag">{customer.phone}</span>
+                )}
+                {currentDue > 0 && (
+                  <span className="ds-cust-due">
+                    Due: <b className="red">{fmt(currentDue)}</b>
+                  </span>
+                )}
+                <button
+                  className="ds-cust-clear"
+                  onClick={() => {
+                    setCustomer(null);
+                    setCustHistory([]);
+                    setPhone("");
+                  }}
+                  tabIndex={-1}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <span className="ds-cust-none">
+                Debit Customer / Counter Sale
+              </span>
+            )}
             {holds.map((h) => (
               <button
                 key={h.id}
@@ -1067,263 +1253,392 @@ export default function DebitSalePage() {
                 onClick={() => resumeHold(h.id)}
                 tabIndex={-1}
               >
-                📋 {h.customer?.name || "Hold"} (
-                {h.rows.filter((r) => r.description).length} items)
+                Hold: {h.customer?.name || "Bill"} ({h.rows?.length || 0})
               </button>
             ))}
           </div>
-        )}
-      </div>
 
-      {/* ── Product Search Bar ── */}
-      <div className="ds-search-bar">
-        <span className="ds-search-label">Select Product</span>
-        <input
-          ref={searchRef}
-          type="text"
-          className={`ds-search-input${searchText ? " filled" : ""}`}
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onClick={() => setShowSearch(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === "ArrowDown") {
-              e.preventDefault();
-              setShowSearch(true);
-            }
-          }}
-          placeholder="Click or press Enter / F3 to search products…"
-          readOnly={!!searchText}
-          tabIndex={2}
-        />
-        {searchText && (
-          <button
-            className="ds-btn"
-            onClick={() => setSearchText("")}
-            tabIndex={-1}
-          >
-            ✕ Clear
-          </button>
-        )}
-      </div>
-
-      {/* ── Items table ── */}
-      <div className="ds-table-wrap">
-        <table className="ds-table">
-          <thead>
-            <tr>
-              <th style={{ width: 32 }}>#</th>
-              <th style={{ width: 80 }}>Code</th>
-              <th>Description</th>
-              <th style={{ width: 80 }}>Meas.</th>
-              <th style={{ width: 65 }}>Qty</th>
-              <th style={{ width: 85 }}>Rate</th>
-              <th style={{ width: 60 }}>Disc%</th>
-              <th style={{ width: 90 }}>Amount</th>
-              <th style={{ width: 28 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => {
-              if (!rowRefs.current[i]) rowRefs.current[i] = {};
-              return (
-                <tr
-                  key={i}
-                  className={
-                    i === activeRow
-                      ? "ds-row-active"
-                      : i % 2 === 0
-                        ? "ds-row-even"
-                        : "ds-row-odd"
-                  }
-                  onClick={() => setActiveRow(i)}
-                >
-                  <td className="c">{i + 1}</td>
-                  <td>
-                    <input
-                      className="ds-cell-input"
-                      ref={(el) => {
-                        if (rowRefs.current[i]) rowRefs.current[i].code = el;
-                      }}
-                      value={row.code}
-                      onChange={(e) => updateRow(i, "code", e.target.value)}
-                      onBlur={(e) => onCodeBlur(i, e.target.value)}
-                      onKeyDown={(e) => onRowKeyDown(e, i, "code")}
-                      tabIndex={100 + i * 10 + 1}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="ds-cell-input full"
-                      ref={(el) => {
-                        if (rowRefs.current[i])
-                          rowRefs.current[i].description = el;
-                      }}
-                      value={row.description}
-                      onChange={(e) =>
-                        updateRow(i, "description", e.target.value)
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "F3") {
-                          e.preventDefault();
-                          setActiveRow(i);
-                          setShowSearch(true);
-                        } else onRowKeyDown(e, i, "description");
-                      }}
-                      tabIndex={100 + i * 10 + 2}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="ds-cell-input"
-                      ref={(el) => {
-                        if (rowRefs.current[i])
-                          rowRefs.current[i].measurement = el;
-                      }}
-                      value={row.measurement}
-                      onChange={(e) =>
-                        updateRow(i, "measurement", e.target.value)
-                      }
-                      onKeyDown={(e) => onRowKeyDown(e, i, "measurement")}
-                      tabIndex={100 + i * 10 + 3}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="ds-cell-input r"
-                      ref={(el) => {
-                        if (rowRefs.current[i]) rowRefs.current[i].qty = el;
-                      }}
-                      value={row.qty}
-                      onChange={(e) => updateRow(i, "qty", e.target.value)}
-                      onKeyDown={(e) => onRowKeyDown(e, i, "qty")}
-                      tabIndex={100 + i * 10 + 4}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="ds-cell-input r"
-                      ref={(el) => {
-                        if (rowRefs.current[i]) rowRefs.current[i].rate = el;
-                      }}
-                      value={row.rate}
-                      onChange={(e) => updateRow(i, "rate", e.target.value)}
-                      onKeyDown={(e) => onRowKeyDown(e, i, "rate")}
-                      tabIndex={100 + i * 10 + 5}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="ds-cell-input r"
-                      ref={(el) => {
-                        if (rowRefs.current[i]) rowRefs.current[i].disc = el;
-                      }}
-                      value={row.disc}
-                      onChange={(e) => updateRow(i, "disc", e.target.value)}
-                      onKeyDown={(e) => onRowKeyDown(e, i, "disc")}
-                      tabIndex={100 + i * 10 + 6}
-                    />
-                  </td>
-                  <td className="r bold">{fmt(row.amount)}</td>
-                  <td className="c">
-                    <button
-                      className="ds-del-row"
-                      onClick={() => deleteRow(i)}
-                      tabIndex={-1}
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Footer totals + actions ── */}
-      <div className="ds-footer">
-        <div className="ds-footer-left">
-          <div className="ds-remarks">
-            <span>Remarks</span>
+          {/* Product search bar */}
+          <div className="ds-search-bar">
+            <span className="ds-search-label">Select Product</span>
             <input
-              className="ds-remarks-input"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") paidRef.current?.focus();
-              }}
-              tabIndex={90}
-            />
-          </div>
-          <div className="ds-footer-actions">
-            <button
-              className="ds-btn"
+              ref={searchRef}
+              type="text"
+              className={`ds-search-input${searchText ? " filled" : ""}`}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               onClick={() => setShowSearch(true)}
-              tabIndex={-1}
-            >
-              🔍 F3 Search
-            </button>
-            <button className="ds-btn" onClick={holdBill} tabIndex={-1}>
-              📋 F8 Hold
-            </button>
-            <button className="ds-btn" onClick={resetForm} tabIndex={-1}>
-              🔄 F2 New
-            </button>
-            <button
-              ref={saveRef}
-              className="ds-btn ds-btn-primary"
-              onClick={handleSave}
-              disabled={saving}
-              tabIndex={91}
-            >
-              {saving ? "Saving…" : "💾 F5 Save"}
-            </button>
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setShowSearch(true);
+                }
+              }}
+              placeholder="Click or press Enter / F3 to search products…"
+              readOnly={!!searchText}
+              tabIndex={2}
+            />
+            {searchText && (
+              <button
+                className="ds-btn"
+                onClick={() => setSearchText("")}
+                tabIndex={-1}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Items table */}
+          <div className="ds-table-wrap">
+            <table className="ds-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 32 }}>#</th>
+                  <th style={{ width: 80 }}>Code</th>
+                  <th>Description</th>
+                  <th style={{ width: 80 }}>Meas.</th>
+                  <th style={{ width: 65 }}>Qty</th>
+                  <th style={{ width: 85 }}>Rate</th>
+                  <th style={{ width: 60 }}>Disc%</th>
+                  <th style={{ width: 90 }}>Amount</th>
+                  <th style={{ width: 28 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => {
+                  if (!rowRefs.current[i]) rowRefs.current[i] = {};
+                  return (
+                    <tr
+                      key={i}
+                      className={
+                        i === activeRow
+                          ? "ds-row-active"
+                          : i % 2 === 0
+                            ? "ds-row-even"
+                            : "ds-row-odd"
+                      }
+                      onClick={() => setActiveRow(i)}
+                    >
+                      <td className="c">{i + 1}</td>
+                      <td>
+                        <input
+                          className="ds-cell-input"
+                          ref={(el) => {
+                            if (rowRefs.current[i])
+                              rowRefs.current[i].code = el;
+                          }}
+                          value={row.code}
+                          onChange={(e) => updateRow(i, "code", e.target.value)}
+                          onBlur={(e) => onCodeBlur(i, e.target.value)}
+                          onKeyDown={(e) => onRowKeyDown(e, i, "code")}
+                          tabIndex={100 + i * 10 + 1}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="ds-cell-input full"
+                          ref={(el) => {
+                            if (rowRefs.current[i])
+                              rowRefs.current[i].description = el;
+                          }}
+                          value={row.description}
+                          onChange={(e) =>
+                            updateRow(i, "description", e.target.value)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "F3") {
+                              e.preventDefault();
+                              setActiveRow(i);
+                              setShowSearch(true);
+                            } else onRowKeyDown(e, i, "description");
+                          }}
+                          tabIndex={100 + i * 10 + 2}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="ds-cell-input"
+                          ref={(el) => {
+                            if (rowRefs.current[i])
+                              rowRefs.current[i].measurement = el;
+                          }}
+                          value={row.measurement}
+                          onChange={(e) =>
+                            updateRow(i, "measurement", e.target.value)
+                          }
+                          onKeyDown={(e) => onRowKeyDown(e, i, "measurement")}
+                          tabIndex={100 + i * 10 + 3}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="ds-cell-input r"
+                          ref={(el) => {
+                            if (rowRefs.current[i]) rowRefs.current[i].qty = el;
+                          }}
+                          value={row.qty}
+                          onChange={(e) => updateRow(i, "qty", e.target.value)}
+                          onKeyDown={(e) => onRowKeyDown(e, i, "qty")}
+                          tabIndex={100 + i * 10 + 4}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="ds-cell-input r"
+                          ref={(el) => {
+                            if (rowRefs.current[i])
+                              rowRefs.current[i].rate = el;
+                          }}
+                          value={row.rate}
+                          onChange={(e) => updateRow(i, "rate", e.target.value)}
+                          onKeyDown={(e) => onRowKeyDown(e, i, "rate")}
+                          tabIndex={100 + i * 10 + 5}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="ds-cell-input r"
+                          ref={(el) => {
+                            if (rowRefs.current[i])
+                              rowRefs.current[i].disc = el;
+                          }}
+                          value={row.disc}
+                          onChange={(e) => updateRow(i, "disc", e.target.value)}
+                          onKeyDown={(e) => onRowKeyDown(e, i, "disc")}
+                          tabIndex={100 + i * 10 + 6}
+                        />
+                      </td>
+                      <td className="r bold">{fmt(row.amount)}</td>
+                      <td className="c">
+                        <button
+                          className="ds-del-row"
+                          onClick={() => deleteRow(i)}
+                          tabIndex={-1}
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Payment Section */}
+          <div className="ds-pay-section">
+            <div className="ds-pay-left">
+              <div className="ds-pay-title">Payment Mode</div>
+              <div className="ds-pay-modes">
+                <button
+                  className={`ds-pay-btn ${cashAmt >= netTotal && netTotal > 0 ? "active-cash" : ""}`}
+                  onClick={setPayFull}
+                >
+                  Full Cash
+                </button>
+                <button
+                  className={`ds-pay-btn ${cashAmt === 0 && netTotal > 0 ? "active-credit" : ""}`}
+                  onClick={setPayCredit}
+                >
+                  Full Credit
+                </button>
+                <button
+                  className={`ds-pay-btn ${cashAmt > 0 && cashAmt < netTotal ? "active-partial" : ""}`}
+                  onClick={setPayPartial}
+                >
+                  Partial
+                </button>
+              </div>
+              <div className="ds-pay-row">
+                <label>Cash Received</label>
+                <input
+                  ref={cashRef}
+                  type="number"
+                  className="ds-pay-input"
+                  value={cashPaid}
+                  min={0}
+                  onChange={(e) => {
+                    setCashPaid(e.target.value);
+                    setPayMode(
+                      Number(e.target.value) >= netTotal ? "Cash" : "Credit",
+                    );
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveRef.current?.focus();
+                  }}
+                  tabIndex={90}
+                />
+              </div>
+              <div className="ds-pay-row">
+                <label>Extra Disc%</label>
+                <input
+                  type="number"
+                  className="ds-pay-input"
+                  value={extraDisc}
+                  onChange={(e) => setExtraDisc(e.target.value)}
+                  tabIndex={89}
+                />
+              </div>
+              <div className="ds-pay-row">
+                <label>Remarks</label>
+                <input
+                  className="ds-pay-input wide"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  tabIndex={91}
+                />
+              </div>
+            </div>
+            <div className="ds-pay-right">
+              <div className="ds-tot-row">
+                <span>Sub Total</span>
+                <span>{fmt(subTotal)}</span>
+              </div>
+              {discAmt > 0 && (
+                <div className="ds-tot-row">
+                  <span>Discount</span>
+                  <span className="red">-{fmt(discAmt)}</span>
+                </div>
+              )}
+              <div className="ds-tot-row bold big">
+                <span>Net Total</span>
+                <span>{fmt(netTotal)}</span>
+              </div>
+              <div className="ds-tot-row green">
+                <span>Cash</span>
+                <span>{fmt(cashAmt)}</span>
+              </div>
+              <div
+                className={`ds-tot-row bold ${creditAmt > 0 ? "red" : "green"}`}
+              >
+                <span>Credit / Balance</span>
+                <span>{fmt(creditAmt)}</span>
+              </div>
+              <div className="ds-pay-actions">
+                <button
+                  ref={saveRef}
+                  className="ds-btn ds-btn-primary"
+                  onClick={handleSave}
+                  disabled={saving}
+                  tabIndex={92}
+                >
+                  {saving ? "Saving…" : "F5 Save"}
+                </button>
+                <button className="ds-btn" onClick={holdBill} tabIndex={-1}>
+                  F8 Hold
+                </button>
+                <button
+                  className="ds-btn"
+                  onClick={() => setShowInvoice(true)}
+                  tabIndex={-1}
+                >
+                  Print
+                </button>
+                <button className="ds-btn" onClick={resetForm} tabIndex={-1}>
+                  F2 New
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="ds-totals">
-          <div className="ds-tot-row">
-            <span>Sub Total</span>
-            <span>{fmt(subTotal)}</span>
-          </div>
-          <div className="ds-tot-row">
-            <span>Extra Disc%</span>
-            <input
-              type="number"
-              className="ds-tot-input"
-              value={extraDisc}
-              onChange={(e) => setExtraDisc(e.target.value)}
-              tabIndex={89}
-            />
-          </div>
-          <div className="ds-tot-row">
-            <span>Disc Amount</span>
-            <span className="red">-{fmt(discAmt)}</span>
-          </div>
-          <div className="ds-tot-row bold big">
-            <span>Net Total</span>
-            <span>{fmt(netTotal)}</span>
-          </div>
-          <div className="ds-tot-row">
-            <span>Paid ({payMode})</span>
-            <input
-              ref={paidRef}
-              type="number"
-              className="ds-tot-input green"
-              value={paid}
-              onChange={(e) => setPaid(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveRef.current?.focus();
-              }}
-              tabIndex={90}
-            />
-          </div>
-          <div className={`ds-tot-row bold ${balance > 0 ? "red" : "green"}`}>
-            <span>Balance</span>
-            <span>{fmt(balance)}</span>
-          </div>
+
+        {/* ═══ RIGHT PANEL ════════════════════════════════════ */}
+        <div className="ds-right-panel">
+          {!customer ? (
+            <div className="ds-rp-empty">
+              <div className="ds-rp-icon">👤</div>
+              <div>
+                Enter phone number
+                <br />
+                to load debit customer
+              </div>
+              <button
+                className="ds-rp-mgmt-btn"
+                onClick={() => setShowCustMgmt(true)}
+              >
+                Manage Debit Customers
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="ds-rp-header">
+                <div className="ds-rp-name">{customer.name}</div>
+                <div className="ds-rp-phone">{customer.phone}</div>
+              </div>
+              <div className="ds-rp-cards">
+                <div className="ds-rp-card">
+                  <div className="ds-rp-cl">Total Sales</div>
+                  <div className="ds-rp-cv">{fmt(histTotal)}</div>
+                </div>
+                <div className="ds-rp-card">
+                  <div className="ds-rp-cl">Total Paid</div>
+                  <div className="ds-rp-cv green">{fmt(histPaid)}</div>
+                </div>
+                <div
+                  className={`ds-rp-card ${currentDue > 0 ? "danger" : "ok"}`}
+                >
+                  <div className="ds-rp-cl">Current Due</div>
+                  <div className="ds-rp-cv bold red">{fmt(currentDue)}</div>
+                </div>
+                {creditAmt > 0 && (
+                  <div className="ds-rp-card danger">
+                    <div className="ds-rp-cl">After This Bill</div>
+                    <div className="ds-rp-cv bold red">
+                      {fmt(currentDue + creditAmt)}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="ds-rp-btns">
+                {customer.phone && (
+                  <button
+                    className="ds-rp-btn wa"
+                    onClick={() => {
+                      const text = `Assalam o Alaikum *${customer.name}*,\n\nYour outstanding balance is *Rs. ${fmt(currentDue)}*.\n\nPlease clear dues.\n\n_${SHOP_NAME}_`;
+                      window.open(
+                        `https://wa.me/${customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
+                        "_blank",
+                      );
+                    }}
+                  >
+                    WA Reminder
+                  </button>
+                )}
+                <button
+                  className="ds-rp-btn detail"
+                  onClick={() => setShowCustMgmt(true)}
+                >
+                  More Detail
+                </button>
+              </div>
+              <div className="ds-rp-hist-label">
+                Recent ({custHistory.length})
+              </div>
+              <div className="ds-rp-hist-wrap">
+                {histLoading && <div className="ds-rp-loading">Loading…</div>}
+                {!histLoading && custHistory.length === 0 && (
+                  <div className="ds-rp-loading">No history yet</div>
+                )}
+                {custHistory.slice(0, 10).map((s) => (
+                  <div
+                    key={s._id}
+                    className={`ds-rp-txn ${s.balance > 0 ? "txn-red" : ""}`}
+                  >
+                    <span className="ds-rp-inv">{s.invoiceNo}</span>
+                    <span className="ds-rp-date">{s.invoiceDate}</span>
+                    <span className="ds-rp-amt">{fmt(s.netTotal)}</span>
+                    <span className={`ds-rp-bal ${s.balance > 0 ? "red" : ""}`}>
+                      {fmt(s.balance)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

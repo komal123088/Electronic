@@ -1,9 +1,9 @@
 /* styles/ProductPage.css */
 
 .pp-root {
-  padding-bottom: 30px;
   background: var(--bg);
-  min-height: 100vh;
+  height: 100%;
+  overflow-y: auto;
 }
 .pp-body {
   display: flex;

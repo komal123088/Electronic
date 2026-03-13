@@ -5,9 +5,10 @@
   font-family: var(--font);
   font-size: var(--font-size);
   background: var(--bg);
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .cs-shortcuts {
   background: #f5f0e0;
@@ -38,6 +39,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 .cs-left {
   flex: 1;
@@ -45,6 +47,7 @@
   display: flex;
   flex-direction: column;
   border-right: 2px solid var(--border);
+  overflow: hidden;
 }
 .cs-right {
   width: 340px;
@@ -195,10 +198,49 @@
   border-color: #e0a800;
 }
 
+/* ── Product Search Bar (above table) ───────────────────────────────────── */
+.cs-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cs-search-label {
+  font-size: var(--font-sm);
+  color: var(--text-label);
+  white-space: nowrap;
+  font-weight: bold;
+}
+.cs-search-input {
+  flex: 1;
+  height: var(--input-h);
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: 2px solid #ff8c00;
+  padding: 0 7px;
+  outline: none;
+  background: var(--bg-input);
+  cursor: pointer;
+  max-width: 500px;
+}
+.cs-search-input.filled {
+  background: var(--bg-filled);
+  font-weight: bold;
+  cursor: default;
+  color: #6c2d9e;
+}
+.cs-search-input:focus {
+  border-color: #e07000;
+}
+
 /* ── Items table ────────────────────────────────────────────────────────── */
 .cs-table-wrap {
   flex: 1;
   overflow: auto;
+  min-height: 0;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
 }
@@ -215,6 +257,9 @@
   white-space: nowrap;
   text-align: left;
   font-size: var(--font-sm);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 .cs-table td {
   border: 1px solid var(--border-table);
@@ -245,7 +290,6 @@
 .cs-row-active td input {
   background: rgba(255, 255, 255, 0.7) !important;
 }
-
 .cs-cell {
   width: 100%;
   height: 21px;
@@ -561,8 +605,6 @@
   color: var(--text-muted);
   margin-top: -4px;
 }
-
-/* Summary cards */
 .cs-hist-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -599,8 +641,6 @@
 .cs-hcard.danger .cs-hcard-v {
   color: #c00;
 }
-
-/* History table */
 .cs-hist-label {
   font-size: var(--font-sm);
   font-weight: bold;
@@ -653,13 +693,19 @@
 .cs-hist-table tbody tr.odd td {
   background: var(--bg-stripe);
 }
-.cs-empty {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 14px !important;
-  font-style: italic;
+.cs-hist-row:hover {
+  background: #d4e8ff !important;
+  cursor: pointer;
 }
-
+.cs-hist-row:hover td {
+  color: #003d82;
+}
+.cs-hist-hint {
+  font-size: 10px;
+  color: #888;
+  font-weight: normal;
+  margin-left: 6px;
+}
 .cs-badge {
   font-size: 9px;
   padding: 1px 5px;
@@ -676,8 +722,14 @@
   color: #a00;
   border: 1px solid #c00;
 }
+.cs-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 14px !important;
+  font-style: italic;
+}
 
-/* ── SearchModal  (sm-* — same as SalePage) ─────────────────────────────── */
+/* ── SearchModal (sm-*) ─────────────────────────────────────────────────── */
 .sm-overlay {
   position: fixed;
   inset: 0;
@@ -696,7 +748,6 @@
   flex-direction: column;
   box-shadow: 4px 6px 16px rgba(0, 0, 0, 0.5);
 }
-
 .sm-titlebar {
   background: linear-gradient(to right, #0a246a, #3a6fc4);
   color: white;
@@ -722,7 +773,6 @@
   justify-content: center;
   padding: 0;
 }
-
 .sm-filters {
   display: flex;
   align-items: flex-end;
@@ -773,7 +823,6 @@
   font-size: var(--font-sm);
   color: var(--text-muted);
 }
-
 .sm-products-box {
   border: 1px solid #999;
   margin: 5px 8px 0;
@@ -797,7 +846,6 @@
   flex: 1;
   margin-top: 6px;
 }
-
 .sm-table {
   width: 100%;
   border-collapse: collapse;
@@ -842,7 +890,6 @@
   background: var(--sel-bg) !important;
   color: var(--sel-text);
 }
-
 .sm-footer {
   padding: 3px 10px 4px;
   font-size: var(--font-sm);
@@ -852,69 +899,10 @@
   flex-shrink: 0;
 }
 
-/* ── Product Search Bar (above table) ───────────────────────────────────── */
-.cs-search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.cs-search-label {
-  font-size: var(--font-sm);
-  color: var(--text-label);
-  white-space: nowrap;
-  font-weight: bold;
-}
-.cs-search-input {
-  flex: 1;
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 2px solid #ff8c00;
-  padding: 0 7px;
-  outline: none;
-  background: var(--bg-input);
-  cursor: pointer;
-  max-width: 500px;
-}
-.cs-search-input.filled {
-  background: var(--bg-filled);
-  font-weight: bold;
-  cursor: default;
-  color: #6c2d9e;
-}
-.cs-search-input:focus {
-  border-color: #e07000;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   ADD THESE STYLES TO YOUR CreditSalePage.css
-   Customer Detail Modal (cdm-*) + History row hover
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* ── History row — hover to show it's clickable ── */
-.cs-hist-row:hover {
-  background: #d4e8ff !important;
-  cursor: pointer;
-}
-.cs-hist-row:hover td {
-  color: #003d82;
-}
-.cs-hist-hint {
-  font-size: 10px;
-  color: #888;
-  font-weight: normal;
-  margin-left: 6px;
-}
-
-/* ══ CustomerDetailModal ════════════════════════════════════════════ */
+/* ── CustomerDetailModal (cdm-*) ────────────────────────────────────────── */
 .cdm-modal {
   background: #ece9d8;
   border: 2px solid #848484;
-  border-radius: 0;
   box-shadow:
     4px 4px 10px rgba(0, 0, 0, 0.5),
     inset 1px 1px 0 #fff,
@@ -927,7 +915,6 @@
   font-family: "Tahoma", "Segoe UI", sans-serif;
   font-size: 12px;
 }
-
 .cdm-titlebar {
   background: linear-gradient(to right, #0a246a, #3a6ea5);
   color: #fff;
@@ -939,16 +926,12 @@
   justify-content: space-between;
   user-select: none;
 }
-
 .cdm-body {
   display: flex;
-  gap: 0;
   flex: 1;
   overflow: hidden;
   min-height: 0;
 }
-
-/* ── Left: Items + totals ── */
 .cdm-left {
   flex: 1.35;
   display: flex;
@@ -958,7 +941,6 @@
   overflow: hidden;
   min-width: 0;
 }
-
 .cdm-section-title {
   font-weight: bold;
   font-size: 11px;
@@ -970,7 +952,6 @@
   align-items: center;
   gap: 6px;
 }
-
 .cdm-items-wrap {
   flex: 1;
   overflow-y: auto;
@@ -978,7 +959,6 @@
   background: #fff;
   min-height: 0;
 }
-
 .cdm-table {
   width: 100%;
   border-collapse: collapse;
@@ -1007,8 +987,6 @@
 .cdm-table tbody tr:hover {
   background: #e8f0ff !important;
 }
-
-/* Totals box */
 .cdm-totals-box {
   margin-top: 8px;
   border: 1px solid #bbb;
@@ -1031,8 +1009,6 @@
 .cdm-tot-row.big {
   font-size: 13px;
 }
-
-/* Meta row */
 .cdm-meta-row {
   display: flex;
   flex-wrap: wrap;
@@ -1052,8 +1028,6 @@
   background: #fffde8;
   border: 1px solid #e0d88a;
 }
-
-/* ── Right: Payments ── */
 .cdm-right {
   width: 300px;
   min-width: 280px;
@@ -1063,7 +1037,6 @@
   gap: 10px;
   overflow-y: auto;
 }
-
 .cdm-pay-box {
   border: 2px solid #0a246a;
   background: #f0f4ff;
@@ -1107,8 +1080,6 @@
   font-size: 12px;
   padding: 5px 12px;
 }
-
-/* Payment history */
 .cdm-pay-history {
   flex: 1;
   display: flex;
@@ -1163,8 +1134,6 @@
   border-top: 1px solid #bbb;
   background: #f0f4ee;
 }
-
-/* Footer */
 .cdm-footer {
   padding: 6px 10px;
   display: flex;
@@ -1174,343 +1143,7 @@
   background: #ece9d8;
 }
 
-/* Common helpers (in case not already in your CSS) */
-.red {
-  color: #cc0000;
-}
-.green {
-  color: #006600;
-}
-.blue {
-  color: #0000cc;
-}
-.bold {
-  font-weight: bold;
-}
-.r {
-  text-align: right;
-}
-.c {
-  text-align: center;
-}
-.cs-empty {
-  text-align: center;
-  padding: 12px;
-  color: #888;
-  font-style: italic;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   ADD THESE STYLES TO YOUR CreditSalePage.css
-   Customer Detail Modal (cdm-*) + History row hover
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* ── History row — hover to show it's clickable ── */
-.cs-hist-row:hover {
-  background: #d4e8ff !important;
-  cursor: pointer;
-}
-.cs-hist-row:hover td {
-  color: #003d82;
-}
-.cs-hist-hint {
-  font-size: 10px;
-  color: #888;
-  font-weight: normal;
-  margin-left: 6px;
-}
-
-/* ══ CustomerDetailModal ════════════════════════════════════════════ */
-.cdm-modal {
-  background: #ece9d8;
-  border: 2px solid #848484;
-  border-radius: 0;
-  box-shadow:
-    4px 4px 10px rgba(0, 0, 0, 0.5),
-    inset 1px 1px 0 #fff,
-    inset -1px -1px 0 #808080;
-  width: 980px;
-  max-width: 98vw;
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  font-family: "Tahoma", "Segoe UI", sans-serif;
-  font-size: 12px;
-}
-
-.cdm-titlebar {
-  background: linear-gradient(to right, #0a246a, #3a6ea5);
-  color: #fff;
-  font-weight: bold;
-  font-size: 12px;
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  user-select: none;
-}
-
-.cdm-body {
-  display: flex;
-  gap: 0;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-
-/* ── Left: Items + totals ── */
-.cdm-left {
-  flex: 1.35;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  border-right: 1px solid #aaa;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.cdm-section-title {
-  font-weight: bold;
-  font-size: 11px;
-  color: #0a246a;
-  border-bottom: 1px solid #0a246a;
-  padding-bottom: 2px;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.cdm-items-wrap {
-  flex: 1;
-  overflow-y: auto;
-  border: 1px solid #bbb;
-  background: #fff;
-  min-height: 0;
-}
-
-.cdm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-.cdm-table thead th {
-  background: #d4d0c8;
-  border: 1px solid #848484;
-  padding: 3px 5px;
-  font-weight: bold;
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-.cdm-table tbody td {
-  border: 1px solid #d0d0d0;
-  padding: 2px 5px;
-}
-.cdm-table tbody tr.even {
-  background: #fff;
-}
-.cdm-table tbody tr.odd {
-  background: #f5f5f0;
-}
-.cdm-table tbody tr:hover {
-  background: #e8f0ff !important;
-}
-
-/* Totals box */
-.cdm-totals-box {
-  margin-top: 8px;
-  border: 1px solid #bbb;
-  background: #f5f4ee;
-  padding: 6px 10px;
-}
-.cdm-tot-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 2px 0;
-  font-size: 11px;
-  border-bottom: 1px dotted #ddd;
-}
-.cdm-tot-row:last-child {
-  border-bottom: none;
-}
-.cdm-tot-row.bold {
-  font-weight: bold;
-}
-.cdm-tot-row.big {
-  font-size: 13px;
-}
-
-/* Meta row */
-.cdm-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-  padding: 5px 8px;
-  background: #e8e5d8;
-  border: 1px solid #bbb;
-  font-size: 11px;
-}
-.cdm-remarks {
-  margin-top: 4px;
-  font-size: 11px;
-  color: #555;
-  font-style: italic;
-  padding: 3px 6px;
-  background: #fffde8;
-  border: 1px solid #e0d88a;
-}
-
-/* ── Right: Payments ── */
-.cdm-right {
-  width: 300px;
-  min-width: 280px;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  gap: 10px;
-  overflow-y: auto;
-}
-
-.cdm-pay-box {
-  border: 2px solid #0a246a;
-  background: #f0f4ff;
-  padding: 8px;
-}
-.cdm-pay-balance {
-  font-size: 12px;
-  margin: 5px 0 8px;
-}
-.cdm-pay-form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.cdm-pay-field {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.cdm-pay-field label {
-  font-size: 10px;
-  font-weight: bold;
-  color: #333;
-}
-.cdm-pay-input {
-  border: 1px solid #848484;
-  background: #fff;
-  padding: 3px 6px;
-  font-size: 12px;
-  font-family: "Tahoma", sans-serif;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.15);
-  width: 100%;
-  box-sizing: border-box;
-}
-.cdm-pay-input:focus {
-  outline: 1px solid #0a246a;
-  background: #fffde8;
-}
-.cdm-pay-btn {
-  margin-top: 4px;
-  font-size: 12px;
-  padding: 5px 12px;
-}
-
-/* Payment history */
-.cdm-pay-history {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #bbb;
-  background: #fff;
-  min-height: 0;
-}
-.cdm-pay-history .cdm-section-title {
-  padding: 5px 8px 4px;
-  margin: 0;
-  border-bottom: 1px solid #0a246a;
-  background: #e8e5d8;
-}
-.cdm-ph-count {
-  font-weight: normal;
-  color: #666;
-  font-size: 10px;
-}
-.cdm-ph-scroll {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 80px;
-  max-height: 220px;
-}
-.cdm-ph-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-.cdm-ph-table thead th {
-  background: #d4d0c8;
-  border: 1px solid #848484;
-  padding: 3px 5px;
-  font-weight: bold;
-  position: sticky;
-  top: 0;
-}
-.cdm-ph-table tbody td {
-  border: 1px solid #e0e0e0;
-  padding: 2px 5px;
-}
-.cdm-ph-table tbody tr.even {
-  background: #fff;
-}
-.cdm-ph-table tbody tr.odd {
-  background: #f5f5f0;
-}
-.cdm-ph-total {
-  padding: 5px 8px;
-  font-size: 11px;
-  border-top: 1px solid #bbb;
-  background: #f0f4ee;
-}
-
-/* Footer */
-.cdm-footer {
-  padding: 6px 10px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  border-top: 1px solid #aaa;
-  background: #ece9d8;
-}
-
-/* Common helpers (in case not already in your CSS) */
-.red {
-  color: #cc0000;
-}
-.green {
-  color: #006600;
-}
-.blue {
-  color: #0000cc;
-}
-.bold {
-  font-weight: bold;
-}
-.r {
-  text-align: right;
-}
-.c {
-  text-align: center;
-}
-.cs-empty {
-  text-align: center;
-  padding: 12px;
-  color: #888;
-  font-style: italic;
-}
-
-/* ══ CustomerSearchModal (csm-*) ════════════════════════════════════════════ */
+/* ── CustomerSearchModal (csm-*) ────────────────────────────────────────── */
 .csm-window {
   background: #ece9d8;
   border: 2px solid #848484;
@@ -1526,7 +1159,6 @@
   font-size: 12px;
   max-height: 80vh;
 }
-
 .csm-titlebar {
   background: linear-gradient(to right, #0a246a, #3a6ea5);
   color: #fff;
@@ -1538,7 +1170,6 @@
   justify-content: space-between;
   user-select: none;
 }
-
 .csm-search-row {
   display: flex;
   align-items: center;
@@ -1548,13 +1179,11 @@
   background: #f5f4ee;
   flex-wrap: wrap;
 }
-
 .csm-label {
   font-weight: bold;
   font-size: 11px;
   white-space: nowrap;
 }
-
 .csm-input {
   flex: 1;
   min-width: 160px;
@@ -1569,7 +1198,6 @@
   outline: 1px solid #0a246a;
   background: #fffde8;
 }
-
 .csm-loading {
   font-size: 14px;
   color: #666;
@@ -1579,7 +1207,6 @@
   color: #555;
   white-space: nowrap;
 }
-
 .csm-table-wrap {
   flex: 1;
   overflow-y: auto;
@@ -1587,7 +1214,6 @@
   max-height: 400px;
   border-top: 1px solid #bbb;
 }
-
 .csm-table {
   width: 100%;
   border-collapse: collapse;
@@ -1623,7 +1249,6 @@
 .csm-table tbody tr:not(.csm-hi):hover {
   background: #d4e8ff !important;
 }
-
 .csm-footer {
   padding: 5px 10px;
   font-size: 10px;
@@ -1631,4 +1256,495 @@
   border-top: 1px solid #bbb;
   background: #ece9d8;
   text-align: center;
+}
+
+/* ── Common helpers ─────────────────────────────────────────────────────── */
+.red {
+  color: #cc0000;
+}
+.green {
+  color: #006600;
+}
+.blue {
+  color: #0000cc;
+}
+.bold {
+  font-weight: bold;
+}
+.r {
+  text-align: right;
+}
+.c {
+  text-align: center;
+}
+
+/* Customer search modal */
+.csm-window {
+  background: #fff;
+  border: 2px solid #6b1a1a;
+  border-radius: 3px;
+  width: 620px;
+  max-width: 98vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.csm-titlebar {
+  background: linear-gradient(to right, #6b1a1a, #a83232);
+  color: #fff;
+  padding: 4px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: var(--font-size);
+  flex-shrink: 0;
+}
+.csm-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.csm-label {
+  font-size: var(--font-sm);
+  color: var(--text-label);
+  white-space: nowrap;
+}
+.csm-input {
+  flex: 1;
+  min-width: 180px;
+  height: var(--input-h);
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: 1px solid var(--border-input);
+  padding: 0 6px;
+  background: var(--bg-input);
+  border-radius: var(--radius);
+  outline: none;
+}
+.csm-input:focus {
+  border-color: var(--border-focus);
+}
+.csm-loading {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+.csm-count {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.csm-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 120px;
+}
+.csm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size);
+}
+.csm-table th {
+  background: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  font-weight: normal;
+  text-align: left;
+  font-size: var(--font-sm);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.csm-table td {
+  border: 1px solid var(--border-table);
+  padding: 1px 6px;
+  height: var(--row-h);
+  white-space: nowrap;
+}
+.csm-table tr.csm-hi td {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+}
+.csm-table tr.even td {
+  background: #fff;
+}
+.csm-table tr.odd td {
+  background: var(--bg-stripe);
+}
+.csm-footer {
+  padding: 3px 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Customer bar extras */
+.cs-cust-none {
+  font-size: var(--font-sm);
+  color: var(--error-text);
+}
+.cs-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cs-search-label {
+  font-size: var(--font-sm);
+  color: var(--text-label);
+  white-space: nowrap;
+}
+
+/* History panel action buttons */
+.cs-hist-panel-actions {
+  display: flex;
+  gap: 4px;
+  padding: 3px 8px 4px;
+  border-top: 1px solid #a85050;
+}
+.cs-hist-action-btn {
+  flex: 1;
+  height: 22px;
+  font-size: 10px;
+  font-family: var(--font);
+  border: 1px solid #fff6;
+  background: #fff2;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: #fff;
+}
+.cs-hist-action-btn:hover {
+  background: #fff3;
+}
+.cs-hist-wa-btn {
+  background: #25d36640;
+  border-color: #25d366;
+}
+.cs-hist-hint {
+  font-size: 9px;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+.cs-hist-row:hover td {
+  background: #fff0f0 !important;
+}
+.cs-manage-btn {
+  padding: 0 16px;
+  height: 28px;
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: 1px solid #6b1a1a;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: #6b1a1a;
+  color: #fff;
+}
+
+/* Invoice modal */
+.cs-modal-title {
+  background: linear-gradient(to right, #6b1a1a, #a83232);
+  color: #fff;
+  padding: 5px 10px;
+  font-weight: bold;
+  font-size: var(--font-size);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.cs-inv-thanks {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+  color: #888;
+  clear: both;
+  border-top: 1px dashed #ccc;
+  padding-top: 10px;
+}
+.cs-btn-wa {
+  background: #25d366;
+  color: #fff;
+  border-color: #25d366;
+}
+.cs-btn-wa:hover {
+  background: #1ebe5b;
+}
+
+/* Row active */
+.cs-row-active td {
+  background: #fce8e8 !important;
+}
+
+/* Cell input */
+.cs-cell {
+  width: 100%;
+  height: 20px;
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: none;
+  padding: 0 3px;
+  background: transparent;
+  outline: none;
+}
+.cs-cell.full {
+  width: 100%;
+}
+.cs-cell:focus {
+  background: #fffde7;
+}
+.cs-cell.r {
+  text-align: right;
+}
+.cs-del-row {
+  width: 18px;
+  height: 18px;
+  background: #dc3545;
+  border: none;
+  color: #fff;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0;
+}
+
+/* Customer detail modal (cdm) */
+.cdm-modal {
+  background: #fff;
+  border: 2px solid #6b1a1a;
+  border-radius: 3px;
+  width: 820px;
+  max-width: 98vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+}
+.cdm-titlebar {
+  background: linear-gradient(to right, #6b1a1a, #a83232);
+  color: #fff;
+  padding: 5px 10px;
+  font-weight: bold;
+  font-size: var(--font-size);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.cdm-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.cdm-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 2px solid var(--border);
+}
+.cdm-right {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-panel);
+}
+.cdm-section-title {
+  font-size: var(--font-sm);
+  font-weight: bold;
+  color: #6b1a1a;
+  padding: 4px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cdm-items-wrap {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cdm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size);
+}
+.cdm-table th {
+  background: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 2px 5px;
+  font-weight: normal;
+  text-align: left;
+  font-size: var(--font-sm);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.cdm-table td {
+  border: 1px solid var(--border-table);
+  padding: 1px 5px;
+  height: var(--row-h);
+}
+.cdm-table tr.even td {
+  background: #fff;
+}
+.cdm-table tr.odd td {
+  background: var(--bg-stripe);
+}
+.cdm-totals-box {
+  padding: 6px 10px;
+  border-top: 2px solid var(--border);
+  flex-shrink: 0;
+  background: #fffafa;
+}
+.cdm-tot-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 12px;
+}
+.cdm-tot-row.bold {
+  font-weight: bold;
+}
+.cdm-tot-row.big {
+  font-size: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 3px;
+}
+.cdm-tot-row.red {
+  color: var(--error-text);
+}
+.cdm-tot-row.green {
+  color: #27ae60;
+}
+.cdm-meta-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-label);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cdm-remarks {
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cdm-pay-box {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cdm-pay-balance {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.cdm-pay-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cdm-pay-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cdm-pay-field label {
+  font-size: 10px;
+  color: var(--text-label);
+}
+.cdm-pay-input {
+  height: 24px;
+  font-size: var(--font-size);
+  font-family: var(--font);
+  border: 1px solid var(--border-input);
+  padding: 0 6px;
+  background: var(--bg-input);
+  border-radius: var(--radius);
+  outline: none;
+}
+.cdm-pay-input:focus {
+  border-color: var(--border-focus);
+}
+.cdm-pay-btn {
+  width: 100%;
+  height: 26px;
+  margin-top: 4px;
+}
+.cdm-pay-history {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+.cdm-ph-count {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: normal;
+  margin-left: 4px;
+}
+.cdm-ph-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cdm-ph-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.cdm-ph-table th {
+  background: var(--bg-header);
+  border: 1px solid var(--border);
+  padding: 2px 5px;
+  font-weight: normal;
+  font-size: 10px;
+  position: sticky;
+  top: 0;
+}
+.cdm-ph-table td {
+  border: 1px solid var(--border-table);
+  padding: 1px 5px;
+  height: 20px;
+}
+.cdm-ph-table tr.even td {
+  background: #fff;
+}
+.cdm-ph-table tr.odd td {
+  background: var(--bg-stripe);
+}
+.cdm-ph-total {
+  padding: 3px 8px;
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+}
+.cdm-footer {
+  padding: 5px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
