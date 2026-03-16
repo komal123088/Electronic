@@ -1,0 +1,407 @@
+/* ═══════════════════════════════════════════════════════════
+   JOURNAL VOUCHER PAGE — jv-*
+═══════════════════════════════════════════════════════════ */
+.jv-page {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  font-family: var(--font);
+  font-size: var(--font-size);
+}
+
+.jv-msg {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.jv-msg.success {
+  background: #dff0d8;
+  color: #2d6a2d;
+  border-bottom: 1px solid #b2dba1;
+}
+.jv-msg.error {
+  background: #fde8e8;
+  color: #a00;
+  border-bottom: 1px solid #f5b8b8;
+}
+
+/* ── Top area (fieldsets + commands) ──────────────────── */
+.jv-top {
+  flex-shrink: 0;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── JV Info fieldset ─────────────────────────────────── */
+.jv-fieldset {
+  border: 1px solid #999;
+  padding: 4px 10px 8px;
+  background: #f4f2ea;
+}
+.jv-fieldset legend {
+  font-size: 11px;
+  font-weight: bold;
+  color: #333;
+  padding: 0 4px;
+}
+
+.jv-info-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.jv-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+.jv-field label {
+  color: #444;
+  white-space: nowrap;
+}
+
+.jv-input {
+  height: var(--input-h);
+  border: 1px solid var(--border-input);
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: var(--bg-input);
+}
+.jv-input:focus {
+  outline: 1px solid var(--border-focus);
+}
+.jv-input[readonly] {
+  background: var(--bg-readonly);
+  color: #555;
+}
+.jv-input.bold {
+  font-weight: bold;
+}
+.jv-input.w90 {
+  width: 90px;
+}
+.jv-input.w120 {
+  width: 120px;
+}
+.jv-input.w200 {
+  width: 200px;
+}
+.jv-input.w280 {
+  width: 280px;
+}
+.jv-input.w80 {
+  width: 80px;
+}
+.jv-input.r {
+  text-align: right;
+}
+
+/* ── Entry rows (Debit / Credit) ─────────────────────── */
+.jv-entry-grid {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 90px 100px;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.jv-entry-grid .jv-col-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  text-align: right;
+  padding-right: 4px;
+}
+.jv-account-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.jv-account-input {
+  flex: 1;
+  height: var(--input-h);
+  border: 1px solid var(--border-input);
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: #fff;
+}
+.jv-account-input:focus {
+  outline: 1px solid var(--border-focus);
+  background: #fffbe6;
+}
+.jv-account-input.has-val {
+  background: var(--bg-filled);
+  font-weight: bold;
+}
+
+/* Dropdown */
+.jv-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  min-width: 320px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #666;
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.3);
+  z-index: 999;
+}
+.jv-drop-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  gap: 8px;
+}
+.jv-drop-item:hover,
+.jv-drop-item.hi {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+}
+.jv-drop-item .jv-drop-type {
+  font-size: 10px;
+  background: #ddd;
+  color: #555;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.jv-drop-item.hi .jv-drop-type {
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.jv-drop-item .jv-drop-bal {
+  font-size: 11px;
+  color: #c00;
+  flex-shrink: 0;
+}
+.jv-drop-item.hi .jv-drop-bal {
+  color: #ffcccc;
+}
+
+/* Balance row */
+.jv-balance-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 90px 100px;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.jv-bal-val {
+  font-size: 12px;
+  font-weight: bold;
+  text-align: right;
+  padding-right: 6px;
+  color: #1a3a9a;
+  grid-column: 5;
+}
+.jv-bal-val.red {
+  color: #c00;
+}
+
+/* ── Column headers (inside fieldset) ────────────────── */
+.jv-entry-headers {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 90px 100px;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+.jv-entry-headers span {
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  border-bottom: 1px solid #bbb;
+  padding-bottom: 2px;
+}
+.jv-entry-headers span.r {
+  text-align: right;
+}
+
+/* ── Commands bar ─────────────────────────────────────── */
+.jv-commands {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: #e8e0cc;
+  border: 1px solid #b0a878;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.jv-sms-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-right: 10px;
+}
+.jv-cmd-btn {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid #8a9ab0;
+  background: linear-gradient(to bottom, #f4f0e8, #ddd8c8);
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.jv-cmd-btn:hover {
+  background: linear-gradient(to bottom, #fffaf0, #eee8d8);
+}
+.jv-cmd-btn:active {
+  background: #ccc8b8;
+}
+.jv-cmd-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.jv-cmd-btn.green {
+  background: linear-gradient(to bottom, #e0f4e0, #90c890);
+  border-color: #5a9a5a;
+  color: #1a4a1a;
+  font-weight: bold;
+}
+.jv-cmd-btn.blue {
+  background: linear-gradient(to bottom, #d8eaff, #6090cc);
+  border-color: #3060aa;
+  color: #fff;
+  font-weight: bold;
+}
+.jv-cmd-btn.red {
+  background: linear-gradient(to bottom, #ffe0e0, #d06060);
+  border-color: #aa3030;
+  color: #fff;
+}
+.jv-cmd-btn.orange {
+  background: linear-gradient(to bottom, #fff4d8, #d4a010);
+  border-color: #a07800;
+  color: #4a3000;
+  font-weight: bold;
+}
+
+/* ── Searching Results ────────────────────────────────── */
+.jv-results-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 8px 6px;
+}
+.jv-results-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  flex-shrink: 0;
+}
+.jv-results-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+  border: 1px solid #999;
+  padding: 1px 8px;
+  background: #e8e4d8;
+}
+.jv-search-input {
+  height: var(--input-h);
+  border: 1px solid var(--border-input);
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: var(--bg-input);
+  width: 220px;
+}
+.jv-search-input:focus {
+  outline: 1px solid var(--border-focus);
+}
+.jv-results-count {
+  font-size: 11px;
+  color: #666;
+}
+
+.jv-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  border: 1px solid #aaa;
+}
+.jv-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.jv-table thead th {
+  background: var(--bg-header);
+  border: 1px solid var(--border-table);
+  padding: 3px 5px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+}
+.jv-table thead th.r {
+  text-align: right;
+}
+.jv-table tbody td {
+  border: 1px solid #ddd;
+  padding: 2px 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jv-table tbody tr.even td {
+  background: var(--bg-stripe);
+}
+.jv-table tbody tr.odd td {
+  background: #fff;
+}
+.jv-table tbody tr.sel td {
+  background: var(--sel-bg) !important;
+  color: var(--sel-text) !important;
+}
+.jv-table tbody tr:hover td {
+  background: var(--bg-hover);
+  cursor: pointer;
+}
+.jv-table .r {
+  text-align: right;
+}
+.jv-table .c {
+  text-align: center;
+}
+.jv-table .bold {
+  font-weight: bold;
+}
+.jv-table .blue {
+  color: #1a3a9a;
+}
+.jv-table .red {
+  color: #c00;
+}
+.jv-table .green {
+  color: #1a6a1a;
+}
+.jv-empty {
+  text-align: center;
+  color: #999;
+  padding: 16px;
+  font-style: italic;
+}

@@ -1,5 +1,7 @@
-// pages/DebitSalePage.jsx — Debit Sale (Cash / Debit Customers)
+// pages/DebitSalePage.jsx
+// Bootstrap Icons: add in index.html → <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/DebitSalePage.css";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
@@ -54,9 +56,15 @@ function CustomerSelectModal({ customers, onSelect, onClose }) {
     >
       <div className="csm-window">
         <div className="csm-titlebar">
-          <span>Select Debit Customer ({customers.length} found)</span>
-          <button className="sm-close-btn" onClick={onClose} tabIndex={-1}>
-            ✕
+          <span>
+            <i
+              className="bi bi-person-lines-fill"
+              style={{ color: "#4fc3f7", marginRight: 6 }}
+            ></i>
+            Select Debit Customer ({customers.length} found)
+          </span>
+          <button className="csm-close" onClick={onClose}>
+            <i className="bi bi-x-lg"></i>
           </button>
         </div>
         <table className="csm-table">
@@ -65,7 +73,7 @@ function CustomerSelectModal({ customers, onSelect, onClose }) {
               <th style={{ width: 32 }}>#</th>
               <th>Name</th>
               <th style={{ width: 130 }}>Phone</th>
-              <th className="r" style={{ width: 100 }}>
+              <th className="r" style={{ width: 110 }}>
                 Balance
               </th>
             </tr>
@@ -87,7 +95,7 @@ function CustomerSelectModal({ customers, onSelect, onClose }) {
                 <td>
                   <b>{c.name}</b>
                 </td>
-                <td>{c.phone}</td>
+                <td>{c.phone || "—"}</td>
                 <td className={`r ${(c.currentBalance || 0) > 0 ? "red" : ""}`}>
                   <b>{fmt(c.currentBalance || 0)}</b>
                 </td>
@@ -96,7 +104,8 @@ function CustomerSelectModal({ customers, onSelect, onClose }) {
           </tbody>
         </table>
         <div className="csm-footer">
-          ↑↓ navigate | Enter / Double-click = select | Esc = close
+          ↑↓ navigate &nbsp;|&nbsp; Enter / Double-click = select &nbsp;|&nbsp;
+          Esc = close
         </div>
       </div>
     </div>
@@ -105,7 +114,8 @@ function CustomerSelectModal({ customers, onSelect, onClose }) {
 
 // ═══════ PRODUCT SEARCH MODAL ════════════════════════════════════════════════
 function SearchModal({ allProducts, onSelect, onClose }) {
-  const [desc, setDesc] = useState("");
+  const [desc, setDesc] = [useState(""), () => {}][0];
+  const [_desc, setDescState] = useState("");
   const [cat, setCat] = useState("");
   const [company, setCompany] = useState("");
   const [rows, setRows] = useState([]);
@@ -165,10 +175,10 @@ function SearchModal({ allProducts, onSelect, onClose }) {
     setRows(buildFlat(allProducts, "", "", ""));
   }, [allProducts, buildFlat]);
   useEffect(() => {
-    const f = buildFlat(allProducts, desc, cat, company);
+    const f = buildFlat(allProducts, _desc, cat, company);
     setRows(f);
     setHiIdx(f.length > 0 ? 0 : -1);
-  }, [desc, cat, company, allProducts, buildFlat]);
+  }, [_desc, cat, company, allProducts, buildFlat]);
   useEffect(() => {
     tbodyRef.current?.children[hiIdx]?.scrollIntoView({ block: "nearest" });
   }, [hiIdx]);
@@ -216,9 +226,15 @@ function SearchModal({ allProducts, onSelect, onClose }) {
     >
       <div className="sm-window">
         <div className="sm-titlebar">
-          <span>Search Products</span>
-          <button className="sm-close-btn" onClick={onClose} tabIndex={-1}>
-            ✕
+          <span>
+            <i
+              className="bi bi-search"
+              style={{ color: "#80cbc4", marginRight: 6 }}
+            ></i>
+            Search Products
+          </span>
+          <button className="sm-close-btn" onClick={onClose}>
+            <i className="bi bi-x-lg"></i>
           </button>
         </div>
         <div className="sm-filters">
@@ -228,8 +244,8 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               ref={rDesc}
               type="text"
               className="sm-filter-input w200"
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
+              value={_desc}
+              onChange={(e) => setDescState(e.target.value)}
               onKeyDown={(e) => fk(e, rCat)}
               placeholder="Name / code…"
               autoComplete="off"
@@ -277,7 +293,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
                   <th style={{ width: 40 }}>Sr.#</th>
                   <th style={{ width: 75 }}>Barcode</th>
                   <th>Name</th>
-                  <th style={{ width: 90 }}>Measurement</th>
+                  <th style={{ width: 90 }}>Meas.</th>
                   <th className="r" style={{ width: 70 }}>
                     Rate
                   </th>
@@ -333,282 +349,6 @@ function SearchModal({ allProducts, onSelect, onClose }) {
   );
 }
 
-// ═══════ DEBIT CUSTOMERS MANAGEMENT MODAL ═══════════════════════════════════
-// Shows ONLY type=walkin customers
-function DebitCustomersModal({ onClose }) {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [selCust, setSelCust] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [payAmt, setPayAmt] = useState("");
-  const [payNote, setPayNote] = useState("");
-  const [paying, setPaying] = useState(false);
-  const [msg, setMsg] = useState({ text: "", type: "" });
-  const payRef = useRef(null);
-
-  useEffect(() => {
-    loadCustomers();
-  }, []);
-  useEffect(() => {
-    if (selCust) loadHistory(selCust._id);
-  }, [selCust?._id]);
-
-  const showMsg = (text, type = "success") => {
-    setMsg({ text, type });
-    setTimeout(() => setMsg({ text: "", type: "" }), 3000);
-  };
-
-  const loadCustomers = async () => {
-    setLoading(true);
-    try {
-      // ONLY walkin type customers
-      const { data } = await api.get(EP.CUSTOMERS.GET_WALKIN());
-      if (data.success)
-        setCustomers((data.data || []).filter((c) => c.type === "walkin"));
-    } catch {}
-    setLoading(false);
-  };
-
-  const loadHistory = async (id) => {
-    try {
-      const { data } = await api.get(EP.CUSTOMERS.SALE_HISTORY(id));
-      if (data.success) setHistory(data.data);
-    } catch {
-      setHistory([]);
-    }
-  };
-
-  const filtered = customers.filter(
-    (c) =>
-      !search ||
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.includes(search),
-  );
-
-  const totalDue = customers.reduce((s, c) => s + (c.currentBalance || 0), 0);
-  const dueCount = customers.filter((c) => (c.currentBalance || 0) > 0).length;
-
-  const recordPayment = async () => {
-    if (!selCust || !payAmt || Number(payAmt) <= 0) return;
-    setPaying(true);
-    try {
-      const newBal = Math.max(
-        0,
-        (selCust.currentBalance || 0) - Number(payAmt),
-      );
-      await api.put(EP.CUSTOMERS.UPDATE(selCust._id), {
-        currentBalance: newBal,
-      });
-      showMsg(`Payment of Rs.${fmt(payAmt)} recorded`);
-      setPayAmt("");
-      setPayNote("");
-      setSelCust((p) => ({ ...p, currentBalance: newBal }));
-      loadCustomers();
-    } catch {
-      showMsg("Payment failed", "error");
-    }
-    setPaying(false);
-  };
-
-  const sendReminder = (cust) => {
-    const text = `Assalam o Alaikum *${cust.name}*,\n\nYour outstanding balance is *Rs. ${fmt(cust.currentBalance)}* at ${SHOP_NAME}.\n\nKindly clear your dues.\n\nThank you!`;
-    window.open(
-      `https://wa.me/${cust.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
-      "_blank",
-    );
-  };
-
-  return (
-    <div
-      className="dcm-overlay"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="dcm-modal">
-        <div className="dcm-titlebar">
-          <span>Debit Customers Management</span>
-          <button className="dcm-close" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-        {msg.text && <div className={`dcm-msg ${msg.type}`}>{msg.text}</div>}
-        <div className="dcm-summary">
-          <div className="dcm-scard">
-            <span>Total Debit Customers</span>
-            <b>{customers.length}</b>
-          </div>
-          <div className="dcm-scard danger">
-            <span>Customers with Due</span>
-            <b className="red">{dueCount}</b>
-          </div>
-          <div className="dcm-scard danger">
-            <span>Total Outstanding</span>
-            <b className="red">Rs. {fmt(totalDue)}</b>
-          </div>
-        </div>
-        <div className="dcm-body">
-          {/* Left: list */}
-          <div className="dcm-left">
-            <input
-              className="dcm-search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name or phone…"
-              autoFocus
-            />
-            <div className="dcm-list-wrap">
-              <table className="dcm-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th className="r">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading && (
-                    <tr>
-                      <td colSpan={4} className="dcm-empty">
-                        Loading…
-                      </td>
-                    </tr>
-                  )}
-                  {!loading && filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="dcm-empty">
-                        No debit customers found
-                      </td>
-                    </tr>
-                  )}
-                  {filtered.map((c, i) => (
-                    <tr
-                      key={c._id}
-                      className={`dcm-row ${selCust?._id === c._id ? "sel" : i % 2 === 0 ? "even" : "odd"}`}
-                      onClick={() => {
-                        setSelCust(c);
-                        setTimeout(() => payRef.current?.focus(), 100);
-                      }}
-                    >
-                      <td className="c">{i + 1}</td>
-                      <td className="bold">{c.name}</td>
-                      <td>{c.phone || "—"}</td>
-                      <td
-                        className={`r ${(c.currentBalance || 0) > 0 ? "red" : ""}`}
-                      >
-                        <b>{fmt(c.currentBalance || 0)}</b>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Right: detail */}
-          <div className="dcm-right">
-            {!selCust ? (
-              <div className="dcm-no-sel">
-                ← Click a debit customer to see details
-              </div>
-            ) : (
-              <>
-                <div className="dcm-cust-header">
-                  <div className="dcm-cust-name">{selCust.name}</div>
-                  {selCust.phone && (
-                    <div className="dcm-cust-phone">{selCust.phone}</div>
-                  )}
-                  <div
-                    className={`dcm-cust-bal ${(selCust.currentBalance || 0) > 0 ? "red" : ""}`}
-                  >
-                    Balance: <b>Rs. {fmt(selCust.currentBalance || 0)}</b>
-                  </div>
-                </div>
-                <div className="dcm-pay-section">
-                  <div className="dcm-pay-title">Record Payment</div>
-                  <div className="dcm-pay-row">
-                    <input
-                      ref={payRef}
-                      type="number"
-                      className="dcm-pay-in"
-                      value={payAmt}
-                      onChange={(e) => setPayAmt(e.target.value)}
-                      placeholder="Amount"
-                      onKeyDown={(e) => e.key === "Enter" && recordPayment()}
-                    />
-                    <input
-                      className="dcm-pay-in wide"
-                      value={payNote}
-                      onChange={(e) => setPayNote(e.target.value)}
-                      placeholder="Note (optional)"
-                    />
-                    <button
-                      className="ds-btn ds-btn-primary"
-                      onClick={recordPayment}
-                      disabled={paying || !payAmt}
-                    >
-                      {paying ? "Saving…" : "Pay"}
-                    </button>
-                    {selCust.phone && (
-                      <button
-                        className="ds-btn ds-btn-wa"
-                        onClick={() => sendReminder(selCust)}
-                      >
-                        WA Remind
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="dcm-hist-label">
-                  Transaction History ({history.length})
-                </div>
-                <div className="dcm-hist-wrap">
-                  <table className="dcm-hist-table">
-                    <thead>
-                      <tr>
-                        <th>Invoice</th>
-                        <th>Date</th>
-                        <th className="r">Amount</th>
-                        <th className="r">Paid</th>
-                        <th className="r">Balance</th>
-                        <th>Mode</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="dcm-empty">
-                            No transactions yet
-                          </td>
-                        </tr>
-                      )}
-                      {history.map((s, i) => (
-                        <tr
-                          key={s._id}
-                          className={i % 2 === 0 ? "even" : "odd"}
-                        >
-                          <td className="blue">{s.invoiceNo}</td>
-                          <td>{s.invoiceDate}</td>
-                          <td className="r bold">{fmt(s.netTotal)}</td>
-                          <td className="r">{fmt(s.paidAmount)}</td>
-                          <td className={`r ${s.balance > 0 ? "red" : ""}`}>
-                            {fmt(s.balance)}
-                          </td>
-                          <td>{s.paymentMode}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ═══════ INVOICE MODAL ═══════════════════════════════════════════════════════
 function InvoiceModal({ sale, shopName, onClose }) {
   const printA4 = () => {
@@ -620,35 +360,33 @@ function InvoiceModal({ sale, shopName, onClose }) {
       .join("");
     const w = window.open("", "_blank", "width=900,height=700");
     w.document.write(
-      `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}h2{text-align:center;font-size:20px;margin:0}.c{text-align:center;font-size:11px;color:#555;margin-bottom:8px}.meta{display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px 10px;margin:8px 0;flex-wrap:wrap;gap:4px}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e0e0e0;border:1px solid #ccc;padding:4px 6px;text-align:left}td{border:1px solid #ddd;padding:3px 6px}.tots{float:right;min-width:220px;margin-top:10px}.tr{display:flex;justify-content:space-between;padding:2px 0}.tr.b{font-weight:bold;font-size:14px;border-top:1px solid #000;margin-top:4px}.tr.red{color:red}.tr.g{color:green}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888}@media print{body{margin:5mm}}</style></head><body><h2>${shopName}</h2><div class="c">DEBIT SALE INVOICE</div><div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Payment:</b> ${sale.paymentMode}</span>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<span><b>Customer:</b> ${sale.customerName}${sale.customerPhone ? " | " + sale.customerPhone : ""}</span>` : ""}</div><table><thead><tr><th>#</th><th>Description</th><th>Meas.</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead><tbody>${trs}</tbody></table><div class="tots"><div class="tr"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="tr"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="tr g"><span>Cash Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>${(sale.balance || 0) > 0 ? `<div class="tr red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}</div><br style="clear:both"><div class="thanks">Thank you for your business! — ${shopName}</div></body></html>`,
+      `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}h2{text-align:center;font-size:20px;margin:0}.sub{text-align:center;font-size:11px;color:#555;margin-bottom:8px}.meta{display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px 10px;margin:8px 0;flex-wrap:wrap;gap:4px}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e0e0e0;border:1px solid #ccc;padding:4px 6px;text-align:left}td{border:1px solid #ddd;padding:3px 6px}.tots{float:right;min-width:220px;margin-top:10px}.tr{display:flex;justify-content:space-between;padding:2px 0}.tr.b{font-weight:bold;font-size:14px;border-top:1px solid #000;margin-top:4px}.tr.red{color:red}.tr.g{color:green}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888}@media print{body{margin:5mm}}</style></head><body><h2>${shopName}</h2><div class="sub">DEBIT SALE INVOICE</div><div class="meta"><span><b>Invoice:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Mode:</b> ${sale.paymentMode}</span>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<span><b>Customer:</b> ${sale.customerName}${sale.customerPhone ? " | " + sale.customerPhone : ""}</span>` : ""}</div><table><thead><tr><th>#</th><th>Description</th><th>Meas.</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead><tbody>${trs}</tbody></table><div class="tots"><div class="tr"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="tr"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="tr g"><span>Cash Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>${(sale.balance || 0) > 0 ? `<div class="tr red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}</div><br style="clear:both"><div class="thanks">Thank you! — ${shopName}</div></body></html>`,
     );
     w.document.close();
     setTimeout(() => w.print(), 400);
   };
-
   const printThermal = () => {
     const trs = sale.items
       .map(
         (it, i) =>
-          `<tr><td style="padding:2px 0">${i + 1}. ${it.description}</td><td align="right" style="padding:2px 0">${it.qty}×${Number(it.rate).toLocaleString()}</td><td align="right" style="padding:2px 0"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+          `<tr><td style="padding:2px 0">${i + 1}. ${it.description}</td><td align="right">${it.qty}×${Number(it.rate).toLocaleString()}</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
       )
       .join("");
     const w = window.open("", "_blank", "width=400,height=600");
     w.document.write(
-      `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px;border-collapse:collapse}.t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.t.b{font-weight:bold;font-size:12px;border-top:1px dashed #000;padding-top:3px;margin-top:2px}.t.red{color:red}.t.g{color:green}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body><h3>${shopName}</h3><div class="c">DEBIT SALE RECEIPT</div><hr><div class="c">Invoice: <b>${sale.invoiceNo}</b> | ${sale.invoiceDate}</div>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<div class="c"><b>${sale.customerName}</b> ${sale.customerPhone || ""}</div>` : ""}<hr><table><tbody>${trs}</tbody></table><hr><div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="t"><span>Disc</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="t b"><span>TOTAL</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="t g"><span>Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>${(sale.balance || 0) > 0 ? `<div class="t red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}<div style="text-align:center;margin-top:8px;font-size:10px">Thank you!</div></body></html>`,
+      `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px;border-collapse:collapse}.t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.t.b{font-weight:bold;border-top:1px dashed #000;padding-top:3px;margin-top:2px}.t.red{color:red}.t.g{color:green}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body><h3>${shopName}</h3><div class="c">DEBIT SALE RECEIPT</div><hr><div class="c"><b>${sale.invoiceNo}</b> | ${sale.invoiceDate}</div>${sale.customerName && sale.customerName !== "COUNTER SALE" ? `<div class="c"><b>${sale.customerName}</b></div>` : ""}<hr><table><tbody>${trs}</tbody></table><hr><div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="t"><span>Disc</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="t b"><span>NET TOTAL</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="t g"><span>Cash Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>${(sale.balance || 0) > 0 ? `<div class="t red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div>` : ""}<div style="text-align:center;margin-top:8px;font-size:10px">Thank you!</div></body></html>`,
     );
     w.document.close();
     setTimeout(() => w.print(), 400);
   };
-
-  const shareWhatsApp = () => {
+  const shareWA = () => {
     const lines = sale.items
       .map(
         (it, i) =>
           `${i + 1}. ${it.description} | ${it.qty}×${Number(it.rate).toLocaleString()} = *${Number(it.amount).toLocaleString()}*`,
       )
       .join("\n");
-    const text = `*${shopName}*\nInvoice #${sale.invoiceNo}\n${sale.invoiceDate}\n${sale.customerName !== "COUNTER SALE" ? "Customer: " + sale.customerName : ""}\n${"─".repeat(26)}\n${lines}\n${"─".repeat(26)}\nNet Total: *${Number(sale.netTotal).toLocaleString()}*\nPaid: ${Number(sale.paidAmount || 0).toLocaleString()}${(sale.balance || 0) > 0 ? "\nBalance: *" + Number(sale.balance).toLocaleString() + "*" : ""}\n_Thank you!_`;
+    const text = `*${shopName}*\nInvoice #${sale.invoiceNo} | ${sale.invoiceDate}\n${sale.customerName !== "COUNTER SALE" ? "Customer: " + sale.customerName : ""}\n${"─".repeat(26)}\n${lines}\n${"─".repeat(26)}\nNet Total: *${Number(sale.netTotal).toLocaleString()}*\nCash: ${Number(sale.paidAmount || 0).toLocaleString()}${(sale.balance || 0) > 0 ? "\nBalance: *" + Number(sale.balance).toLocaleString() + "*" : ""}\n_Thank you!_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -659,9 +397,13 @@ function InvoiceModal({ sale, shopName, onClose }) {
     >
       <div className="ds-inv-modal">
         <div className="ds-inv-title">
+          <i
+            className="bi bi-receipt"
+            style={{ color: "#80cbc4", marginRight: 6 }}
+          ></i>
           Invoice #{sale.invoiceNo} — {sale.customerName || "Counter Sale"}
-          <button className="cs-close-x" onClick={onClose}>
-            ✕
+          <button className="csm-close" onClick={onClose}>
+            <i className="bi bi-x-lg"></i>
           </button>
         </div>
         <div className="ds-inv-preview">
@@ -738,16 +480,503 @@ function InvoiceModal({ sale, shopName, onClose }) {
         </div>
         <div className="cs-inv-actions">
           <button className="ds-btn" onClick={printThermal}>
-            Thermal Print
+            <i
+              className="bi bi-printer-fill"
+              style={{ color: "#4fc3f7", marginRight: 4 }}
+            ></i>
+            Thermal
           </button>
           <button className="ds-btn" onClick={printA4}>
-            A4 Print / PDF
+            <i
+              className="bi bi-file-earmark-pdf-fill"
+              style={{ color: "#ef5350", marginRight: 4 }}
+            ></i>
+            A4 / PDF
           </button>
-          <button className="ds-btn ds-btn-wa" onClick={shareWhatsApp}>
+          <button className="ds-btn ds-btn-wa" onClick={shareWA}>
+            <i
+              className="bi bi-whatsapp"
+              style={{ color: "#fff", marginRight: 4 }}
+            ></i>
             WhatsApp
           </button>
           <button className="ds-btn" onClick={onClose}>
-            Close
+            <i className="bi bi-x-circle" style={{ marginRight: 4 }}></i>Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════ CUSTOMER DETAIL MODAL (right panel click) ═══════════════════════════
+function CustomerDetailModal({ customer, onClose, onPaymentDone }) {
+  const [sales, setSales] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loadingS, setLoadingS] = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payRemarks, setPayRemarks] = useState("");
+  const [payMode, setPayMode] = useState("Cash");
+  const [paying, setPaying] = useState(false);
+  const [payMsg, setPayMsg] = useState({ text: "", type: "" });
+  const [activeTab, setActiveTab] = useState("history");
+  const [expanded, setExpanded] = useState(null);
+  const payRef = useRef(null);
+
+  useEffect(() => {
+    loadData();
+  }, [customer._id]);
+
+  const loadData = async () => {
+    setLoadingS(true);
+    try {
+      const [sRes, pRes] = await Promise.all([
+        api.get(EP.CUSTOMERS.SALE_HISTORY(customer._id)),
+        api.get(EP.PAYMENTS.BY_CUSTOMER(customer._id)),
+      ]);
+      if (sRes.data.success) setSales(sRes.data.data || []);
+      if (pRes.data.success) setPayments(pRes.data.data?.payments || []);
+    } catch {}
+    setLoadingS(false);
+  };
+
+  const showPayMsg = (t, type = "success") => {
+    setPayMsg({ text: t, type });
+    setTimeout(() => setPayMsg({ text: "", type: "" }), 3000);
+  };
+
+  const handlePay = async () => {
+    const amt = Number(payAmount);
+    if (!amt || amt <= 0) {
+      showPayMsg("Valid amount enter karo", "error");
+      return;
+    }
+    setPaying(true);
+    try {
+      const { data } = await api.post(EP.PAYMENTS.CREATE, {
+        customerId: customer._id,
+        amount: amt,
+        paymentMode: payMode,
+        remarks: payRemarks,
+        paymentDate: new Date().toISOString().split("T")[0],
+      });
+      if (data.success) {
+        showPayMsg(`PKR ${fmt(amt)} payment recorded!`);
+        setPayAmount("");
+        setPayRemarks("");
+        loadData();
+        if (onPaymentDone) onPaymentDone();
+      } else showPayMsg(data.message || "Failed", "error");
+    } catch (e) {
+      showPayMsg(e.response?.data?.message || "Failed", "error");
+    }
+    setPaying(false);
+  };
+
+  const sendReceipt = () => {
+    const saleTxns = sales.filter((s) => s.saleType === "sale");
+    const totalS = saleTxns.reduce((s, x) => s + (x.netTotal || 0), 0);
+    const totalP = saleTxns.reduce((s, x) => s + (x.paidAmount || 0), 0);
+    const payTotal = payments.reduce((s, p) => s + (p.amount || 0), 0);
+    const sep = "━".repeat(28);
+    const lines = sales
+      .slice(0, 15)
+      .map(
+        (s, i) =>
+          `${i + 1}. ${s.invoiceNo} | ${s.invoiceDate}\n    PKR ${fmt(s.netTotal)} | Paid: ${fmt(s.paidAmount)} | *Bal: ${fmt(s.balance)}*`,
+      )
+      .join("\n");
+    const text = `*${SHOP_NAME}*\n${sep}\n*Customer: ${customer.name}*${customer.phone ? "\n" + customer.phone : ""}\nDate: ${new Date().toISOString().split("T")[0]}\n${sep}\n*TRANSACTIONS*\n${lines}\n${sep}\nTotal Sales: PKR ${fmt(totalS)}\nPaid: PKR ${fmt(totalP + payTotal)}\n*Outstanding: PKR ${fmt(customer.currentBalance || 0)}*\n${sep}\n_Thank you!_`;
+    const ph = customer.phone?.replace(/\D/g, "") || "";
+    window.open(
+      `https://wa.me/${ph}?text=${encodeURIComponent(text)}`,
+      "_blank",
+    );
+  };
+
+  const totalS = sales
+    .filter((s) => s.saleType === "sale")
+    .reduce((s, x) => s + (x.netTotal || 0), 0);
+  const totalP = sales
+    .filter((s) => s.saleType === "sale")
+    .reduce((s, x) => s + (x.paidAmount || 0), 0);
+  const payTotal = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const due = customer.currentBalance || 0;
+
+  return (
+    <div
+      className="cdm-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="cdm-modal-d">
+        {/* Title */}
+        <div className="cdm-title-d">
+          <span>
+            <i
+              className="bi bi-person-badge-fill"
+              style={{ color: "#4fc3f7", marginRight: 6 }}
+            ></i>
+            {customer.name}
+            {customer.code && <span className="cdm-code">{customer.code}</span>}
+          </span>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {customer.phone && (
+              <button className="ds-btn ds-btn-wa" onClick={sendReceipt}>
+                <i className="bi bi-whatsapp" style={{ marginRight: 4 }}></i>
+                Send Receipt
+              </button>
+            )}
+            <button className="cdm-close-btn" onClick={onClose}>
+              <i className="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        {/* Summary cards */}
+        <div className="cdm-info-d">
+          <div className="cdm-info-row">
+            {customer.phone && (
+              <span>
+                <i
+                  className="bi bi-telephone-fill"
+                  style={{ color: "#4fc3f7", marginRight: 4 }}
+                ></i>
+                {customer.phone}
+              </span>
+            )}
+            {customer.area && (
+              <span>
+                <i
+                  className="bi bi-geo-alt-fill"
+                  style={{ color: "#ffa726", marginRight: 4 }}
+                ></i>
+                {customer.area}
+              </span>
+            )}
+          </div>
+          <div className="cdm-cards-d">
+            <div className="cdm-card-d">
+              <div className="cdm-cl">Total Sales</div>
+              <div className="cdm-cv">{fmt(totalS)}</div>
+            </div>
+            <div className="cdm-card-d">
+              <div className="cdm-cl">Paid at Sale</div>
+              <div className="cdm-cv green">{fmt(totalP)}</div>
+            </div>
+            <div className="cdm-card-d">
+              <div className="cdm-cl">Extra Payments</div>
+              <div className="cdm-cv green">{fmt(payTotal)}</div>
+            </div>
+            <div className={`cdm-card-d ${due > 0 ? "danger" : "ok"}`}>
+              <div className="cdm-cl">Outstanding</div>
+              <div className="cdm-cv bold">{fmt(due)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="cdm-tabs-d">
+          <button
+            className={`cdm-tab-d ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            <i
+              className="bi bi-clock-history"
+              style={{ color: "#4fc3f7", marginRight: 4 }}
+            ></i>
+            Transactions ({sales.length})
+          </button>
+          <button
+            className={`cdm-tab-d ${activeTab === "payments" ? "active" : ""}`}
+            onClick={() => setActiveTab("payments")}
+          >
+            <i
+              className="bi bi-cash-coin"
+              style={{ color: "#66bb6a", marginRight: 4 }}
+            ></i>
+            Payments ({payments.length})
+          </button>
+          <button
+            className={`cdm-tab-d ${activeTab === "pay" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("pay");
+              setTimeout(() => payRef.current?.focus(), 60);
+            }}
+          >
+            <i
+              className="bi bi-plus-circle-fill"
+              style={{ color: "#ffa726", marginRight: 4 }}
+            ></i>
+            Record Payment
+          </button>
+        </div>
+
+        <div className="cdm-body-d">
+          {/* History */}
+          {activeTab === "history" && (
+            <div className="cdm-tab-content">
+              {loadingS && <div className="cdm-loading">Loading…</div>}
+              {!loadingS && sales.length === 0 && (
+                <div className="cdm-empty">Koi transaction nahi</div>
+              )}
+              {!loadingS && sales.length > 0 && (
+                <table className="cdm-table-d">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 28 }}>#</th>
+                      <th style={{ width: 100 }}>Invoice</th>
+                      <th style={{ width: 88 }}>Date</th>
+                      <th className="r" style={{ width: 88 }}>
+                        Total
+                      </th>
+                      <th className="r" style={{ width: 78 }}>
+                        Paid
+                      </th>
+                      <th className="r" style={{ width: 78 }}>
+                        Balance
+                      </th>
+                      <th style={{ width: 55 }}>Mode</th>
+                      <th style={{ width: 30 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sales.map((s, i) => (
+                      <>
+                        <tr
+                          key={s._id}
+                          className={`${i % 2 === 0 ? "even" : "odd"} ${expanded === s._id ? "sel" : ""}`}
+                          onClick={() =>
+                            setExpanded(expanded === s._id ? null : s._id)
+                          }
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td className="c">{i + 1}</td>
+                          <td className="bold blue">{s.invoiceNo}</td>
+                          <td>{s.invoiceDate}</td>
+                          <td className="r bold">{fmt(s.netTotal)}</td>
+                          <td className="r">{fmt(s.paidAmount)}</td>
+                          <td
+                            className={`r ${s.balance > 0 ? "red bold" : ""}`}
+                          >
+                            {fmt(s.balance)}
+                          </td>
+                          <td>{s.paymentMode}</td>
+                          <td
+                            className="c"
+                            style={{ color: "#90a4ae", fontSize: 10 }}
+                          >
+                            <i
+                              className={`bi bi-chevron-${expanded === s._id ? "up" : "down"}`}
+                            ></i>
+                          </td>
+                        </tr>
+                        {expanded === s._id && (
+                          <tr key={s._id + "-x"}>
+                            <td colSpan={8} style={{ padding: 0 }}>
+                              <div className="cdm-expand">
+                                <table className="cdm-exp-table">
+                                  <thead>
+                                    <tr>
+                                      <th>#</th>
+                                      <th>Description</th>
+                                      <th>Meas</th>
+                                      <th className="r">Qty</th>
+                                      <th className="r">Rate</th>
+                                      <th className="r">Disc%</th>
+                                      <th className="r">Amount</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(s.items || []).length === 0 && (
+                                      <tr>
+                                        <td colSpan={7} className="cdm-empty">
+                                          Items not available
+                                        </td>
+                                      </tr>
+                                    )}
+                                    {(s.items || []).map((it, j) => (
+                                      <tr key={j}>
+                                        <td className="c">{j + 1}</td>
+                                        <td>{it.description}</td>
+                                        <td>{it.measurement}</td>
+                                        <td className="r">{it.qty}</td>
+                                        <td className="r">{fmt(it.rate)}</td>
+                                        <td className="r">{it.disc || 0}%</td>
+                                        <td className="r bold">
+                                          {fmt(it.amount)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                                <div className="cdm-exp-tots">
+                                  <span>
+                                    Net: <b>PKR {fmt(s.netTotal)}</b>
+                                  </span>
+                                  <span className="green">
+                                    Paid: <b>PKR {fmt(s.paidAmount)}</b>
+                                  </span>
+                                  {s.balance > 0 && (
+                                    <span className="red">
+                                      Bal: <b>PKR {fmt(s.balance)}</b>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* Payments */}
+          {activeTab === "payments" && (
+            <div className="cdm-tab-content">
+              {payments.length === 0 && (
+                <div className="cdm-empty">Koi extra payment nahi mili</div>
+              )}
+              {payments.length > 0 && (
+                <table className="cdm-table-d">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 32 }}>#</th>
+                      <th style={{ width: 100 }}>Date</th>
+                      <th className="r" style={{ width: 100 }}>
+                        Amount
+                      </th>
+                      <th style={{ width: 70 }}>Mode</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p, i) => (
+                      <tr
+                        key={p._id || i}
+                        className={i % 2 === 0 ? "even" : "odd"}
+                      >
+                        <td className="c">{i + 1}</td>
+                        <td>{p.paymentDate || p.createdAt?.split("T")[0]}</td>
+                        <td className="r green bold">PKR {fmt(p.amount)}</td>
+                        <td>{p.paymentMode || "Cash"}</td>
+                        <td>{p.remarks || "—"}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ background: "var(--bg-header)" }}>
+                      <td colSpan={2} className="bold">
+                        Total
+                      </td>
+                      <td className="r green bold">PKR {fmt(payTotal)}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* Pay */}
+          {activeTab === "pay" && (
+            <div className="cdm-pay-content">
+              <div className="cdm-pay-due">
+                Outstanding:{" "}
+                <span className={`bold ${due > 0 ? "red" : "green"}`}>
+                  PKR {fmt(due)}
+                </span>
+              </div>
+              {payMsg.text && (
+                <div className={`cdm-pay-msg ${payMsg.type}`}>
+                  {payMsg.text}
+                </div>
+              )}
+              <div className="cdm-pay-form-d">
+                <div className="cdm-pay-field-d">
+                  <label>
+                    <i
+                      className="bi bi-currency-rupee"
+                      style={{ color: "#66bb6a", marginRight: 3 }}
+                    ></i>
+                    Amount (PKR)
+                  </label>
+                  <input
+                    ref={payRef}
+                    type="number"
+                    className="cdm-pay-inp"
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handlePay();
+                    }}
+                    placeholder="Amount…"
+                  />
+                </div>
+                <div className="cdm-pay-field-d">
+                  <label>
+                    <i
+                      className="bi bi-credit-card"
+                      style={{ color: "#4fc3f7", marginRight: 3 }}
+                    ></i>
+                    Mode
+                  </label>
+                  <select
+                    className="cdm-pay-inp"
+                    value={payMode}
+                    onChange={(e) => setPayMode(e.target.value)}
+                  >
+                    <option>Cash</option>
+                    <option>Bank</option>
+                    <option>Cheque</option>
+                    <option>Online</option>
+                  </select>
+                </div>
+                <div className="cdm-pay-field-d">
+                  <label>
+                    <i
+                      className="bi bi-chat-square-text"
+                      style={{ color: "#bdbdbd", marginRight: 3 }}
+                    ></i>
+                    Remarks
+                  </label>
+                  <input
+                    type="text"
+                    className="cdm-pay-inp"
+                    value={payRemarks}
+                    onChange={(e) => setPayRemarks(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handlePay();
+                    }}
+                    placeholder="e.g. Cash received…"
+                  />
+                </div>
+                <button
+                  className="ds-btn ds-btn-primary cdm-pay-submit"
+                  onClick={handlePay}
+                  disabled={paying}
+                >
+                  {paying ? (
+                    "Processing…"
+                  ) : (
+                    <>
+                      <i
+                        className="bi bi-check-circle-fill"
+                        style={{ marginRight: 4 }}
+                      ></i>
+                      Record Payment
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="cdm-footer-d">
+          <button className="ds-btn" onClick={onClose}>
+            <i className="bi bi-x-circle" style={{ marginRight: 4 }}></i>Close
           </button>
         </div>
       </div>
@@ -757,6 +986,7 @@ function InvoiceModal({ sale, shopName, onClose }) {
 
 // ═══════ MAIN PAGE ═══════════════════════════════════════════════════════════
 export default function DebitSalePage() {
+  const navigate = useNavigate();
   const [invoiceNo, setInvoiceNo] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(isoDate());
   const [phone, setPhone] = useState("");
@@ -778,9 +1008,10 @@ export default function DebitSalePage() {
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [msg, setMsg] = useState({ text: "", type: "" });
   const [holds, setHolds] = useState([]);
-  const [showCustMgmt, setShowCustMgmt] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [savedSale, setSavedSale] = useState(null);
+
+  const [showCustDetail, setShowCustDetail] = useState(false);
 
   const phoneRef = useRef(null);
   const searchRef = useRef(null);
@@ -838,27 +1069,32 @@ export default function DebitSalePage() {
     setTimeout(() => setMsg({ text: "", type: "" }), 3500);
   };
 
-  // Phone search — ONLY walkin customers
+  // ── Phone search: exact match → auto-select, multiple → modal, none → create ──
   const handlePhoneSearch = async () => {
     if (!phone.trim() || phone.length < 3) return;
     setPhoneLoading(true);
     try {
       const { data } = await api.get(EP.CUSTOMERS.GET_WALKIN(phone.trim()));
       if (data.success && data.data.length > 0) {
-        const list = data.data.filter((c) => c.type === "walkin"); // double filter
-        const exact = list.find((c) => c.phone === phone.trim());
+        const list = (data.data || []).filter((c) => c.type === "walkin");
+        if (list.length === 0) {
+          await createWalkinCustomer();
+          return;
+        }
+
+        // EXACT phone match only - auto-select, no modal
+        const exact = list.find((c) => c.phone?.trim() === phone.trim());
         if (exact) {
           selectCustomer(exact);
-        } else if (list.length === 1) {
-          selectCustomer(list[0]);
-        } else if (list.length > 1) {
+          showMsg(`${exact.name} selected`);
+        }
+        // No exact match (partial results) - hamesha modal show karo
+        else {
           setCustMatches(list);
           setShowCustSel(true);
-        } else {
-          promptNewCustomer();
         }
       } else {
-        promptNewCustomer();
+        await createWalkinCustomer();
       }
     } catch {
       showMsg("Search failed", "error");
@@ -866,21 +1102,16 @@ export default function DebitSalePage() {
     setPhoneLoading(false);
   };
 
-  const promptNewCustomer = async () => {
-    // Quick-create debit customer with phone
-    const name = prompt(
-      `No debit customer found for "${phone}"\n\nEnter customer name to create new:`,
-    );
-    if (!name?.trim()) return;
+  const createWalkinCustomer = async () => {
     try {
       const { data } = await api.post(EP.CUSTOMERS.CREATE, {
-        name: name.trim(),
+        name: `Customer (${phone})`,
         phone: phone.trim(),
         type: "walkin",
       });
       if (data.success) {
         selectCustomer(data.data);
-        showMsg(`New debit customer created: ${data.data.name}`);
+        showMsg(`New debit customer created`);
       }
     } catch {
       showMsg("Create failed", "error");
@@ -892,7 +1123,6 @@ export default function DebitSalePage() {
     loadCustHistory(c._id);
     setShowCustSel(false);
     setCustMatches([]);
-    showMsg(`${c.name} loaded`);
   };
 
   const loadCustHistory = async (id) => {
@@ -929,8 +1159,8 @@ export default function DebitSalePage() {
 
   const updateRow = (i, field, val) => {
     setRows((prev) => {
-      const next = [...prev],
-        r = { ...next[i], [field]: val };
+      const next = [...prev];
+      const r = { ...next[i], [field]: val };
       if (["qty", "rate", "disc"].includes(field)) {
         const q = field === "qty" ? Number(val) : Number(r.qty),
           rt = field === "rate" ? Number(val) : Number(r.rate),
@@ -948,6 +1178,7 @@ export default function DebitSalePage() {
       return n;
     });
     setActiveRow(i + 1);
+    setSearchText("");
     setTimeout(() => setShowSearch(true), 30);
   };
   const deleteRow = (i) => {
@@ -958,6 +1189,7 @@ export default function DebitSalePage() {
     setRows((p) => p.filter((_, idx) => idx !== i));
     setActiveRow(Math.max(0, i - 1));
   };
+
   const onRowKeyDown = (e, i, field) => {
     if (e.key === "F3") {
       e.preventDefault();
@@ -1085,6 +1317,7 @@ export default function DebitSalePage() {
       const payload = {
         invoiceDate,
         saleType: "sale",
+        saleSource: "debit",
         paymentMode: actualMode,
         customerId: customer?._id || undefined,
         customerName: customer?.name || "COUNTER SALE",
@@ -1125,15 +1358,31 @@ export default function DebitSalePage() {
 
   return (
     <div className="ds-page">
+      {showCustDetail && customer && (
+        <CustomerDetailModal
+          customer={customer}
+          onClose={() => setShowCustDetail(false)}
+          onPaymentDone={() => {
+            loadCustHistory(customer._id);
+            // refresh customer balance
+            api
+              .get(EP.CUSTOMERS.GET_WALKIN(customer.phone))
+              .then(({ data }) => {
+                if (data.success) {
+                  const c = data.data.find((x) => x._id === customer._id);
+                  if (c) setCustomer(c);
+                }
+              })
+              .catch(() => {});
+          }}
+        />
+      )}
       {showSearch && (
         <SearchModal
           allProducts={products}
           onSelect={handleProductSelect}
           onClose={() => setShowSearch(false)}
         />
-      )}
-      {showCustMgmt && (
-        <DebitCustomersModal onClose={() => setShowCustMgmt(false)} />
       )}
       {showCustSel && (
         <CustomerSelectModal
@@ -1161,7 +1410,13 @@ export default function DebitSalePage() {
 
       {/* Header */}
       <div className="ds-header-bar">
-        <div className="ds-header-title">Debit Sale</div>
+        <div className="ds-header-title">
+          <i
+            className="bi bi-cash-coin"
+            style={{ color: "#ffd54f", fontSize: 18, marginRight: 6 }}
+          ></i>
+          Debit Sale
+        </div>
         <div className="ds-header-fields">
           <div className="ds-hf">
             <span>Invoice #</span>
@@ -1185,20 +1440,29 @@ export default function DebitSalePage() {
         </div>
         <button
           className="ds-btn ds-btn-mgmt"
-          onClick={() => setShowCustMgmt(true)}
+          onClick={() => navigate("/debit-customers")}
           tabIndex={-1}
         >
+          <i
+            className="bi bi-people-fill"
+            style={{ color: "#ffd54f", marginRight: 5 }}
+          ></i>
           Manage Debit Customers
         </button>
       </div>
 
-      {/* Layout */}
       <div className="ds-layout">
-        {/* ═══ LEFT ════════════════════════════════════════════ */}
+        {/* ═══ LEFT ══════════════════════════════════════════════ */}
         <div className="ds-left">
           {/* Customer bar */}
           <div className="ds-cust-bar">
-            <span className="ds-cust-label">Phone</span>
+            <span className="ds-cust-label">
+              <i
+                className="bi bi-telephone-fill"
+                style={{ color: "#4fc3f7", marginRight: 4 }}
+              ></i>
+              Phone
+            </span>
             <input
               ref={phoneRef}
               className="ds-cust-phone"
@@ -1207,19 +1471,30 @@ export default function DebitSalePage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handlePhoneSearch();
               }}
-              placeholder="Phone → Enter to find debit customer"
+              placeholder="Phone → Enter for exact match / search"
               tabIndex={1}
             />
             <button
-              className="ds-btn ds-btn-sm"
+              className="ds-btn"
               onClick={handlePhoneSearch}
               disabled={phoneLoading}
               tabIndex={-1}
             >
-              {phoneLoading ? "…" : "Search"}
+              {phoneLoading ? (
+                <i
+                  className="bi bi-hourglass-split"
+                  style={{ color: "#ffd54f" }}
+                ></i>
+              ) : (
+                <i className="bi bi-search" style={{ color: "#4fc3f7" }}></i>
+              )}
             </button>
             {customer ? (
               <div className="ds-cust-info">
+                <i
+                  className="bi bi-person-check-fill"
+                  style={{ color: "#66bb6a", marginRight: 4 }}
+                ></i>
                 <span className="ds-cust-name">{customer.name}</span>
                 {customer.phone && (
                   <span className="ds-cust-phone-tag">{customer.phone}</span>
@@ -1238,11 +1513,15 @@ export default function DebitSalePage() {
                   }}
                   tabIndex={-1}
                 >
-                  ✕
+                  <i className="bi bi-x"></i>
                 </button>
               </div>
             ) : (
               <span className="ds-cust-none">
+                <i
+                  className="bi bi-person-dash"
+                  style={{ color: "#bdbdbd", marginRight: 4 }}
+                ></i>
                 Debit Customer / Counter Sale
               </span>
             )}
@@ -1253,14 +1532,24 @@ export default function DebitSalePage() {
                 onClick={() => resumeHold(h.id)}
                 tabIndex={-1}
               >
-                Hold: {h.customer?.name || "Bill"} ({h.rows?.length || 0})
+                <i
+                  className="bi bi-pause-circle-fill"
+                  style={{ color: "#ffa726", marginRight: 3 }}
+                ></i>
+                {h.customer?.name || "Hold"}
               </button>
             ))}
           </div>
 
           {/* Product search bar */}
           <div className="ds-search-bar">
-            <span className="ds-search-label">Select Product</span>
+            <span className="ds-search-label">
+              <i
+                className="bi bi-box-seam-fill"
+                style={{ color: "#4db6ac", marginRight: 4 }}
+              ></i>
+              Select Product
+            </span>
             <input
               ref={searchRef}
               type="text"
@@ -1284,7 +1573,7 @@ export default function DebitSalePage() {
                 onClick={() => setSearchText("")}
                 tabIndex={-1}
               >
-                Clear
+                <i className="bi bi-x-circle" style={{ color: "#ef5350" }}></i>
               </button>
             )}
           </div>
@@ -1419,7 +1708,10 @@ export default function DebitSalePage() {
                           onClick={() => deleteRow(i)}
                           tabIndex={-1}
                         >
-                          ✕
+                          <i
+                            className="bi bi-trash3-fill"
+                            style={{ color: "#ef5350", fontSize: 11 }}
+                          ></i>
                         </button>
                       </td>
                     </tr>
@@ -1432,29 +1724,66 @@ export default function DebitSalePage() {
           {/* Payment Section */}
           <div className="ds-pay-section">
             <div className="ds-pay-left">
-              <div className="ds-pay-title">Payment Mode</div>
+              <div className="ds-pay-title">
+                <i
+                  className="bi bi-credit-card-2-front-fill"
+                  style={{ color: "#4fc3f7", marginRight: 5 }}
+                ></i>
+                Payment Mode
+              </div>
               <div className="ds-pay-modes">
                 <button
                   className={`ds-pay-btn ${cashAmt >= netTotal && netTotal > 0 ? "active-cash" : ""}`}
                   onClick={setPayFull}
                 >
+                  <i
+                    className="bi bi-cash-stack"
+                    style={{
+                      color:
+                        cashAmt >= netTotal && netTotal > 0
+                          ? "#fff"
+                          : "#66bb6a",
+                      marginRight: 4,
+                    }}
+                  ></i>
                   Full Cash
                 </button>
                 <button
                   className={`ds-pay-btn ${cashAmt === 0 && netTotal > 0 ? "active-credit" : ""}`}
                   onClick={setPayCredit}
                 >
+                  <i
+                    className="bi bi-journal-text"
+                    style={{
+                      color: cashAmt === 0 && netTotal > 0 ? "#fff" : "#ef5350",
+                      marginRight: 4,
+                    }}
+                  ></i>
                   Full Credit
                 </button>
                 <button
                   className={`ds-pay-btn ${cashAmt > 0 && cashAmt < netTotal ? "active-partial" : ""}`}
                   onClick={setPayPartial}
                 >
+                  <i
+                    className="bi bi-pie-chart-fill"
+                    style={{
+                      color:
+                        cashAmt > 0 && cashAmt < netTotal ? "#fff" : "#ffa726",
+                      marginRight: 4,
+                    }}
+                  ></i>
                   Partial
                 </button>
               </div>
               <div className="ds-pay-row">
-                <label>Cash Received</label>
+                <label>
+                  <i
+                    className="bi bi-currency-rupee"
+                    style={{ color: "#66bb6a", marginRight: 3 }}
+                  ></i>
+                  Cash Received
+                </label>
                 <input
                   ref={cashRef}
                   type="number"
@@ -1462,10 +1791,9 @@ export default function DebitSalePage() {
                   value={cashPaid}
                   min={0}
                   onChange={(e) => {
+                    const v = Number(e.target.value);
                     setCashPaid(e.target.value);
-                    setPayMode(
-                      Number(e.target.value) >= netTotal ? "Cash" : "Credit",
-                    );
+                    setPayMode(v >= netTotal ? "Cash" : "Credit");
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") saveRef.current?.focus();
@@ -1474,7 +1802,13 @@ export default function DebitSalePage() {
                 />
               </div>
               <div className="ds-pay-row">
-                <label>Extra Disc%</label>
+                <label>
+                  <i
+                    className="bi bi-percent"
+                    style={{ color: "#ffa726", marginRight: 3 }}
+                  ></i>
+                  Extra Disc%
+                </label>
                 <input
                   type="number"
                   className="ds-pay-input"
@@ -1484,7 +1818,13 @@ export default function DebitSalePage() {
                 />
               </div>
               <div className="ds-pay-row">
-                <label>Remarks</label>
+                <label>
+                  <i
+                    className="bi bi-chat-square-text"
+                    style={{ color: "#bdbdbd", marginRight: 3 }}
+                  ></i>
+                  Remarks
+                </label>
                 <input
                   className="ds-pay-input wide"
                   value={remarks}
@@ -1526,19 +1866,38 @@ export default function DebitSalePage() {
                   disabled={saving}
                   tabIndex={92}
                 >
+                  <i
+                    className="bi bi-floppy-fill"
+                    style={{ color: "#fff", marginRight: 4 }}
+                  ></i>
                   {saving ? "Saving…" : "F5 Save"}
                 </button>
                 <button className="ds-btn" onClick={holdBill} tabIndex={-1}>
+                  <i
+                    className="bi bi-pause-circle-fill"
+                    style={{ color: "#ffa726", marginRight: 4 }}
+                  ></i>
                   F8 Hold
                 </button>
                 <button
                   className="ds-btn"
-                  onClick={() => setShowInvoice(true)}
+                  onClick={() => {
+                    if (savedSale) setShowInvoice(true);
+                    else showMsg("Save first", "error");
+                  }}
                   tabIndex={-1}
                 >
+                  <i
+                    className="bi bi-printer-fill"
+                    style={{ color: "#4fc3f7", marginRight: 4 }}
+                  ></i>
                   Print
                 </button>
                 <button className="ds-btn" onClick={resetForm} tabIndex={-1}>
+                  <i
+                    className="bi bi-arrow-counterclockwise"
+                    style={{ color: "#bdbdbd", marginRight: 4 }}
+                  ></i>
                   F2 New
                 </button>
               </div>
@@ -1550,43 +1909,78 @@ export default function DebitSalePage() {
         <div className="ds-right-panel">
           {!customer ? (
             <div className="ds-rp-empty">
-              <div className="ds-rp-icon">👤</div>
+              <i
+                className="bi bi-person-circle"
+                style={{
+                  fontSize: 36,
+                  color: "#bdbdbd",
+                  marginBottom: 8,
+                  display: "block",
+                }}
+              ></i>
               <div>
                 Enter phone number
                 <br />
                 to load debit customer
               </div>
-              <button
-                className="ds-rp-mgmt-btn"
-                onClick={() => setShowCustMgmt(true)}
-              >
-                Manage Debit Customers
-              </button>
             </div>
           ) : (
             <>
               <div className="ds-rp-header">
                 <div className="ds-rp-name">{customer.name}</div>
-                <div className="ds-rp-phone">{customer.phone}</div>
+                <div className="ds-rp-phone">
+                  <i
+                    className="bi bi-telephone-fill"
+                    style={{ color: "#4fc3f7", marginRight: 4 }}
+                  ></i>
+                  {customer.phone}
+                </div>
               </div>
               <div className="ds-rp-cards">
                 <div className="ds-rp-card">
-                  <div className="ds-rp-cl">Total Sales</div>
+                  <div className="ds-rp-cl">
+                    <i
+                      className="bi bi-bag-fill"
+                      style={{ color: "#4db6ac", marginRight: 3 }}
+                    ></i>
+                    Total Sales
+                  </div>
                   <div className="ds-rp-cv">{fmt(histTotal)}</div>
                 </div>
                 <div className="ds-rp-card">
-                  <div className="ds-rp-cl">Total Paid</div>
+                  <div className="ds-rp-cl">
+                    <i
+                      className="bi bi-cash"
+                      style={{ color: "#66bb6a", marginRight: 3 }}
+                    ></i>
+                    Total Paid
+                  </div>
                   <div className="ds-rp-cv green">{fmt(histPaid)}</div>
                 </div>
                 <div
                   className={`ds-rp-card ${currentDue > 0 ? "danger" : "ok"}`}
                 >
-                  <div className="ds-rp-cl">Current Due</div>
+                  <div className="ds-rp-cl">
+                    <i
+                      className="bi bi-exclamation-triangle-fill"
+                      style={{
+                        color: currentDue > 0 ? "#ef5350" : "#66bb6a",
+                        marginRight: 3,
+                      }}
+                    ></i>
+                    Current Due
+                  </div>
                   <div className="ds-rp-cv bold red">{fmt(currentDue)}</div>
                 </div>
                 {creditAmt > 0 && (
                   <div className="ds-rp-card danger">
-                    <div className="ds-rp-cl">After This Bill</div>
+                    <div className="ds-rp-cl">
+                      <i
+                        className="bi bi-arrow-up-circle-fill"
+                        style={{ color: "#ef5350", marginRight: 3 }}
+                      ></i>
+                      After This Bill
+                    </div>
                     <div className="ds-rp-cv bold red">
                       {fmt(currentDue + creditAmt)}
                     </div>
@@ -1605,17 +1999,29 @@ export default function DebitSalePage() {
                       );
                     }}
                   >
+                    <i
+                      className="bi bi-whatsapp"
+                      style={{ marginRight: 4 }}
+                    ></i>
                     WA Reminder
                   </button>
                 )}
                 <button
                   className="ds-rp-btn detail"
-                  onClick={() => setShowCustMgmt(true)}
+                  onClick={() => setShowCustDetail(true)}
                 >
-                  More Detail
+                  <i
+                    className="bi bi-person-lines-fill"
+                    style={{ color: "#4fc3f7", marginRight: 4 }}
+                  ></i>
+                  Detail & Pay
                 </button>
               </div>
               <div className="ds-rp-hist-label">
+                <i
+                  className="bi bi-clock-history"
+                  style={{ color: "#90a4ae", marginRight: 4 }}
+                ></i>
                 Recent ({custHistory.length})
               </div>
               <div className="ds-rp-hist-wrap">
@@ -1627,6 +2033,9 @@ export default function DebitSalePage() {
                   <div
                     key={s._id}
                     className={`ds-rp-txn ${s.balance > 0 ? "txn-red" : ""}`}
+                    onClick={() => setShowCustDetail(true)}
+                    style={{ cursor: "pointer" }}
+                    title="Click for detail & payment"
                   >
                     <span className="ds-rp-inv">{s.invoiceNo}</span>
                     <span className="ds-rp-date">{s.invoiceDate}</span>

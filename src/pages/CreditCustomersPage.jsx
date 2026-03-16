@@ -47,7 +47,7 @@ function CustomerDetailModal({ customer, onClose, onUpdated }) {
     }
     setPaying(true);
     try {
-      const { data } = await api.post("/api/payments", {
+      const { data } = await api.post("/payments", {
         customerId: customer._id,
         amount: amt,
         remarks: payRemarks,

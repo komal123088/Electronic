@@ -1480,6 +1480,7 @@ export default function CreditSalePage() {
         invoiceDate,
         saleType: "sale",
         paymentMode: "Credit",
+        saleSource: "credit", 
         customerId: customer._id,
         customerName: customer.name,
         customerPhone: customer.phone || phone,

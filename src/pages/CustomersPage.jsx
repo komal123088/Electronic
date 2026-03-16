@@ -1,8 +1,3 @@
-// pages/CustomersPage.jsx
-// Windows XP style — exact layout from screenshot
-// KEYBOARD: Enter moves to next field, F2=New, F5=Save, Delete=Del, Esc=reset
-// Mouse usage minimized — full keyboard workflow
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import "../styles/CustomersPage.css";
 import api from "../api/api.js";

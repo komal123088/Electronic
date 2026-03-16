@@ -1,0 +1,408 @@
+/* ═══════════════════════════════════════════════════════════
+   QUOTATION PAGE — qt-*
+═══════════════════════════════════════════════════════════ */
+.qt-page {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  font-family: var(--font);
+  font-size: var(--font-size);
+}
+
+/* ── Shortcuts bar ─────────────────────────────────────── */
+.qt-shortcuts {
+  background: #dde8f8;
+  border-bottom: 1px solid #b0c0d8;
+  padding: 2px 10px;
+  font-size: 11px;
+  color: #444;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qt-msg {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.qt-msg.success {
+  background: #dff0d8;
+  color: #2d6a2d;
+  border-bottom: 1px solid #b2dba1;
+}
+.qt-msg.error {
+  background: #fde8e8;
+  color: #a00;
+  border-bottom: 1px solid #f5b8b8;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.qt-header-bar {
+  background: linear-gradient(to bottom, #4a7fd4, #2a5fb4);
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 2px solid #1a4a90;
+}
+.qt-header-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.qt-header-fields {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.qt-hf {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #e0ecff;
+  font-size: 12px;
+}
+.qt-hinput {
+  height: 22px;
+  border: 1px solid #6090d0;
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: #e8f0ff;
+  color: #001840;
+  width: 110px;
+}
+.qt-hinput.bold {
+  font-weight: bold;
+  color: #001840;
+}
+.qt-hinput[readonly] {
+  background: #c8d8f8;
+}
+
+/* ── Customer bar ──────────────────────────────────────── */
+.qt-cust-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #eef4fe;
+  border-bottom: 1px solid #b8cce8;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.qt-cust-label {
+  font-size: 12px;
+  color: #444;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.qt-cust-name-input {
+  height: var(--input-h);
+  border: 2px solid #90b0e0;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: #fff;
+  width: 200px;
+}
+.qt-cust-name-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.qt-cust-phone-input {
+  height: var(--input-h);
+  border: 2px solid #90b0e0;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: #fff;
+  width: 150px;
+}
+.qt-cust-phone-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.qt-cust-note {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+}
+
+/* ── Search bar ────────────────────────────────────────── */
+.qt-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #f8f4e0;
+  border-bottom: 1px solid #d8c880;
+  flex-shrink: 0;
+}
+.qt-search-label {
+  font-size: 12px;
+  color: #5a4a00;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.qt-search-input {
+  flex: 1;
+  max-width: 420px;
+  height: var(--input-h);
+  border: 2px solid #c0a040;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: #fff;
+}
+.qt-search-input:focus {
+  outline: none;
+  border-color: #8a6000;
+}
+.qt-search-input.filled {
+  background: var(--bg-filled);
+  font-weight: bold;
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+.qt-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  border-bottom: 1px solid var(--border-table);
+}
+.qt-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.qt-table thead th {
+  background: var(--bg-header);
+  border: 1px solid var(--border-table);
+  padding: 3px 5px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.qt-table tbody td {
+  border: 1px solid #ddd;
+  padding: 0;
+}
+.qt-row-active td {
+  background: #d0e4ff !important;
+}
+.qt-row-even td {
+  background: var(--bg-stripe);
+}
+.qt-row-odd td {
+  background: #fff;
+}
+.qt-table tbody tr:hover td {
+  background: var(--bg-hover);
+}
+
+.qt-cell {
+  width: 100%;
+  height: 22px;
+  border: none;
+  background: transparent;
+  padding: 0 4px;
+  font-size: 12px;
+  font-family: var(--font);
+  outline: none;
+}
+.qt-cell:focus {
+  background: #fffbe6;
+  outline: 1px solid var(--border-focus);
+}
+.qt-cell.full {
+  width: 100%;
+}
+.qt-cell.r {
+  text-align: right;
+}
+
+.qt-del-row {
+  width: 20px;
+  height: 20px;
+  background: #e88;
+  color: #fff;
+  border: 1px solid #c44;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0;
+  line-height: 1;
+}
+.qt-del-row:hover {
+  background: #c44;
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+.qt-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #e8e0cc;
+  border-top: 2px solid #b0a070;
+  flex-shrink: 0;
+  gap: 10px;
+}
+.qt-footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qt-remarks-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #444;
+}
+.qt-remarks-input {
+  width: 260px;
+  height: var(--input-h);
+  border: 1px solid var(--border-input);
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  background: var(--bg-input);
+}
+.qt-remarks-input:focus {
+  outline: 1px solid var(--border-focus);
+}
+
+.qt-footer-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Totals */
+.qt-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 230px;
+}
+.qt-tr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 1px 4px;
+  gap: 10px;
+}
+.qt-tr.bold {
+  font-weight: bold;
+}
+.qt-tr.big {
+  font-size: 14px;
+}
+.qt-tot-input {
+  width: 90px;
+  height: 20px;
+  border: 1px solid var(--border-input);
+  padding: 0 4px;
+  font-size: 12px;
+  font-family: var(--font);
+  text-align: right;
+  background: var(--bg-input);
+}
+.qt-tot-input:focus {
+  outline: 1px solid var(--border-focus);
+}
+
+/* ── Shared utils ──────────────────────────────────────── */
+.qt-page .r {
+  text-align: right;
+}
+.qt-page .c {
+  text-align: center;
+}
+.qt-page .bold {
+  font-weight: bold;
+}
+.qt-page .red {
+  color: #c00;
+}
+.qt-page .green {
+  color: #1a6a1a;
+}
+.qt-page .blue {
+  color: #1a3a9a;
+}
+.qt-page .even td {
+  background: var(--bg-stripe);
+}
+.qt-page .odd td {
+  background: #fff;
+}
+.qt-page .hi td {
+  background: var(--sel-bg) !important;
+  color: var(--sel-text) !important;
+}
+.qt-page .empty {
+  text-align: center;
+  color: #999;
+  padding: 12px;
+  font-style: italic;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.qt-page .qt-btn {
+  height: var(--btn-h);
+  padding: 0 10px;
+  border: 1px solid #8a9ab0;
+  background: linear-gradient(to bottom, #f4f0e8, #ddd8c8);
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.qt-page .qt-btn:hover {
+  background: linear-gradient(to bottom, #fff8f0, #ece8d8);
+}
+.qt-page .qt-btn:active {
+  background: #ccc8b8;
+}
+.qt-page .qt-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.qt-btn-print {
+  background: linear-gradient(to bottom, #e8f4e8, #b8d8b8) !important;
+  border-color: #6a9a6a !important;
+  color: #1a4a1a;
+  font-weight: bold;
+}
+.qt-btn-wa {
+  background: linear-gradient(to bottom, #e0f8e0, #25d366) !important;
+  border-color: #1da851 !important;
+  color: #fff;
+  font-weight: bold;
+}
+.qt-btn-save {
+  background: linear-gradient(to bottom, #d8eaff, #2a6fcc) !important;
+  border-color: #1a4a99 !important;
+  color: #fff;
+  font-weight: bold;
+}
+.qt-btn-new {
+  background: linear-gradient(to bottom, #fff8e0, #d4a010) !important;
+  border-color: #a07800 !important;
+  color: #4a3000;
+  font-weight: bold;
+}

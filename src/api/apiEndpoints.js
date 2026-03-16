@@ -12,13 +12,13 @@ const EP = {
   // ── Sales ─────────────────────────────────────────────────────────────────
   SALES: {
     GET_ALL: "/sales",
+    SUMMARY: "/sales/summary",
     GET_ONE: (id) => `/sales/${id}`,
+    GET_BY_ID: (id) => `/sales/${id}`,
+    NEXT_INVOICE: "/sales/next-invoice",
     CREATE: "/sales",
     UPDATE: (id) => `/sales/${id}`,
     DELETE: (id) => `/sales/${id}`,
-    NEXT_INVOICE: "/sales/next-invoice",
-    CREATE_RETURN: "/sales/return",
-    STATS: "/sales/stats",
   },
 
   // ── Customers ─────────────────────────────────────────────────────────────
@@ -36,6 +36,13 @@ const EP = {
       `/customers?type=walkin${search ? "&search=" + encodeURIComponent(search) : ""}`,
     GET_WHOLESALE: (search = "") =>
       `/customers?type=wholesale${search ? "&search=" + encodeURIComponent(search) : ""}`,
+  },
+  PAYMENTS: {
+    GET_ALL: "/payments",
+    CREATE: "/payments",
+    BY_CUSTOMER: (id) => `/payments/customer/${id}`,
+    BY_SALE: (id) => `/payments/sale/${id}`,
+    DELETE: (id) => `/payments/${id}`,
   },
 };
 

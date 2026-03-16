@@ -1,8 +1,3 @@
-// pages/SalePage.jsx
-// FIXED: Hold Bill flow — hold saves to panel, click resumes, X deletes
-// FIXED: Save properly resets, next invoice updates from API
-// FIXED: productId empty string validation
-// FIXED: pickProduct guard added
 import { useState, useEffect, useRef, useCallback } from "react";
 import "../styles/SalePage.css";
 import api from "../api/api.js";
@@ -519,12 +514,10 @@ export default function SalePage() {
     try {
       const payload = {
         invoiceDate,
-        // FIX: customerId empty string nahi bhejo — undefined bhejo
         customerId: customerId || undefined,
         customerName: buyerName || "COUNTER SALE",
         customerPhone: buyerCode,
         items: items.map((r) => ({
-          // FIX: productId empty string nahi bhejo
           productId: r.productId || undefined,
           code: r.code,
           description: r.name,
@@ -547,6 +540,7 @@ export default function SalePage() {
         printType,
         remarks: "",
         saleType: "sale",
+        
       };
 
       const { data } = editId
