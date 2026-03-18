@@ -25,6 +25,9 @@ const MENU_CONFIG = [
       { label: "Quotation", route: "/quotation-page", shortcut: "Ctrl+Q" },
       { label: "───" },
       { label: "Journal Voucher", route: "/journal-page", shortcut: "Ctrl+J" },
+      { label: "Raw Sale", route: "/raw-sale" },
+      { label: "Raw Purchase", route: "/raw-purchase" },
+      { label: "Purchase", route: "/purchase" },
     ],
   },
   {

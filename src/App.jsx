@@ -14,6 +14,10 @@ import DebitCustomersPage from "./pages/DebitCustomersPage.jsx";
 import JournalVoucherPage from "./pages/JournalVoucherPage.jsx";
 import ManualSalePage from "./pages/ManualSalePage.jsx";
 import ManualPurchasePage from "./pages/ManualPurchasePage.jsx";
+import RawSalePage from "./pages/RawSalePage.jsx";
+import RawPurchasePage from "./pages/RawPurchasePage.jsx";
+import PurchasePage from "./pages/PurchasePage.jsx";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -28,6 +32,9 @@ export default function App() {
           <Route path="/journal-page" element={<JournalVoucherPage />} />
           <Route path="/manual-sale" element={<ManualSalePage />} />
           <Route path="/manual-purchase" element={<ManualPurchasePage />} />
+          <Route path="/raw-sale" element={<RawSalePage />} />
+          <Route path="/raw-purchase" element={<RawPurchasePage />} />
+          <Route path="/purchase" element={<PurchasePage />} />
           <Route path="/credit-sale" element={<CreditSalePage />} />
           <Route path="/products" element={<ProductPage />} />
           <Route path="/customers" element={<CustomersPage />} />

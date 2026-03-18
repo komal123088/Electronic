@@ -26,11 +26,18 @@
   grid-template-columns: 330px 1fr;
   gap: 8px;
   flex-shrink: 0;
+  position: relative;
 }
 .pp-left-col {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  z-index: 10;
+}
+.pp-right-col {
+  position: relative;
+  z-index: 1;
 }
 .pp-right-col {
   display: flex;
@@ -109,8 +116,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  /* IMPORTANT: z-index context so dropdown stays inside */
-  z-index: 0;
+  /* NO z-index here — let dropdown escape to page stacking context */
 }
 .pp-combo-wrap .xp-input {
   flex: 1;
@@ -141,8 +147,8 @@
   top: 100%;
   left: 0;
   right: 0;
-  /* HIGH z-index but scoped inside the field, not above packing section */
-  z-index: 300;
+  /* Page-level z-index — must be above packing section */
+  z-index: 9999;
   background: #fff;
   border-top: 1px solid var(--xp-silver-5);
   border-left: 1px solid var(--xp-silver-5);
@@ -316,6 +322,7 @@
   font-weight: 700;
   border-radius: 2px;
   flex-shrink: 0;
+  position: relative;
 }
 
 /* Measurement combo — narrow like screenshot */
@@ -323,7 +330,6 @@
   position: relative;
   display: flex;
   align-items: center;
-  z-index: 10;
 }
 .pp-meas-combo-wrap .xp-input {
   flex: 1;
@@ -334,7 +340,7 @@
   top: 100%;
   left: 0;
   right: 0;
-  z-index: 200;
+  z-index: 9999;
   background: #fff;
   border-top: 1px solid var(--xp-silver-5);
   border-left: 1px solid var(--xp-silver-5);
