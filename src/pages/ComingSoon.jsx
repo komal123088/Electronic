@@ -1,4 +1,3 @@
-// pages/ComingSoon.jsx — Placeholder for pages not yet built
 export default function ComingSoon({ pageName }) {
   return (
     <div

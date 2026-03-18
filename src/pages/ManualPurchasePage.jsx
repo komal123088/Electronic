@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import "../styles/ManualBills.css";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
+import "../styles/theme.css";
+import "../styles/ManualPurchasePage.css";
 
 const isoDate = () => new Date().toISOString().split("T")[0];
 const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
@@ -16,9 +17,9 @@ const EMPTY_ROW = {
   amount: 0,
 };
 
-// ═══════════════════════════════════════════════════════════
-// SEARCH MODAL
-// ═══════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   PRODUCT SEARCH MODAL
+───────────────────────────────────────────────────────────── */
 function SearchModal({ allProducts, onSelect, onClose }) {
   const [desc, setDesc] = useState("");
   const [cat, setCat] = useState("");
@@ -31,9 +32,9 @@ function SearchModal({ allProducts, onSelect, onClose }) {
   const tbodyRef = useRef(null);
 
   const buildFlat = useCallback((products, d, c, co) => {
-    const ld = d.trim().toLowerCase();
-    const lc = c.trim().toLowerCase();
-    const lo = co.trim().toLowerCase();
+    const ld = d.trim().toLowerCase(),
+      lc = c.trim().toLowerCase(),
+      lo = co.trim().toLowerCase();
     const res = [];
     products.forEach((p) => {
       const ok =
@@ -46,7 +47,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
       const _name = [p.category, p.description, p.company]
         .filter(Boolean)
         .join(" ");
-      if (p.packingInfo?.length > 0) {
+      if (p.packingInfo?.length > 0)
         p.packingInfo.forEach((pk, i) =>
           res.push({
             ...p,
@@ -58,7 +59,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
             _name,
           }),
         );
-      } else {
+      else
         res.push({
           ...p,
           _pi: 0,
@@ -68,7 +69,6 @@ function SearchModal({ allProducts, onSelect, onClose }) {
           _stock: 0,
           _name,
         });
-      }
     });
     return res;
   }, []);
@@ -87,21 +87,19 @@ function SearchModal({ allProducts, onSelect, onClose }) {
       tbodyRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
   }, [hiIdx]);
 
-  const filterKey = (e, nextRef) => {
+  const fk = (e, nr) => {
     if (e.key === "Escape") {
       onClose();
       return;
     }
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
-      if (nextRef) nextRef.current?.focus();
-      else {
-        tbodyRef.current?.focus();
-        setHiIdx((h) => Math.max(0, h));
-      }
+      nr
+        ? nr.current?.focus()
+        : (tbodyRef.current?.focus(), setHiIdx((h) => Math.max(0, h)));
     }
   };
-  const tableKey = (e) => {
+  const tk = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setHiIdx((i) => Math.min(i + 1, rows.length - 1));
@@ -123,177 +121,164 @@ function SearchModal({ allProducts, onSelect, onClose }) {
 
   return (
     <div
-      className="sm-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="xp-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="sm-window">
-        <div className="sm-titlebar">
-          <span>
-            <i className="bi bi-search"></i> Search Products
+      <div className="xp-modal xp-modal-lg">
+        <div className="xp-modal-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+          </svg>
+          <span className="xp-modal-title">
+            Search Products (Purchase Rate)
           </span>
-          <button className="sm-close-btn" onClick={onClose} tabIndex={-1}>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="sm-filters">
-          <div className="sm-filter-field">
-            <span className="sm-filter-label">Description</span>
+
+        {/* filters */}
+        <div className="cs-modal-filters">
+          <div className="cs-modal-filter-grp">
+            <label className="xp-label">Description / Code</label>
             <input
               ref={rDesc}
               type="text"
-              className="sm-filter-input w200"
+              className="xp-input"
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
-              onKeyDown={(e) => filterKey(e, rCat)}
+              onKeyDown={(e) => fk(e, rCat)}
               placeholder="Name / code…"
               autoComplete="off"
             />
           </div>
-          <div className="sm-filter-field">
-            <span className="sm-filter-label">Category</span>
+          <div className="cs-modal-filter-grp">
+            <label className="xp-label">Category</label>
             <input
               ref={rCat}
               type="text"
-              className="sm-filter-input w140"
+              className="xp-input"
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              onKeyDown={(e) => filterKey(e, rCompany)}
+              onKeyDown={(e) => fk(e, rCompany)}
               placeholder="e.g. SMALL"
               autoComplete="off"
             />
           </div>
-          <div className="sm-filter-field">
-            <span className="sm-filter-label">Company</span>
+          <div className="cs-modal-filter-grp">
+            <label className="xp-label">Company</label>
             <input
               ref={rCompany}
               type="text"
-              className="sm-filter-input w130"
+              className="xp-input"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              onKeyDown={(e) => filterKey(e, null)}
+              onKeyDown={(e) => fk(e, null)}
               placeholder="e.g. LUX"
               autoComplete="off"
             />
           </div>
-          <div className="sm-filters-right">
-            <span className="sm-count">{rows.length} result(s)</span>
-            <button
-              className="sm-close-btn"
-              style={{ padding: "0 10px", height: 24 }}
-              onClick={onClose}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6 }}>
+            <span
+              style={{
+                fontSize: "var(--xp-fs-xs)",
+                color: "#555",
+                whiteSpace: "nowrap",
+              }}
             >
+              {rows.length} result(s)
+            </span>
+            <button className="xp-btn xp-btn-sm" onClick={onClose}>
               Close
             </button>
           </div>
         </div>
-        <div className="sm-products-box">
-          <span className="sm-products-legend">Products</span>
-          <div className="sm-products-scroll">
-            <table className="sm-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 40 }}>Sr.#</th>
-                  <th style={{ width: 75 }}>Barcode</th>
-                  <th>Name</th>
-                  <th style={{ width: 90 }}>Measurement</th>
-                  <th className="r" style={{ width: 80 }}>
-                    Purchase Rate
-                  </th>
-                  <th className="r" style={{ width: 70 }}>
-                    Stock
-                  </th>
-                  <th className="r" style={{ width: 55 }}>
-                    Pack
-                  </th>
-                </tr>
-              </thead>
-              <tbody
-                ref={tbodyRef}
-                tabIndex={0}
-                onKeyDown={tableKey}
-                style={{ outline: "none" }}
-              >
-                {rows.length === 0 && (
+
+        <div className="xp-modal-body" style={{ padding: 0 }}>
+          <div className="xp-table-panel" style={{ border: "none" }}>
+            <div className="xp-table-scroll">
+              <table className="xp-table">
+                <thead>
                   <tr>
-                    <td className="empty" colSpan={7}>
-                      No products found
-                    </td>
+                    <th style={{ width: 36 }}>Sr.#</th>
+                    <th>Barcode</th>
+                    <th>Name</th>
+                    <th>Meas.</th>
+                    <th className="r">Purchase Rate</th>
+                    <th className="r">Stock</th>
+                    <th className="r">Pack</th>
                   </tr>
-                )}
-                {rows.map((r, i) => (
-                  <tr
-                    key={`${r._id}-${r._pi}`}
-                    className={
-                      i === hiIdx ? "hi" : i % 2 === 0 ? "even" : "odd"
-                    }
-                    onClick={() => setHiIdx(i)}
-                    onDoubleClick={() => onSelect(r)}
-                  >
-                    <td style={{ textAlign: "center" }}>{i + 1}</td>
-                    <td style={{ fontWeight: "bold" }}>{r.code}</td>
-                    <td>{r._name}</td>
-                    <td>{r._meas}</td>
-                    <td className="r">{r._rate}</td>
-                    <td className="r">{r._stock}</td>
-                    <td className="r">{r._pack}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody ref={tbodyRef} tabIndex={0} onKeyDown={tk}>
+                  {rows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="xp-empty">
+                        No products found
+                      </td>
+                    </tr>
+                  )}
+                  {rows.map((r, i) => (
+                    <tr
+                      key={`${r._id}-${r._pi}`}
+                      style={{
+                        background: i === hiIdx ? "#c3d9f5" : undefined,
+                      }}
+                      onClick={() => setHiIdx(i)}
+                      onDoubleClick={() => onSelect(r)}
+                    >
+                      <td className="text-muted">{i + 1}</td>
+                      <td>
+                        <span className="xp-code">{r.code}</span>
+                      </td>
+                      <td>
+                        <button className="xp-link-btn">{r._name}</button>
+                      </td>
+                      <td className="text-muted">{r._meas}</td>
+                      <td className="r xp-amt">{fmt(r._rate)}</td>
+                      <td className="r">{r._stock}</td>
+                      <td className="r">{r._pack}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <div className="sm-footer">
-          ↑↓ navigate | Enter / Double-click = select | Esc = close | Tab =
-          filters
+
+        <div className="cs-modal-hint">
+          ↑↓ navigate &nbsp;|&nbsp; Enter / Double-click = select &nbsp;|&nbsp;
+          Esc = close &nbsp;|&nbsp; Tab = filters
         </div>
       </div>
     </div>
   );
 }
 
-// ── Print ─────────────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────
+   PRINT & SHARE
+───────────────────────────────────────────────────────────── */
 function printBill(bill) {
   const rows = bill.items
     .map(
       (it, i) =>
-        `<tr><td>${i + 1}</td><td>${it.description}</td><td>${it.measurement || ""}</td>
-    <td align="right">${it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td>
-    <td align="right">${it.disc || 0}%</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+        `<tr><td>${i + 1}</td><td>${it.description}</td><td>${it.measurement || ""}</td><td align="right">${it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right">${it.disc || 0}%</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
     )
     .join("");
   const win = window.open("", "_blank", "width=820,height=640");
   win.document
     .write(`<!DOCTYPE html><html><head><title>Purchase Bill ${bill.billNo}</title>
-  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:18px}
-  h2{text-align:center;font-size:18px}h3{text-align:center;color:#555;font-size:11px;margin:2px 0 10px;letter-spacing:1px}
-  .meta{display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px 10px;margin-bottom:10px;flex-wrap:wrap;gap:4px;background:#f8f8f8}
-  table{width:100%;border-collapse:collapse;margin-bottom:12px}
-  th{background:#1a4a8a;color:#fff;padding:5px 7px;text-align:left;font-size:12px;border:1px solid #0a2a6a}
-  td{border:1px solid #ccc;padding:4px 7px}tr:nth-child(even) td{background:#f5f5ff}
-  .tots{float:right;min-width:200px;border:1px solid #ccc;padding:8px 12px;background:#f8f8f8}
-  .tr{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}
-  .tr.b{font-weight:bold;font-size:14px;border-top:2px solid #333;margin-top:4px;padding-top:4px}
-  .footer{text-align:center;margin-top:24px;color:#888;font-size:11px;clear:both;border-top:1px solid #ddd;padding-top:8px}
-  @media print{body{padding:5mm}}</style></head><body>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;padding:18px}h2,h3{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid #ccc;padding:5px}th{background:#e8e8e8}.meta{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:12px}.tots{float:right;min-width:200px;margin-top:10px}.tr{display:flex;justify-content:space-between;padding:2px 0}.tr.b{font-weight:bold;border-top:1px solid #000;margin-top:4px}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888;clear:both}</style></head><body>
   <h2>${SHOP}</h2><h3>PURCHASE BILL</h3>
-  <div class="meta">
-    <span><b>Bill #:</b> ${bill.billNo}</span>
-    <span><b>Date:</b> ${bill.date}</span>
-    ${bill.suppName ? `<span><b>Supplier:</b> ${bill.suppName}</span>` : ""}
-    ${bill.suppPhone ? `<span><b>Phone:</b> ${bill.suppPhone}</span>` : ""}
-    ${bill.suppInvoice ? `<span><b>Supp. Invoice:</b> ${bill.suppInvoice}</span>` : ""}
-  </div>
-  <table><thead><tr><th>#</th><th>Description</th><th>Meas</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead>
-  <tbody>${rows}</tbody></table>
-  <div class="tots">
-    <div class="tr"><span>Sub Total</span><span>${Number(bill.subTotal).toLocaleString()}</span></div>
-    ${bill.discAmt > 0 ? `<div class="tr" style="color:red"><span>Discount (${bill.extraDisc}%)</span><span>-${Number(bill.discAmt).toLocaleString()}</span></div>` : ""}
-    <div class="tr b"><span>Net Total</span><span>Rs. ${Number(bill.netTotal).toLocaleString()}</span></div>
-  </div>
-  ${bill.remarks ? `<p style="clear:both;margin-top:8px;font-size:11px;color:#555"><b>Note:</b> ${bill.remarks}</p>` : ""}
-  <div class="footer">— ${SHOP}</div></body></html>`);
+  <div class="meta"><span><b>Bill #:</b> ${bill.billNo}</span><span><b>Date:</b> ${bill.date}</span>${bill.suppName ? `<span><b>Supplier:</b> ${bill.suppName}</span>` : ""}${bill.suppPhone ? `<span><b>Phone:</b> ${bill.suppPhone}</span>` : ""}${bill.suppInvoice ? `<span><b>Supp. Invoice:</b> ${bill.suppInvoice}</span>` : ""}</div>
+  <table><thead><tr><th>#</th><th>Description</th><th>Meas</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="tots"><div class="tr"><span>Sub Total</span><span>${Number(bill.subTotal).toLocaleString()}</span></div>${bill.discAmt > 0 ? `<div class="tr"><span>Discount (${bill.extraDisc}%)</span><span>-${Number(bill.discAmt).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>Rs. ${Number(bill.netTotal).toLocaleString()}</span></div></div>
+  ${bill.remarks ? `<p style="clear:both"><b>Note:</b> ${bill.remarks}</p>` : ""}
+  <div class="thanks">Thank you! — ${SHOP}</div></body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 400);
 }
@@ -310,8 +295,7 @@ function shareWA(bill) {
     (bill.suppName ? `🏪 ${bill.suppName}  ` : "") +
     (bill.suppPhone ? `📞 ${bill.suppPhone}` : "") +
     (bill.suppInvoice ? `\n📋 Supp.Inv: ${bill.suppInvoice}` : "") +
-    "\n" +
-    `${"─".repeat(26)}\n${lines}\n${"─".repeat(26)}\n` +
+    `\n${"─".repeat(26)}\n${lines}\n${"─".repeat(26)}\n` +
     (bill.discAmt > 0
       ? `Sub Total: ${Number(bill.subTotal).toLocaleString()}\nDiscount: -${Number(bill.discAmt).toLocaleString()}\n`
       : "") +
@@ -329,9 +313,9 @@ const getNextNo = () => {
   return `MP-${String(n).padStart(5, "0")}`;
 };
 
-// ═══════════════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────────────────────── */
 export default function ManualPurchasePage() {
   const initNo = () => {
     const n = parseInt(localStorage.getItem("mpurch_counter") || "0") + 1;
@@ -391,6 +375,7 @@ export default function ManualPurchasePage() {
       if (data.success) setProducts(data.data);
     } catch {}
   };
+
   const showMsg = (text, type = "success") => {
     setMsg({ text, type });
     setTimeout(() => setMsg({ text: "", type: "" }), 3000);
@@ -398,7 +383,6 @@ export default function ManualPurchasePage() {
 
   const handleProductSelect = (product) => {
     const qty = rows[activeRow]?.qty || 1;
-    // Use purchaseRate if available, else saleRate
     const rate = product._rate || 0;
     setRows((prev) => {
       const next = [...prev];
@@ -482,8 +466,9 @@ export default function ManualPurchasePage() {
         if (fi < order.length - 1) {
           ensureRef(i);
           rowRefs.current[i]?.[order[fi + 1]]?.focus();
-        } else if (i === rows.length - 1) addRowAfter(i);
-        else {
+        } else if (i === rows.length - 1) {
+          addRowAfter(i);
+        } else {
           ensureRef(i + 1);
           setActiveRow(i + 1);
           setTimeout(() => setShowSearch(true), 30);
@@ -514,7 +499,7 @@ export default function ManualPurchasePage() {
     }
     setSaving(true);
     printBill(bill);
-    showMsg(`✅ Bill ${bill.billNo} ready`);
+    showMsg(`Bill ${bill.billNo} ready`);
     setTimeout(() => {
       resetForm();
       setSaving(false);
@@ -535,7 +520,7 @@ export default function ManualPurchasePage() {
   };
 
   return (
-    <div className="mb-page">
+    <div className="mp-page">
       {showSearch && (
         <SearchModal
           allProducts={products}
@@ -543,360 +528,512 @@ export default function ManualPurchasePage() {
           onClose={() => setShowSearch(false)}
         />
       )}
-      <div className={`mb-msg ${msg.text ? "show" : ""} ${msg.type}`}>
-        {msg.text}
+
+      {/* ── Titlebar ── */}
+      <div className="xp-titlebar">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 16 16"
+          fill="rgba(255,255,255,0.85)"
+        >
+          <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4" />
+        </svg>
+        <span className="xp-tb-title">Manual Purchase Bill — {SHOP}</span>
+        <div className="xp-tb-actions">
+          <div className="xp-tb-divider" />
+          <button className="xp-cap-btn" title="Minimize">
+            ─
+          </button>
+          <button className="xp-cap-btn" title="Maximize">
+            □
+          </button>
+          <button className="xp-cap-btn xp-cap-close" title="Close">
+            ✕
+          </button>
+        </div>
       </div>
 
-      {/* Header */}
-      <div className="mb-header purchase">
-        <div className="mb-title">
-          <i className="bi bi-box-seam"></i> Manual Purchase Bill
+      {/* ── Alert ── */}
+      {msg.text && (
+        <div
+          className={`xp-alert ${msg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
+          style={{ margin: "4px 10px 0" }}
+        >
+          {msg.text}
         </div>
-        <div className="mb-header-fields">
-          <div className="mb-hf">
-            <span>Bill #</span>
+      )}
+
+      <div className="mp-body">
+        {/* ── Header ── */}
+        <div className="mp-header">
+          <div className="mp-header-title">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="var(--xp-blue-dark)"
+            >
+              <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4" />
+            </svg>
+            Manual Purchase Bill
+          </div>
+          <div className="mp-field-pair">
+            <label>Bill #</label>
             <input
-              className="mb-hinput bold"
+              className="xp-input"
+              style={{ width: 110 }}
               value={billNo}
               readOnly
               tabIndex={-1}
             />
           </div>
-          <div className="mb-hf">
-            <span>Date</span>
+          <div className="mp-field-pair">
+            <label>Date</label>
             <input
               type="date"
-              className="mb-hinput"
+              className="xp-input"
+              style={{ width: 140 }}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               tabIndex={-1}
             />
           </div>
         </div>
-      </div>
 
-      {/* Supplier bar */}
-      <div className="mb-party-bar">
-        <span className="mb-party-label">
-          <i className="bi bi-shop"></i> Supplier
-        </span>
-        <input
-          ref={suppRef}
-          className="mb-party-input"
-          value={suppName}
-          onChange={(e) => setSuppName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") phoneRef.current?.focus();
-          }}
-          placeholder="Supplier name (optional)…"
-          tabIndex={1}
-        />
-        <span className="mb-party-label">
-          <i className="bi bi-telephone"></i> Phone
-        </span>
-        <input
-          ref={phoneRef}
-          className="mb-phone-input"
-          value={suppPhone}
-          onChange={(e) => setSuppPhone(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") invRef.current?.focus();
-          }}
-          placeholder="03xx-xxxxxxx"
-          tabIndex={2}
-        />
-        <span className="mb-party-label">
-          <i className="bi bi-file-text"></i> Supp. Invoice
-        </span>
-        <input
-          ref={invRef}
-          className="mb-phone-input"
-          value={suppInvoice}
-          onChange={(e) => setSuppInvoice(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              setActiveRow(0);
-              setShowSearch(true);
-            }
-          }}
-          placeholder="Invoice # (optional)"
-          tabIndex={3}
-          style={{ width: 130 }}
-        />
-      </div>
+        {/* ── Supplier Strip ── */}
+        <div className="mp-supplier-strip">
+          <label>Supplier</label>
+          <input
+            ref={suppRef}
+            className="mp-supplier-input"
+            value={suppName}
+            onChange={(e) => setSuppName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") phoneRef.current?.focus();
+            }}
+            placeholder="Supplier name (optional)…"
+            tabIndex={1}
+          />
 
-      {/* Hints */}
-      <div className="mb-hints">
-        <i className="bi bi-keyboard"></i>&nbsp; F2=New | F3=Search | F5=Save
-        &amp; Print | Enter on Description=Search | Enter on last row=Next row |
-        Ctrl+Del=Remove
-      </div>
+          <label>Phone</label>
+          <input
+            ref={phoneRef}
+            className="mp-supplier-input"
+            style={{ maxWidth: 140 }}
+            value={suppPhone}
+            onChange={(e) => setSuppPhone(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") invRef.current?.focus();
+            }}
+            placeholder="03xx-xxxxxxx"
+            tabIndex={2}
+          />
 
-      {/* Table */}
-      <div className="mb-table-wrap">
-        <table className="mb-table">
-          <thead>
-            <tr>
-              <th style={{ width: 28 }}>#</th>
-              <th style={{ width: 75 }}>Code</th>
-              <th>Description</th>
-              <th style={{ width: 80 }}>Meas.</th>
-              <th style={{ width: 60 }} className="r">
-                Qty
-              </th>
-              <th style={{ width: 85 }} className="r">
-                Rate
-              </th>
-              <th style={{ width: 55 }} className="r">
-                Disc%
-              </th>
-              <th style={{ width: 90 }} className="r">
-                Amount
-              </th>
-              <th style={{ width: 24 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => {
-              ensureRef(i);
-              return (
-                <tr
-                  key={i}
-                  className={
-                    i === activeRow
-                      ? "mb-row-active"
-                      : i % 2 === 0
-                        ? "mb-row-even"
-                        : "mb-row-odd"
-                  }
-                  onClick={() => setActiveRow(i)}
-                >
-                  <td className="mb-td-num">{i + 1}</td>
-                  <td style={{ padding: 0 }}>
-                    <input
-                      className="mb-cell full"
-                      value={row.code}
-                      readOnly
-                      style={{
-                        background: "transparent",
-                        color: "#1a3a9a",
-                        fontWeight: "bold",
-                      }}
-                      tabIndex={-1}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="mb-cell full"
-                      ref={(el) => {
-                        ensureRef(i);
-                        rowRefs.current[i].desc = el;
-                      }}
-                      value={row.description}
-                      onChange={(e) =>
-                        updateRow(i, "description", e.target.value)
-                      }
-                      onKeyDown={(e) => onKey(e, i, "desc")}
-                      onClick={() => {
-                        setActiveRow(i);
-                        setShowSearch(true);
-                      }}
-                      placeholder="Click or Enter to search…"
-                      style={
-                        row.description
-                          ? { fontWeight: "bold" }
-                          : { color: "#aaa" }
-                      }
-                      tabIndex={10 + i * 10 + 1}
-                    />
-                  </td>
-                  <td style={{ padding: 0 }}>
-                    <input
-                      className="mb-cell"
-                      value={row.measurement}
-                      readOnly
-                      style={{ background: "transparent" }}
-                      tabIndex={-1}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="mb-cell r"
-                      ref={(el) => {
-                        ensureRef(i);
-                        rowRefs.current[i].qty = el;
-                      }}
-                      value={row.qty}
-                      onChange={(e) => updateRow(i, "qty", e.target.value)}
-                      onKeyDown={(e) => onKey(e, i, "qty")}
-                      tabIndex={10 + i * 10 + 2}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="mb-cell r"
-                      ref={(el) => {
-                        ensureRef(i);
-                        rowRefs.current[i].rate = el;
-                      }}
-                      value={row.rate}
-                      onChange={(e) => updateRow(i, "rate", e.target.value)}
-                      onKeyDown={(e) => onKey(e, i, "rate")}
-                      tabIndex={10 + i * 10 + 3}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="mb-cell r"
-                      ref={(el) => {
-                        ensureRef(i);
-                        rowRefs.current[i].disc = el;
-                      }}
-                      value={row.disc}
-                      onChange={(e) => updateRow(i, "disc", e.target.value)}
-                      onKeyDown={(e) => onKey(e, i, "disc")}
-                      tabIndex={10 + i * 10 + 4}
-                    />
-                  </td>
-                  <td
-                    className="r bold"
-                    style={{
-                      padding: "0 6px",
-                      fontSize: 12,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {fmt(row.amount)}
-                  </td>
-                  <td className="mb-td-del">
-                    <button
-                      className="mb-del-btn"
-                      onClick={() => deleteRow(i)}
-                      tabIndex={-1}
-                    >
-                      <i className="bi bi-x"></i>
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+          <label>Supp. Invoice</label>
+          <input
+            ref={invRef}
+            className="mp-supplier-input"
+            style={{ maxWidth: 140 }}
+            value={suppInvoice}
+            onChange={(e) => setSuppInvoice(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setActiveRow(0);
+                setShowSearch(true);
+              }
+            }}
+            placeholder="Invoice # (optional)"
+            tabIndex={3}
+          />
 
-      {/* Footer */}
-      <div className="mb-footer">
-        <div className="mb-footer-left">
-          <div className="mb-remarks-row">
-            <span>
-              <i className="bi bi-chat-left-text"></i> Note
-            </span>
-            <input
-              className="mb-remarks-input"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") discRef.current?.focus();
-              }}
-              placeholder="Remarks…"
-              tabIndex={90}
-            />
-          </div>
-          <div className="mb-btns">
-            <button
-              className="mb-btn"
-              onClick={() => {
-                setActiveRow(rows.length - 1);
-                addRowAfter(rows.length - 1);
-              }}
-              tabIndex={-1}
-            >
-              <i className="bi bi-plus-lg"></i> Add Row
-            </button>
-            <button className="mb-btn orange" onClick={resetForm} tabIndex={-1}>
-              <i className="bi bi-arrow-counterclockwise"></i> F2 New
-            </button>
-            <button
-              className="mb-btn green"
-              onClick={() => {
-                const b = getBill();
-                if (!b.items.length) {
-                  showMsg("Add items", "error");
-                  return;
-                }
-                printBill(b);
-              }}
-              tabIndex={-1}
-            >
-              <i className="bi bi-printer"></i> Print
-            </button>
-            <button
-              className="mb-btn wa"
-              onClick={() => {
-                const b = getBill();
-                if (!b.items.length) {
-                  showMsg("Add items", "error");
-                  return;
-                }
-                shareWA(b);
-              }}
-              tabIndex={-1}
-            >
-              <i className="bi bi-whatsapp"></i> WhatsApp
-            </button>
-            <button
-              ref={saveRef}
-              className="mb-btn primary"
-              onClick={handleSave}
-              disabled={saving}
-              tabIndex={91}
-            >
-              <i className="bi bi-floppy"></i>{" "}
-              {saving ? "…" : "F5 Save & Print"}
-            </button>
-          </div>
-        </div>
-        <div className="mb-totals">
-          <div className="mb-tr">
-            <span>Sub Total</span>
-            <span className="bold">{fmt(subTotal)}</span>
-          </div>
-          <div className="mb-tr">
-            <span>Extra Disc%</span>
-            <input
-              ref={discRef}
-              type="number"
-              className="mb-tot-input"
-              value={extraDisc}
-              onChange={(e) => setExtraDisc(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveRef.current?.focus();
-              }}
-              tabIndex={89}
-            />
-          </div>
-          {discAmt > 0 && (
-            <div className="mb-tr">
-              <span>Disc Amt</span>
-              <span className="red bold">-{fmt(discAmt)}</span>
-            </div>
-          )}
-          <div className="mb-tr bold big">
-            <span>Net Total</span>
-            <span className="blue">Rs. {fmt(netTotal)}</span>
-          </div>
+          <div className="xp-toolbar-divider" />
+
+          {/* hint inline */}
           <div
-            className="mb-tr"
-            style={{ fontSize: 11, color: "#888", marginTop: 2 }}
+            style={{
+              fontSize: "var(--xp-fs-xs)",
+              color: "#666",
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
           >
             <span>
-              <i className="bi bi-list-ol"></i> Items
+              <span
+                style={{
+                  fontFamily: "var(--xp-mono)",
+                  fontWeight: 700,
+                  color: "var(--xp-blue-dark)",
+                }}
+              >
+                F3
+              </span>{" "}
+              Search
             </span>
-            <span>{rows.filter((r) => r.description).length}</span>
+            <span>
+              <span
+                style={{
+                  fontFamily: "var(--xp-mono)",
+                  fontWeight: 700,
+                  color: "var(--xp-blue-dark)",
+                }}
+              >
+                F5
+              </span>{" "}
+              Save
+            </span>
+            <span>
+              <span
+                style={{
+                  fontFamily: "var(--xp-mono)",
+                  fontWeight: 700,
+                  color: "var(--xp-blue-dark)",
+                }}
+              >
+                F2
+              </span>{" "}
+              New
+            </span>
+            <span>
+              <span
+                style={{
+                  fontFamily: "var(--xp-mono)",
+                  fontWeight: 700,
+                  color: "var(--xp-blue-dark)",
+                }}
+              >
+                Ctrl+Del
+              </span>{" "}
+              Remove Row
+            </span>
           </div>
+        </div>
+
+        {/* ── Items Table ── */}
+        <div className="mp-items-panel">
+          <table className="mp-items-table">
+            <thead>
+              <tr>
+                <th style={{ width: 30 }}>#</th>
+                <th style={{ width: 75 }}>Code</th>
+                <th>Description</th>
+                <th style={{ width: 65 }}>Meas.</th>
+                <th style={{ width: 60 }} className="r">
+                  Qty
+                </th>
+                <th style={{ width: 90 }} className="r">
+                  Rate
+                </th>
+                <th style={{ width: 55 }} className="r">
+                  Disc%
+                </th>
+                <th style={{ width: 100 }} className="r">
+                  Amount
+                </th>
+                <th style={{ width: 26 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => {
+                ensureRef(i);
+                return (
+                  <tr
+                    key={i}
+                    className={activeRow === i ? "mp-active-row" : ""}
+                    onClick={() => setActiveRow(i)}
+                  >
+                    <td
+                      className="text-muted"
+                      style={{
+                        textAlign: "center",
+                        fontSize: "var(--xp-fs-xs)",
+                      }}
+                    >
+                      {i + 1}
+                    </td>
+                    <td>
+                      <input
+                        className="mp-cell-in w-code"
+                        value={row.code}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="mp-cell-in desc"
+                        ref={(el) => {
+                          ensureRef(i);
+                          rowRefs.current[i].desc = el;
+                        }}
+                        value={row.description}
+                        onChange={(e) =>
+                          updateRow(i, "description", e.target.value)
+                        }
+                        onKeyDown={(e) => onKey(e, i, "desc")}
+                        onClick={() => {
+                          setActiveRow(i);
+                          setShowSearch(true);
+                        }}
+                        placeholder="Click or Enter to search…"
+                        tabIndex={10 + i * 10 + 1}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="mp-cell-in w-meas"
+                        value={row.measurement}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="mp-cell-in w-sm"
+                        ref={(el) => {
+                          ensureRef(i);
+                          rowRefs.current[i].qty = el;
+                        }}
+                        value={row.qty}
+                        onChange={(e) => updateRow(i, "qty", e.target.value)}
+                        onKeyDown={(e) => onKey(e, i, "qty")}
+                        tabIndex={10 + i * 10 + 2}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="mp-cell-in w-md"
+                        ref={(el) => {
+                          ensureRef(i);
+                          rowRefs.current[i].rate = el;
+                        }}
+                        value={row.rate}
+                        onChange={(e) => updateRow(i, "rate", e.target.value)}
+                        onKeyDown={(e) => onKey(e, i, "rate")}
+                        tabIndex={10 + i * 10 + 3}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="mp-cell-in w-sm"
+                        ref={(el) => {
+                          ensureRef(i);
+                          rowRefs.current[i].disc = el;
+                        }}
+                        value={row.disc}
+                        onChange={(e) => updateRow(i, "disc", e.target.value)}
+                        onKeyDown={(e) => onKey(e, i, "disc")}
+                        tabIndex={10 + i * 10 + 4}
+                      />
+                    </td>
+                    <td className="mp-amt">{fmt(row.amount)}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <button
+                        className="xp-btn xp-btn-sm xp-btn-ico"
+                        onClick={() => deleteRow(i)}
+                        tabIndex={-1}
+                        style={{
+                          width: 20,
+                          height: 20,
+                          fontSize: 9,
+                          color: "var(--xp-red)",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Bottom ── */}
+        <div className="mp-bottom">
+          {/* Left: remarks + buttons */}
+          <div className="mp-actions-col">
+            <div className="mp-remarks-row">
+              <label>Note</label>
+              <input
+                className="mp-remarks-input"
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") discRef.current?.focus();
+                }}
+                placeholder="Remarks…"
+                tabIndex={90}
+              />
+            </div>
+            <div className="mp-btn-row">
+              <button
+                className="xp-btn xp-btn-sm"
+                onClick={() => {
+                  setActiveRow(rows.length - 1);
+                  addRowAfter(rows.length - 1);
+                }}
+                tabIndex={-1}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
+                </svg>
+                Add Row
+              </button>
+              <button
+                className="xp-btn xp-btn-sm"
+                onClick={resetForm}
+                tabIndex={-1}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+                  <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
+                </svg>
+                F2 New
+              </button>
+              <button
+                className="xp-btn xp-btn-sm"
+                onClick={() => {
+                  const b = getBill();
+                  if (!b.items.length) {
+                    showMsg("Add items", "error");
+                    return;
+                  }
+                  printBill(b);
+                }}
+                tabIndex={-1}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
+                  <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2z" />
+                </svg>
+                Print
+              </button>
+              <button
+                className="xp-btn xp-btn-wa xp-btn-sm"
+                onClick={() => {
+                  const b = getBill();
+                  if (!b.items.length) {
+                    showMsg("Add items", "error");
+                    return;
+                  }
+                  shareWA(b);
+                }}
+                tabIndex={-1}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326z" />
+                </svg>
+                WhatsApp
+              </button>
+              <button
+                ref={saveRef}
+                className="xp-btn xp-btn-primary xp-btn-lg"
+                onClick={handleSave}
+                disabled={saving}
+                tabIndex={91}
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v7.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L7.5 9.293V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" />
+                </svg>
+                {saving ? "…" : "F5 Save & Print"}
+              </button>
+            </div>
+          </div>
+
+          {/* Right: totals */}
+          <div className="mp-totals-box">
+            <div className="mp-total-row">
+              <label>Sub Total</label>
+              <span className="mp-val">{fmt(subTotal)}</span>
+            </div>
+            <div className="mp-total-row">
+              <label>Extra Disc%</label>
+              <input
+                ref={discRef}
+                type="number"
+                className="mp-disc-input"
+                value={extraDisc}
+                onChange={(e) => setExtraDisc(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveRef.current?.focus();
+                }}
+                tabIndex={89}
+              />
+            </div>
+            {discAmt > 0 && (
+              <div className="mp-total-row">
+                <label>Disc Amt</label>
+                <span className="mp-val danger">-{fmt(discAmt)}</span>
+              </div>
+            )}
+            <div className="mp-total-row highlight">
+              <label>Net Total</label>
+              <span className="mp-val blue">PKR {fmt(netTotal)}</span>
+            </div>
+            <div className="mp-total-row">
+              <label>Items</label>
+              <span className="mp-val">
+                {rows.filter((r) => r.description).length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Status Bar ── */}
+      <div className="xp-statusbar">
+        <div className="xp-status-pane">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607z" />
+          </svg>
+          Bill: {billNo}
+        </div>
+        <div className="xp-status-pane">{suppName || "No supplier"}</div>
+        <div className="xp-status-pane">
+          Items: {rows.filter((r) => r.description).length}
+        </div>
+        <div className="xp-status-pane">
+          Net:{" "}
+          <strong
+            style={{
+              fontFamily: "var(--xp-mono)",
+              marginLeft: 3,
+              color: "var(--xp-blue-dark)",
+            }}
+          >
+            PKR {fmt(netTotal)}
+          </strong>
         </div>
       </div>
     </div>

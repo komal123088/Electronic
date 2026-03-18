@@ -1,1189 +1,376 @@
-/* styles/DebitSalePage.css */
+/* ============================================================
+   DebitSalePage.css
+   Page-specific styles only.  prefix: ds-
+   Shared atoms  → theme.css
+   Sale layout   → reuses cs- classes from CreditSalePage.css
+   ============================================================ */
 
-.ds-page {
-  font-family: var(--font);
-  font-size: var(--font-size);
-  background: var(--bg);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.ds-shortcuts {
-  background: #f5f0e0;
-  border-bottom: 1px solid #ccc;
-  padding: 2px 10px;
-  font-size: 11px;
-  color: #555;
-}
-.ds-msg {
-  padding: 3px 12px;
-  margin: 2px 8px;
-  font-size: var(--font-size);
-  border: 1px solid;
-}
-.ds-msg.success {
-  background: #dff0d8;
-  border-color: #3c763d;
-  color: #3c763d;
-}
-.ds-msg.error {
-  background: #f2dede;
-  border-color: #a94442;
-  color: #a94442;
-}
-
-/* Header */
-.ds-header-bar {
-  background: var(--sale-dark);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  height: 40px;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.ds-header-title {
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-  min-width: 140px;
-}
-.ds-header-fields {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.ds-hf {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #cde;
-  font-size: var(--font-sm);
-}
-.ds-hinput {
-  height: 20px;
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid #7aadcf;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  padding: 0 5px;
-  outline: none;
-}
-.ds-hinput.bold {
-  font-weight: bold;
-  min-width: 110px;
-}
-.ds-btn-mgmt {
-  margin-left: auto;
-  height: 26px;
-  padding: 0 12px;
-  font-size: var(--font-sm);
-  font-family: var(--font);
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: white;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.ds-btn-mgmt:hover {
-  background: rgba(255, 255, 255, 0.35);
-}
-
-/* Main layout */
-.ds-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-.ds-left {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.ds-right-panel {
-  width: 260px;
-  flex-shrink: 0;
-  border-left: 2px solid var(--border);
-  background: var(--bg-panel);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-/* Customer bar */
-.ds-cust-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-panel);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-.ds-cust-label {
-  font-size: var(--font-sm);
-  color: var(--text-label);
-  font-weight: bold;
-  white-space: nowrap;
-}
-.ds-cust-phone {
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid var(--border-input);
-  padding: 0 6px;
-  outline: none;
-  width: 160px;
-}
-.ds-cust-phone:focus {
-  border-color: var(--border-focus);
-}
-.ds-cust-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #dff0d8;
-  border: 1px solid #3c763d;
-  padding: 1px 7px;
-}
-.ds-cust-name {
-  font-size: var(--font-size);
-  color: #2d6a2d;
-  font-weight: bold;
-}
-.ds-cust-due {
-  font-size: var(--font-sm);
-}
-.ds-cust-clear {
-  background: none;
-  border: none;
-  color: #a00;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 0 2px;
-}
-.ds-cust-none {
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-  font-style: italic;
-}
-.ds-hold-btn {
-  height: 22px;
-  padding: 0 8px;
-  font-size: var(--font-sm);
-  font-family: var(--font);
-  background: #fff3cd;
-  border: 1px solid #ffa500;
-  cursor: pointer;
-}
-.ds-hold-btn:hover {
-  background: #ffe08a;
-}
-
-/* Search bar */
-.ds-search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.ds-search-label {
-  font-size: var(--font-sm);
-  color: var(--text-label);
-  white-space: nowrap;
-  font-weight: bold;
-}
-.ds-search-input {
-  flex: 1;
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 2px solid #ff8c00;
-  padding: 0 7px;
-  outline: none;
-  background: var(--bg-input);
-  cursor: pointer;
-  max-width: 480px;
-}
-.ds-search-input.filled {
-  background: var(--bg-filled);
-  font-weight: bold;
-  cursor: default;
-  color: #003380;
-}
-.ds-search-input:focus {
-  border-color: #e07000;
-}
-
-/* Items table */
-.ds-table-wrap {
-  flex: 1;
-  overflow: auto;
-  min-height: 120px;
-}
-.ds-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size);
-}
-.ds-table th {
-  background: var(--bg-header);
-  border: 1px solid var(--border);
-  padding: 2px 5px;
-  font-weight: normal;
-  white-space: nowrap;
-  text-align: left;
-  font-size: var(--font-sm);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-.ds-table td {
-  border: 1px solid var(--border-table);
-  padding: 1px 3px;
-}
-.ds-table td.c {
-  text-align: center;
-  color: var(--text-muted);
-}
-.ds-table td.r {
-  text-align: right;
-}
-.ds-table td.bold {
-  font-weight: bold;
-}
-.ds-row-even td {
-  background: white;
-}
-.ds-row-odd td {
-  background: var(--bg-stripe);
-}
-.ds-row-active td {
-  background: var(--sel-bg) !important;
-  color: var(--sel-text);
-}
-.ds-row-active td input {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
-}
-.ds-cell-input {
-  width: 100%;
-  height: 21px;
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: none;
-  background: transparent;
-  padding: 0 3px;
-  outline: none;
-}
-.ds-cell-input.full {
-  width: 100%;
-}
-.ds-cell-input.r {
-  text-align: right;
-}
-.ds-cell-input:focus {
-  outline: 1px solid var(--border-focus);
-  background: white !important;
-  color: #000 !important;
-}
-.ds-del-row {
-  background: none;
-  border: none;
-  color: #c00;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 0;
-}
-
-/* ── Payment Section ── */
+/* ══════════════════════════════════════════════════════════
+   PAYMENT MODE PANEL  (unique to debit)
+   ══════════════════════════════════════════════════════════ */
 .ds-pay-section {
+  background: var(--xp-silver-3);
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid var(--xp-silver-5);
+  border-bottom: 1px solid var(--xp-silver-5);
+  padding: 7px 10px;
   display: flex;
-  gap: 0;
-  border-top: 2px solid var(--border);
-  background: var(--bg);
+  flex-direction: column;
+  gap: 6px;
   flex-shrink: 0;
 }
-.ds-pay-left {
-  flex: 1;
-  padding: 8px 10px;
-  border-right: 1px solid var(--border);
-}
+
 .ds-pay-title {
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--text-label);
-  margin-bottom: 6px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 4px;
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: var(--xp-blue-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--xp-silver-2);
+  padding-bottom: 3px;
+  margin-bottom: 2px;
 }
 
-/* Quick payment buttons */
-.ds-pay-modes {
+/* Quick-pay buttons row */
+.ds-qpay-row {
   display: flex;
   gap: 5px;
-  margin-bottom: 8px;
 }
-.ds-pay-btn {
+
+.ds-qpay-btn {
   flex: 1;
-  height: 26px;
-  font-size: 11px;
-  font-family: var(--font);
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
+  height: 24px;
+  font-size: var(--xp-fs-xs);
+  font-family: var(--xp-font);
+  font-weight: 700;
   cursor: pointer;
   border-radius: 2px;
-  transition: all 0.1s;
-}
-.ds-pay-btn:hover {
-  background: var(--btn-bg-hover);
-}
-.ds-pay-btn.active-cash {
-  background: #d4edda;
-  border-color: #28a745;
-  color: #155724;
-  font-weight: bold;
-}
-.ds-pay-btn.active-credit {
-  background: #f8d7da;
-  border-color: #dc3545;
-  color: #721c24;
-  font-weight: bold;
-}
-.ds-pay-btn.active-partial {
-  background: #fff3cd;
-  border-color: #ffc107;
-  color: #856404;
-  font-weight: bold;
-}
-
-/* Payment inputs */
-.ds-pay-row {
+  border: 1px solid var(--xp-silver-5);
+  box-shadow: var(--xp-shadow-btn);
+  background: linear-gradient(180deg, #f4f1e8 0%, #dedad0 50%, #c8c4ba 100%);
+  color: #000;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 5px;
+  justify-content: center;
+  gap: 4px;
 }
-.ds-pay-row label {
-  font-size: var(--font-sm);
-  color: var(--text-label);
-  width: 90px;
-  flex-shrink: 0;
+.ds-qpay-btn:hover {
+  background: linear-gradient(180deg, #fafaf0 0%, #e8e4d8 100%);
 }
-.ds-pay-input {
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid var(--border-input);
-  padding: 0 5px;
+.ds-qpay-btn:active {
+  box-shadow: var(--xp-shadow-btn-dn);
+}
+
+.ds-qpay-btn.full-cash {
+  background: linear-gradient(180deg, #f0fdf4 0%, #86efac 100%);
+  color: #14532d;
+  border-color: #22c55e;
+}
+.ds-qpay-btn.full-cash:hover {
+  filter: brightness(1.05);
+}
+
+.ds-qpay-btn.full-credit {
+  background: linear-gradient(180deg, #fff5f5 0%, #fca5a5 100%);
+  color: #7f1d1d;
+  border-color: #ef4444;
+}
+.ds-qpay-btn.full-credit:hover {
+  filter: brightness(1.05);
+}
+
+.ds-qpay-btn.partial {
+  background: linear-gradient(180deg, #fefce8 0%, #fde68a 100%);
+  color: #78350f;
+  border-color: #f59e0b;
+}
+.ds-qpay-btn.partial:hover {
+  filter: brightness(1.05);
+}
+
+/* Cash input row */
+.ds-cash-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ds-cash-row label {
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: #444;
+  white-space: nowrap;
+}
+.ds-cash-input {
+  flex: 1;
+  height: 24px;
+  padding: 0 6px;
+  font-family: var(--xp-mono);
+  font-size: var(--xp-fs-sm);
+  font-weight: 700;
+  color: var(--xp-green);
+  background: #fff;
+  border-top: 1px solid var(--xp-silver-5);
+  border-left: 1px solid var(--xp-silver-5);
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
   outline: none;
-  width: 100px;
   text-align: right;
 }
-.ds-pay-input.wide {
-  width: 180px;
-  text-align: left;
-}
-.ds-pay-input:focus {
-  border-color: var(--border-focus);
+.ds-cash-input:focus {
+  outline: 2px solid #3b80f0;
 }
 
-/* Totals + action right side */
-.ds-pay-right {
-  min-width: 230px;
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-}
-.ds-tot-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 3px 0;
-  border-bottom: 1px solid #eee;
-  font-size: var(--font-size);
-}
-.ds-tot-row.bold {
-  font-weight: bold;
-  border-top: 1px solid var(--border);
-  margin-top: 2px;
-}
-.ds-tot-row.big {
-  font-size: 15px;
-}
-.ds-tot-row.red {
-  color: #c00;
-}
-.ds-tot-row.green {
-  color: #060;
-}
-.ds-tot-row span:first-child {
-  color: var(--text-label);
-}
-.ds-tot-row span:last-child {
-  font-weight: bold;
-}
-.ds-pay-actions {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid #ddd;
-}
-
-/* Buttons */
-.ds-btn {
-  height: var(--btn-h);
-  padding: 0 10px;
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
-  cursor: pointer;
-  white-space: nowrap;
+/* Credit badge */
+.ds-credit-badge {
   display: inline-flex;
   align-items: center;
-}
-.ds-btn:hover {
-  background: var(--btn-bg-hover);
-}
-.ds-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.ds-btn-primary {
-  font-weight: bold;
-  background: #d4e8f7;
-  border-color: #316ac5;
-  color: #003380;
-}
-.ds-btn-primary:hover {
-  background: #b8d4f0;
+  gap: 4px;
+  padding: 1px 8px;
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  background: #fee2e2;
+  color: #7f1d1d;
+  border: 1px solid #fca5a5;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-family: var(--xp-mono);
 }
 
-/* ── Right Panel (customer) ── */
-.ds-rp-empty {
+/* ══════════════════════════════════════════════════════════
+   CUSTOMER HISTORY PANEL  (right column — debit version)
+   ══════════════════════════════════════════════════════════ */
+.ds-hist-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ds-hist-empty {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
-  color: var(--text-muted);
-  font-size: var(--font-sm);
+  gap: 10px;
+  color: #999;
+  font-size: var(--xp-fs-sm);
+  padding: 20px;
   text-align: center;
-  gap: 8px;
 }
-.ds-rp-icon {
-  font-size: 36px;
-  opacity: 0.3;
-}
-.ds-rp-header {
-  background: var(--sale-dark);
-  padding: 8px 10px;
-  color: white;
+
+.ds-hist-customer-hdr {
+  background: linear-gradient(180deg, #d7e4f2 0%, #c0d4ec 100%);
+  border-bottom: 2px solid #7aabda;
+  padding: 7px 10px;
   flex-shrink: 0;
 }
-.ds-rp-name {
-  font-size: 14px;
-  font-weight: bold;
+.ds-hist-name {
+  font-size: var(--xp-fs-md);
+  font-weight: 700;
+  color: var(--xp-blue-dark);
 }
-.ds-rp-phone {
-  font-size: 11px;
-  color: #adf;
-  margin-top: 2px;
+.ds-hist-sub {
+  font-size: var(--xp-fs-xs);
+  color: #555;
+  margin-top: 1px;
 }
-.ds-rp-cards {
+.ds-hist-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+/* mini stats 2-col grid */
+.ds-hist-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  padding: 6px;
+  padding: 6px 8px;
+  background: var(--xp-silver-1);
+  border-bottom: 1px solid var(--xp-silver-2);
+  flex-shrink: 0;
 }
-.ds-rp-card {
-  border: 1px solid var(--border);
-  background: white;
-  padding: 4px 6px;
+.ds-hstat {
+  background: var(--xp-silver-3);
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid var(--xp-silver-5);
+  border-bottom: 1px solid var(--xp-silver-5);
+  padding: 4px 7px;
 }
-.ds-rp-card.danger {
-  border-color: #e74c3c;
-  background: #fdf0f0;
+.ds-hstat.danger {
+  background: var(--xp-red-bg);
 }
-.ds-rp-card.ok {
-  border-color: #27ae60;
-  background: #f0fdf4;
+.ds-hstat.amber {
+  background: var(--xp-amber-bg);
 }
-.ds-rp-cl {
-  font-size: 10px;
-  color: var(--text-muted);
+.ds-hstat-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 1px;
 }
-.ds-rp-cv {
+.ds-hstat-val {
   font-size: 12px;
-  font-weight: bold;
-  text-align: right;
+  font-weight: 700;
+  font-family: var(--xp-mono);
+  color: #000;
 }
-.ds-rp-cv.green {
-  color: #060;
+.ds-hstat-val.danger {
+  color: var(--xp-red);
 }
-.ds-rp-cv.bold {
-  font-size: 13px;
+.ds-hstat-val.success {
+  color: var(--xp-green);
 }
-.ds-rp-cv.red {
-  color: #c00;
+.ds-hstat-val.warning {
+  color: var(--xp-amber);
 }
-.ds-rp-btns {
+
+/* section title */
+.ds-hist-section {
+  padding: 4px 8px 2px;
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: var(--xp-blue-dark);
+  background: var(--xp-silver-1);
+  border-bottom: 1px solid var(--xp-silver-2);
   display: flex;
+  align-items: center;
   gap: 5px;
-  padding: 6px;
+  flex-shrink: 0;
 }
-.ds-rp-btn {
-  flex: 1;
-  height: 26px;
-  font-size: 11px;
-  font-family: var(--font);
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
-  cursor: pointer;
-}
-.ds-rp-btn:hover {
-  background: var(--btn-bg-hover);
-}
-.ds-rp-btn.wa {
-  background: #25d366;
-  color: white;
-  border-color: #128c7e;
-}
-.ds-rp-btn.wa:hover {
-  background: #20b858;
-}
-.ds-rp-btn.detail {
-  background: #e8d0f8;
-  border-color: #9b59b6;
-  color: #5b1991;
-}
-.ds-rp-hist-label {
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--text-label);
-  padding: 2px 8px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-header);
-}
-.ds-rp-hist-wrap {
+
+/* history cards list */
+.ds-hist-list-wrap {
   flex: 1;
   overflow-y: auto;
+  background: #fff;
+  border-top: 1px solid var(--xp-silver-5);
 }
-.ds-rp-loading {
-  padding: 10px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.ds-rp-txn {
+
+.ds-hist-card {
   display: grid;
-  grid-template-columns: 1fr 70px 60px 60px;
+  grid-template-columns: 1fr auto;
   gap: 2px;
-  padding: 3px 8px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 10px;
-  cursor: default;
+  padding: 5px 8px;
+  border-bottom: 1px solid #e8e4dc;
+  cursor: pointer;
+  font-size: var(--xp-fs-xs);
 }
-.ds-rp-txn:hover {
-  background: var(--bg-hover);
+.ds-hist-card:hover {
+  background: #c3d9f5;
 }
-.ds-rp-txn.txn-red {
-  border-left: 2px solid #e74c3c;
+.ds-hist-card:nth-child(even) {
+  background: #f5f3ee;
 }
-.ds-rp-inv {
-  color: var(--text-id);
-  font-weight: bold;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ds-rp-date {
-  color: var(--text-muted);
-}
-.ds-rp-amt {
-  text-align: right;
-  font-weight: bold;
-}
-.ds-rp-bal {
-  text-align: right;
-}
-.ds-rp-bal.red {
-  color: #c00;
-  font-weight: bold;
+.ds-hist-card:nth-child(even):hover {
+  background: #c3d9f5;
 }
 
-/* ── Debit Customers Management Modal ── */
-.dcm-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 9000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.ds-hist-card-inv {
+  font-family: var(--xp-mono);
+  font-weight: 700;
+  font-size: var(--xp-fs-xs);
+  color: var(--xp-blue-dark);
 }
-.dcm-modal {
-  background: white;
-  border: 1px solid #aaa;
-  width: 900px;
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 4px 8px 20px rgba(0, 0, 0, 0.5);
+.ds-hist-card-date {
+  color: #777;
+  font-size: 10px;
 }
-.dcm-titlebar {
-  background: linear-gradient(to right, #0a246a, #3a6fc4);
-  color: white;
-  padding: 5px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-.dcm-close {
-  background: #c0392b;
-  border: none;
-  color: white;
-  width: 22px;
-  height: 20px;
-  cursor: pointer;
-  font-size: 11px;
-}
-.dcm-msg {
-  padding: 3px 12px;
-  font-size: 12px;
-  border: 1px solid;
-  margin: 2px 8px;
-}
-.dcm-msg.success {
-  background: #dff0d8;
-  border-color: #3c763d;
-  color: #3c763d;
-}
-.dcm-msg.error {
-  background: #f2dede;
-  border-color: #a94442;
-  color: #a94442;
-}
-.dcm-summary {
-  display: flex;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--bg);
-  border-bottom: 1px solid #ddd;
-  flex-shrink: 0;
-}
-.dcm-scard {
-  border: 1px solid var(--border);
-  background: var(--bg-panel);
-  padding: 5px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.dcm-scard span {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.dcm-scard b {
-  font-size: 15px;
-}
-.dcm-scard.danger {
-  border-color: #e74c3c;
-  background: #fdf0f0;
-}
-.dcm-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-.dcm-left {
-  width: 320px;
-  flex-shrink: 0;
-  border-right: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
-}
-.dcm-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.dcm-search {
-  margin: 6px 8px;
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid var(--border-input);
-  padding: 0 8px;
-  outline: none;
-  width: calc(100% - 16px);
-}
-.dcm-list-wrap {
-  flex: 1;
-  overflow-y: auto;
-}
-.dcm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size);
-}
-.dcm-table th {
-  background: var(--bg-header);
-  border: 1px solid var(--border);
-  padding: 2px 5px;
-  font-weight: normal;
-  position: sticky;
-  top: 0;
-  font-size: var(--font-sm);
-  text-align: left;
-}
-.dcm-table td {
-  border: 1px solid var(--border-table);
-  padding: 2px 5px;
-}
-.dcm-table td.c {
-  text-align: center;
-}
-.dcm-table td.r {
+.ds-hist-card-total {
+  font-family: var(--xp-mono);
+  font-weight: 700;
   text-align: right;
 }
-.dcm-table td.bold {
-  font-weight: bold;
+.ds-hist-card-bal {
+  font-family: var(--xp-mono);
+  font-weight: 700;
+  text-align: right;
+  font-size: 11px;
 }
-.dcm-table td.blue {
-  color: var(--text-id);
-  font-weight: bold;
+.ds-hist-card-bal.danger {
+  color: var(--xp-red);
 }
-.dcm-table td.red {
-  color: #c00;
+.ds-hist-card-bal.success {
+  color: var(--xp-green);
 }
-.dcm-row {
-  cursor: pointer;
-}
-.dcm-row.even td {
-  background: white;
-}
-.dcm-row.odd td {
-  background: var(--bg-stripe);
-}
-.dcm-row.sel td {
-  background: var(--sel-bg) !important;
-  color: var(--sel-text);
-}
-.dcm-row:hover td {
-  background: var(--bg-hover);
-}
-.dcm-no-sel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.dcm-empty {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 16px !important;
-  font-style: italic;
-}
-.dcm-cust-header {
-  padding: 8px 12px;
-  background: #f8f0ff;
-  border-bottom: 1px solid #ddd;
-  flex-shrink: 0;
-}
-.dcm-cust-name {
-  font-size: 15px;
-  font-weight: bold;
+
+/* ══════════════════════════════════════════════════════════
+   CUSTOMER SELECT MODAL
+   ══════════════════════════════════════════════════════════ */
+.ds-cust-sel-hint {
+  padding: 4px 12px;
+  background: #d7e4f2;
+  border-top: 1px solid #7aabda;
+  font-size: 10px;
   color: #333;
-}
-.dcm-cust-phone {
-  font-size: 12px;
-  color: #555;
-}
-.dcm-cust-bal {
-  font-size: 13px;
-  margin-top: 3px;
-}
-.dcm-cust-bal.red {
-  color: #c00;
-}
-.dcm-pay-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: #fffde7;
-  border-bottom: 1px solid #ddd;
   flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.dcm-pay-lbl {
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--text-label);
-  white-space: nowrap;
-}
-.dcm-pay-in {
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid var(--border-input);
-  padding: 0 5px;
-  outline: none;
-  width: 90px;
-  text-align: right;
-}
-.dcm-pay-in.wide {
-  width: 130px;
-  text-align: left;
-}
-.dcm-pay-in:focus {
-  border-color: var(--border-focus);
-}
-.dcm-hist-label {
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--text-label);
-  padding: 4px 10px;
-  border-bottom: 1px solid #ddd;
-  background: var(--bg-header);
-  flex-shrink: 0;
-}
-.dcm-hist-wrap {
-  flex: 1;
-  overflow-y: auto;
-}
-.dcm-hist-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-.dcm-hist-table th {
-  background: var(--bg-header);
-  border: 1px solid var(--border);
-  padding: 2px 5px;
-  font-weight: normal;
-  position: sticky;
-  top: 0;
-  text-align: left;
-  font-size: 10px;
-}
-.dcm-hist-table td {
-  border: 1px solid var(--border-table);
-  padding: 2px 5px;
-}
-.dcm-hist-table td.r {
-  text-align: right;
-}
-.dcm-hist-table td.bold {
-  font-weight: bold;
-}
-.dcm-hist-table td.blue {
-  color: var(--text-id);
-  font-weight: bold;
-}
-.dcm-hist-table td.red {
-  color: #c00;
-}
-.dcm-hist-table tbody tr.even td {
-  background: white;
-}
-.dcm-hist-table tbody tr.odd td {
-  background: var(--bg-stripe);
 }
 
-/* ── SearchModal (sm-*) ── */
-.sm-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 9500;
-  display: flex;
+/* ══════════════════════════════════════════════════════════
+   INVOICE MODAL (debit version)
+   ══════════════════════════════════════════════════════════ */
+.ds-inv-mode-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  border-radius: 2px;
+  font-family: var(--xp-font);
 }
-.sm-window {
-  background: var(--bg-panel);
-  border: 2px solid var(--border-input);
-  width: 870px;
-  max-height: 82vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 4px 6px 16px rgba(0, 0, 0, 0.5);
+.ds-inv-mode-cash {
+  background: #dcfce7;
+  color: #14532d;
+  border: 1px solid #86efac;
 }
-.sm-titlebar {
-  background: linear-gradient(to right, #0a246a, #3a6fc4);
-  color: white;
-  padding: 4px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--font-size);
-  font-weight: bold;
-  user-select: none;
-  flex-shrink: 0;
+.ds-inv-mode-credit {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border: 1px solid #fca5a5;
 }
-.sm-close-btn {
-  background: #c0392b;
-  border: 1px solid #8b0000;
-  color: white;
-  width: 18px;
-  height: 16px;
-  cursor: pointer;
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+.ds-inv-mode-partial {
+  background: #fef3c7;
+  color: #78350f;
+  border: 1px solid #fcd34d;
 }
-.sm-filters {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 7px 12px 5px;
-  border-bottom: 1px solid #ccc;
-  background: var(--bg);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.sm-filter-field {
-  display: flex;
-  flex-direction: column;
-}
-.sm-filter-label {
-  font-size: var(--font-sm);
-  margin-bottom: 2px;
-  color: var(--text-label);
-}
-.sm-filter-input {
-  height: var(--input-h);
-  font-size: var(--font-size);
-  font-family: var(--font);
-  border: 1px solid var(--border-input);
-  padding: 0 5px;
-  outline: none;
-}
-.sm-filter-input:focus {
-  border-color: var(--border-focus);
-}
-.sm-filter-input.w200 {
-  width: 200px;
-}
-.sm-filter-input.w140 {
-  width: 140px;
-}
-.sm-filter-input.w130 {
-  width: 130px;
-}
-.sm-filters-right {
-  display: flex;
-  align-items: flex-end;
+
+/* ══════════════════════════════════════════════════════════
+   CUSTOMER DETAIL MODAL (payment tabs inside)
+   Same structure as CreditSale — reuse cc- classes
+   ══════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════
+   BOTTOM LAYOUT OVERRIDE
+   Debit has payment-mode section + totals in a different order
+   ══════════════════════════════════════════════════════════ */
+.ds-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-left: auto;
-  padding-bottom: 1px;
-}
-.sm-count {
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-}
-.sm-products-box {
-  border: 1px solid #999;
-  margin: 5px 8px 0;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
-.sm-products-legend {
-  position: absolute;
-  top: -8px;
-  left: 10px;
-  background: var(--bg-panel);
-  padding: 0 4px;
-  font-size: var(--font-sm);
-  font-weight: bold;
-}
-.sm-products-scroll {
-  overflow-y: auto;
-  flex: 1;
-  margin-top: 6px;
-}
-.sm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size);
-}
-.sm-table th {
-  background: var(--bg-header);
-  border: 1px solid var(--border);
-  padding: 2px 6px;
-  font-weight: normal;
-  white-space: nowrap;
-  text-align: left;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  font-size: var(--font-sm);
-}
-.sm-table td {
-  border: 1px solid var(--border-table);
-  padding: 2px 6px;
-  white-space: nowrap;
-}
-.sm-table td.r {
-  text-align: right;
-}
-.sm-table td.empty {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 18px;
-  font-style: italic;
-}
-.sm-table tbody tr {
-  cursor: pointer;
-}
-.sm-table tbody tr.even td {
-  background: white;
-}
-.sm-table tbody tr.odd td {
-  background: var(--bg-stripe);
-}
-.sm-table tbody tr.hi td {
-  background: var(--sel-bg) !important;
-  color: var(--sel-text);
-}
-.sm-footer {
-  padding: 3px 10px 4px;
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-  border-top: 1px solid #ddd;
-  background: var(--bg-readonly);
+  padding: 6px 0 2px;
   flex-shrink: 0;
 }
 
-/* Utility */
-.r {
-  text-align: right;
-}
-.c {
-  text-align: center;
-}
-.red {
-  color: #c00;
-}
-.green {
-  color: #060;
-}
-.bold {
-  font-weight: bold;
-}
-
-/* ── Customer Select Modal ── */
-.csm-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 9600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.csm-window {
-  background: var(--bg-panel);
-  border: 2px solid var(--border-input);
-  width: 560px;
-  max-height: 60vh;
+.ds-left-col {
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 6px 16px rgba(0, 0, 0, 0.5);
+  gap: 6px;
 }
-.csm-titlebar {
-  background: linear-gradient(to right, #0a246a, #3a6fc4);
-  color: white;
-  padding: 5px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-.csm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size);
-}
-.csm-table th {
-  background: var(--bg-header);
-  border: 1px solid var(--border);
-  padding: 3px 6px;
-  font-weight: normal;
-  text-align: left;
-  font-size: var(--font-sm);
-  position: sticky;
-  top: 0;
-}
-.csm-table td {
-  border: 1px solid var(--border-table);
-  padding: 3px 6px;
-}
-.csm-table td.c {
-  text-align: center;
-  color: var(--text-muted);
-}
-.csm-table td.r {
-  text-align: right;
-}
-.csm-table td.red {
-  color: #c00;
-}
-.csm-table tbody {
-  display: block;
-  max-height: calc(60vh - 80px);
-  overflow-y: auto;
-}
-.csm-table thead,
-.csm-table tbody tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-.csm-table tbody tr.even td {
-  background: white;
-}
-.csm-table tbody tr.odd td {
-  background: var(--bg-stripe);
-}
-.csm-table tbody tr.hi td {
-  background: var(--sel-bg) !important;
-  color: var(--sel-text);
-}
-.csm-table tbody tr:hover td {
-  background: var(--bg-hover);
-  cursor: pointer;
-}
-.csm-footer {
-  padding: 3px 10px 4px;
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-  border-top: 1px solid #ddd;
-  background: var(--bg-readonly);
-  flex-shrink: 0;
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .ds-bottom {
+    grid-template-columns: 1fr;
+  }
+  .ds-hist-stats {
+    grid-template-columns: 1fr 1fr;
+  }
 }

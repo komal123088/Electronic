@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/CreditCustomersPage.css";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
+import "../styles/theme.css";
+import "../styles/CreditCustomersPage.css";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
 const isoD = () => new Date().toISOString().split("T")[0];
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CUSTOMER DETAIL MODAL — full history + payment + WhatsApp PDF
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   CUSTOMER DETAIL MODAL
+───────────────────────────────────────────────────────────── */
 function CustomerDetailModal({ customer, onClose, onUpdated }) {
   const [sales, setSales] = useState([]);
   const [loadingSales, setLoadS] = useState(false);
@@ -17,7 +18,7 @@ function CustomerDetailModal({ customer, onClose, onUpdated }) {
   const [payRemarks, setPayRemarks] = useState("");
   const [paying, setPaying] = useState(false);
   const [payMsg, setPayMsg] = useState({ text: "", type: "" });
-  const [activeTab, setActiveTab] = useState("history"); // "history" | "pay"
+  const [activeTab, setActiveTab] = useState("history");
   const [selectedSale, setSelectedSale] = useState(null);
   const payRef = useRef(null);
 
@@ -54,7 +55,7 @@ function CustomerDetailModal({ customer, onClose, onUpdated }) {
         paymentDate: isoD(),
       });
       if (data.success) {
-        showPayMsg(`✅ PKR ${fmt(amt)} payment recorded!`, "success");
+        showPayMsg(`PKR ${fmt(amt)} payment recorded`, "success");
         setPayAmount("");
         setPayRemarks("");
         loadSales();
@@ -66,7 +67,6 @@ function CustomerDetailModal({ customer, onClose, onUpdated }) {
     setPaying(false);
   };
 
-  // ── WhatsApp: PDF-style full history ──────────────────────────────────────
   const sendWhatsAppHistory = () => {
     const saleTxns = sales.filter((s) => s.saleType === "sale");
     const returnTxns = sales.filter((s) => s.saleType === "return");
@@ -74,64 +74,35 @@ function CustomerDetailModal({ customer, onClose, onUpdated }) {
     const totalPaid = saleTxns.reduce((s, x) => s + (x.paidAmount || 0), 0);
     const totalReturn = returnTxns.reduce((s, x) => s + (x.netTotal || 0), 0);
     const outstanding = customer.currentBalance || 0;
-
     const sep = "━".repeat(30);
     const dash = "─".repeat(30);
-
-    // Detailed per-invoice lines
     const invoiceLines = sales
       .map((s, i) => {
         const itemLines = (s.items || [])
           .map(
             (it) =>
-              `    • ${it.description}${it.measurement ? " (" + it.measurement + ")" : ""}\n      Qty: ${it.qty} × PKR ${Number(it.rate).toLocaleString()} = *PKR ${Number(it.amount).toLocaleString()}*`,
+              `    • ${it.description}${it.measurement ? " (" + it.measurement + ")" : ""}\n      Qty: ${it.qty} x PKR ${Number(it.rate).toLocaleString()} = *PKR ${Number(it.amount).toLocaleString()}*`,
           )
           .join("\n");
-        const typeLabel = s.saleType === "return" ? "↩ RETURN" : "🛒 SALE";
+        const typeLabel = s.saleType === "return" ? "RETURN" : "SALE";
         return (
           `${i + 1}. ${typeLabel} | *${s.invoiceNo}* | ${s.invoiceDate}\n` +
           (s.items?.length > 0 ? itemLines + "\n" : "") +
-          `   Net Total: *PKR ${Number(s.netTotal || 0).toLocaleString()}*\n` +
+          `   Net: *PKR ${Number(s.netTotal || 0).toLocaleString()}*\n` +
           `   Paid: PKR ${Number(s.paidAmount || 0).toLocaleString()}` +
           (s.balance > 0
-            ? ` | ⚠️ Bal: *PKR ${Number(s.balance).toLocaleString()}*`
-            : " ✅")
+            ? ` | Bal: *PKR ${Number(s.balance).toLocaleString()}*`
+            : " (Clear)")
         );
       })
       .join(`\n${dash}\n`);
-
-    const text = `${sep}
-🏪 *ASIM ELECTRIC & ELECTRONIC STORE*
-📋 *CUSTOMER ACCOUNT STATEMENT*
-${sep}
-👤 *${customer.name}*${customer.phone ? "\n📞 " + customer.phone : ""}${customer.code ? "\n🔖 Code: " + customer.code : ""}
-📅 Statement Date: ${isoD()}
-${sep}
-📊 *ACCOUNT SUMMARY*
-Total Purchases:    PKR ${fmt(totalSales)}
-Total Returns:      PKR ${fmt(totalReturn)}
-Total Paid:         PKR ${fmt(totalPaid)}
-*Outstanding Due:   PKR ${fmt(outstanding)}*
-Transactions:       ${sales.length} records
-${sep}
-📜 *TRANSACTION DETAILS*
-${dash}
-${invoiceLines}
-${sep}
-💰 *PLEASE CLEAR YOUR DUES*
-Outstanding Amount: *PKR ${fmt(outstanding)}*
-${sep}
-_For queries contact us. Thank you for your business!_
-_Asim Electric and Electronic Store_`;
-
-    const phoneNum = customer.phone?.replace(/\D/g, "") || "";
+    const text = `${sep}\n*ASIM ELECTRIC & ELECTRONIC STORE*\n*CUSTOMER ACCOUNT STATEMENT*\n${sep}\n*${customer.name}*${customer.phone ? "\n" + customer.phone : ""}${customer.code ? "\nCode: " + customer.code : ""}\nDate: ${isoD()}\n${sep}\nTotal Purchases: PKR ${fmt(totalSales)}\nTotal Returns:   PKR ${fmt(totalReturn)}\nTotal Paid:      PKR ${fmt(totalPaid)}\n*Outstanding:    PKR ${fmt(outstanding)}*\n${sep}\n${invoiceLines}\n${sep}\n_Asim Electric and Electronic Store_`;
     window.open(
-      `https://wa.me/${phoneNum}?text=${encodeURIComponent(text)}`,
+      `https://wa.me/${(customer.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
       "_blank",
     );
   };
 
-  // Compute stats
   const saleTxns = sales.filter((s) => s.saleType === "sale");
   const returnTxns = sales.filter((s) => s.saleType === "return");
   const totalSales = saleTxns.reduce((s, x) => s + (x.netTotal || 0), 0);
@@ -141,280 +112,392 @@ _Asim Electric and Electronic Store_`;
 
   return (
     <div
-      className="ccp-overlay"
+      className="xp-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="ccp-detail-modal">
-        {/* Title */}
-        <div className="ccp-detail-title">
-          <span>
-            👤 {customer.name}{" "}
+      <div className="xp-modal">
+        {/* ── Modal Titlebar (theme.css) ── */}
+        <div className="xp-modal-tb">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+          </svg>
+          <span className="xp-modal-title">
+            {customer.name}
             {customer.code && (
-              <span className="ccp-code-badge">{customer.code}</span>
+              <span className="xp-modal-code">{customer.code}</span>
             )}
           </span>
-          <div className="ccp-detail-title-btns">
-            <button
-              className="ccp-btn ccp-btn-wa"
-              onClick={sendWhatsAppHistory}
-              title="Send full history via WhatsApp"
-            >
-              📱 WhatsApp Statement
-            </button>
-            <button className="ccp-close-x" onClick={onClose}>
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Customer Info + Summary Cards */}
-        <div className="ccp-detail-info">
-          <div className="ccp-info-row">
-            {customer.phone && <span>📞 {customer.phone}</span>}
-            {customer.address && <span>📍 {customer.address}</span>}
-            {customer.area && <span>🗺 {customer.area}</span>}
-          </div>
-          <div className="ccp-detail-cards">
-            <div className="ccp-stat-card">
-              <div className="ccp-sc-label">Total Purchases</div>
-              <div className="ccp-sc-value">{fmt(totalSales)}</div>
-            </div>
-            <div className="ccp-stat-card">
-              <div className="ccp-sc-label">Total Paid</div>
-              <div className="ccp-sc-value green">{fmt(totalPaid)}</div>
-            </div>
-            <div className="ccp-stat-card">
-              <div className="ccp-sc-label">Returns</div>
-              <div className="ccp-sc-value green">{fmt(totalReturn)}</div>
-            </div>
-            <div
-              className={`ccp-stat-card ${outstanding > 0 ? "danger" : "ok"}`}
-            >
-              <div className="ccp-sc-label">Outstanding Due</div>
-              <div className="ccp-sc-value bold">{fmt(outstanding)}</div>
-            </div>
-            <div className="ccp-stat-card">
-              <div className="ccp-sc-label">Transactions</div>
-              <div className="ccp-sc-value">{sales.length}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="ccp-detail-tabs">
           <button
-            className={`ccp-tab ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => setActiveTab("history")}
+            className="xp-btn xp-btn-wa xp-btn-sm"
+            onClick={sendWhatsAppHistory}
+            style={{ marginRight: 4 }}
           >
-            📜 Transaction History ({sales.length})
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592" />
+            </svg>
+            Statement
           </button>
           <button
-            className={`ccp-tab ${activeTab === "pay" ? "active" : ""}`}
+            className="xp-cap-btn xp-cap-close"
+            onClick={onClose}
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* ── Info Strip (cc- classes) ── */}
+        <div className="cc-info-strip">
+          <div className="cc-info-meta">
+            {customer.phone && (
+              <span className="cc-info-chip">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="#0a246a">
+                  <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.6 17.6 0 0 0 4.168 6.608 17.6 17.6 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.68.68 0 0 0-.58-.122l-2.19.547a1.75 1.75 0 0 1-1.657-.459L5.482 8.062a1.75 1.75 0 0 1-.46-1.657l.548-2.19a.68.68 0 0 0-.122-.58z" />
+                </svg>
+                {customer.phone}
+              </span>
+            )}
+            {customer.address && (
+              <span className="cc-info-chip">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="#0a246a">
+                  <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6" />
+                </svg>
+                {customer.address}
+              </span>
+            )}
+            {customer.area && (
+              <span className="cc-info-chip">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="#0a246a">
+                  <path
+                    fillRule="evenodd"
+                    d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.5.5 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103z"
+                  />
+                </svg>
+                {customer.area}
+              </span>
+            )}
+          </div>
+
+          {/* cc-stat-row → cc-mini-stat */}
+          <div className="cc-stat-row">
+            <div className="cc-mini-stat">
+              <div className="cc-mini-lbl">Total Purchases</div>
+              <div className="cc-mini-val">PKR {fmt(totalSales)}</div>
+            </div>
+            <div className="cc-mini-stat">
+              <div className="cc-mini-lbl">Total Paid</div>
+              <div className="cc-mini-val success">PKR {fmt(totalPaid)}</div>
+            </div>
+            <div className="cc-mini-stat">
+              <div className="cc-mini-lbl">Returns</div>
+              <div className="cc-mini-val warning">PKR {fmt(totalReturn)}</div>
+            </div>
+            <div className="cc-mini-stat danger">
+              <div className="cc-mini-lbl">Outstanding</div>
+              <div className="cc-mini-val danger">PKR {fmt(outstanding)}</div>
+            </div>
+            <div className="cc-mini-stat">
+              <div className="cc-mini-lbl">Transactions</div>
+              <div className="cc-mini-val">{sales.length}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Tabs (theme.css) ── */}
+        <div className="xp-tab-bar">
+          <button
+            className={`xp-tab${activeTab === "history" ? " active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z" />
+              <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5" />
+            </svg>
+            Transaction History
+            <span className="xp-tab-cnt">{sales.length}</span>
+          </button>
+          <button
+            className={`xp-tab${activeTab === "pay" ? " active" : ""}`}
             onClick={() => {
               setActiveTab("pay");
               setTimeout(() => payRef.current?.focus(), 50);
             }}
           >
-            💰 Record Payment
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.136.326A1.5 1.5 0 0 1 14 1.78V3h.5A1.5 1.5 0 0 1 16 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13.5v-9A1.5 1.5 0 0 1 1.432 3.001L12.136.326z" />
+            </svg>
+            Record Payment
           </button>
         </div>
 
-        {/* Tab Content */}
-        <div className="ccp-detail-tab-body">
-          {/* ── History Tab ── */}
+        {/* ── Modal Body ── */}
+        <div className="xp-modal-body">
+          {/* HISTORY TAB */}
           {activeTab === "history" && (
-            <div className="ccp-history-wrap">
-              {loadingSales && <div className="ccp-loading">Loading…</div>}
+            <>
+              {loadingSales && (
+                <div className="xp-loading">Loading transactions…</div>
+              )}
               {!loadingSales && sales.length === 0 && (
-                <div className="ccp-empty">Koi transaction nahi mili</div>
+                <div className="xp-empty">No transactions found</div>
               )}
               {!loadingSales && sales.length > 0 && (
-                <table className="ccp-hist-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th style={{ width: 100 }}>Invoice</th>
-                      <th style={{ width: 90 }}>Date</th>
-                      <th className="r" style={{ width: 90 }}>
-                        Net Total
-                      </th>
-                      <th className="r" style={{ width: 80 }}>
-                        Paid
-                      </th>
-                      <th className="r" style={{ width: 80 }}>
-                        Balance
-                      </th>
-                      <th style={{ width: 55 }}>Type</th>
-                      <th style={{ width: 50 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sales.map((s, i) => (
-                      <>
-                        <tr
-                          key={s._id}
-                          className={`${i % 2 === 0 ? "even" : "odd"} ${selectedSale?._id === s._id ? "sel" : ""}`}
-                          onClick={() =>
-                            setSelectedSale(
-                              selectedSale?._id === s._id ? null : s,
-                            )
-                          }
-                          style={{ cursor: "pointer" }}
-                          title="Click to expand items"
-                        >
-                          <td className="c">{i + 1}</td>
-                          <td className="bold blue">{s.invoiceNo}</td>
-                          <td>{s.invoiceDate}</td>
-                          <td className="r bold">{fmt(s.netTotal)}</td>
-                          <td className="r">{fmt(s.paidAmount)}</td>
-                          <td
-                            className={`r ${s.balance > 0 ? "red bold" : ""}`}
-                          >
-                            {fmt(s.balance)}
-                          </td>
-                          <td className="c">
-                            <span className={`ccp-badge ${s.saleType}`}>
-                              {s.saleType}
-                            </span>
-                          </td>
-                          <td className="c ccp-expand-icon">
-                            {selectedSale?._id === s._id ? "▲" : "▼"}
-                          </td>
+                <div className="xp-table-panel">
+                  <div className="xp-table-scroll">
+                    <table className="xp-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 28 }}>#</th>
+                          <th>Invoice No.</th>
+                          <th>Date</th>
+                          <th className="r">Net Total</th>
+                          <th className="r">Paid</th>
+                          <th className="r">Balance</th>
+                          <th>Type</th>
+                          <th style={{ width: 24 }}></th>
                         </tr>
-                        {/* Expandable items row */}
-                        {selectedSale?._id === s._id && (
-                          <tr key={s._id + "-items"} className="ccp-items-row">
-                            <td colSpan={8} style={{ padding: 0 }}>
-                              <div className="ccp-items-expand">
-                                <table className="ccp-items-table">
-                                  <thead>
-                                    <tr>
-                                      <th>#</th>
-                                      <th>Description</th>
-                                      <th>Meas</th>
-                                      <th className="r">Qty</th>
-                                      <th className="r">Rate</th>
-                                      <th className="r">Disc%</th>
-                                      <th className="r">Amount</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {(s.items || []).length === 0 && (
-                                      <tr>
-                                        <td colSpan={7} className="ccp-empty">
-                                          Items not available
-                                        </td>
-                                      </tr>
+                      </thead>
+                      <tbody>
+                        {sales.map((s, i) => (
+                          <>
+                            <tr
+                              key={s._id}
+                              className={
+                                selectedSale?._id === s._id
+                                  ? "cc-row-expanded"
+                                  : ""
+                              }
+                              onClick={() =>
+                                setSelectedSale(
+                                  selectedSale?._id === s._id ? null : s,
+                                )
+                              }
+                            >
+                              <td className="text-muted">{i + 1}</td>
+                              <td
+                                style={{
+                                  fontFamily: "var(--xp-mono)",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {s.invoiceNo}
+                              </td>
+                              <td className="text-muted">{s.invoiceDate}</td>
+                              <td className="r xp-amt">{fmt(s.netTotal)}</td>
+                              <td className="r xp-amt success">
+                                {fmt(s.paidAmount)}
+                              </td>
+                              <td className="r">
+                                {s.balance > 0 ? (
+                                  <span className="xp-amt danger">
+                                    {fmt(s.balance)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted">—</span>
+                                )}
+                              </td>
+                              <td>
+                                <span
+                                  className={`xp-badge ${s.saleType === "return" ? "xp-badge-ret" : "xp-badge-sale"}`}
+                                >
+                                  {s.saleType === "return" ? "Return" : "Sale"}
+                                </span>
+                              </td>
+                              <td
+                                style={{
+                                  textAlign: "center",
+                                  color: "#555",
+                                  fontSize: 11,
+                                }}
+                              >
+                                {selectedSale?._id === s._id ? "▲" : "▼"}
+                              </td>
+                            </tr>
+
+                            {selectedSale?._id === s._id && (
+                              <tr key={`${s._id}-detail`}>
+                                <td colSpan={8} className="cc-detail-cell">
+                                  <div className="cc-detail-inner">
+                                    <table
+                                      className="xp-table"
+                                      style={{ fontSize: "11px" }}
+                                    >
+                                      <thead>
+                                        <tr>
+                                          <th style={{ width: 24 }}>#</th>
+                                          <th>Description</th>
+                                          <th>Meas.</th>
+                                          <th className="r">Qty</th>
+                                          <th className="r">Rate</th>
+                                          <th className="r">Disc%</th>
+                                          <th className="r">Amount</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {(s.items || []).length === 0 && (
+                                          <tr>
+                                            <td
+                                              colSpan={7}
+                                              className="text-muted"
+                                              style={{
+                                                padding: "8px",
+                                                textAlign: "center",
+                                              }}
+                                            >
+                                              No items available
+                                            </td>
+                                          </tr>
+                                        )}
+                                        {(s.items || []).map((it, j) => (
+                                          <tr key={j}>
+                                            <td className="text-muted">
+                                              {j + 1}
+                                            </td>
+                                            <td>{it.description}</td>
+                                            <td className="text-muted">
+                                              {it.measurement || "—"}
+                                            </td>
+                                            <td className="r">{it.qty}</td>
+                                            <td className="r xp-amt">
+                                              {fmt(it.rate)}
+                                            </td>
+                                            <td className="r">
+                                              {it.disc || 0}%
+                                            </td>
+                                            <td className="r xp-amt">
+                                              {fmt(it.amount)}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                  <div className="cc-detail-footer">
+                                    <span>
+                                      Net Total:{" "}
+                                      <strong>PKR {fmt(s.netTotal)}</strong>
+                                    </span>
+                                    {s.prevBalance > 0 && (
+                                      <span className="text-muted">
+                                        Prev Bal:{" "}
+                                        <strong>
+                                          PKR {fmt(s.prevBalance)}
+                                        </strong>
+                                      </span>
                                     )}
-                                    {(s.items || []).map((it, j) => (
-                                      <tr key={j}>
-                                        <td className="c">{j + 1}</td>
-                                        <td>{it.description}</td>
-                                        <td>{it.measurement}</td>
-                                        <td className="r">{it.qty}</td>
-                                        <td className="r">{fmt(it.rate)}</td>
-                                        <td className="r">{it.disc || 0}%</td>
-                                        <td className="r bold">
-                                          {fmt(it.amount)}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                                <div className="ccp-items-totals">
-                                  <span>
-                                    Net Total: <b>PKR {fmt(s.netTotal)}</b>
-                                  </span>
-                                  {s.prevBalance > 0 && (
-                                    <span>
-                                      Prev Bal:{" "}
-                                      <b className="red">
-                                        PKR {fmt(s.prevBalance)}
-                                      </b>
+                                    <span style={{ color: "var(--xp-green)" }}>
+                                      Paid:{" "}
+                                      <strong>PKR {fmt(s.paidAmount)}</strong>
                                     </span>
-                                  )}
-                                  <span>
-                                    Paid:{" "}
-                                    <b className="green">
-                                      PKR {fmt(s.paidAmount)}
-                                    </b>
-                                  </span>
-                                  {s.balance > 0 && (
-                                    <span>
-                                      Balance:{" "}
-                                      <b className="red">
-                                        PKR {fmt(s.balance)}
-                                      </b>
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    ))}
-                  </tbody>
-                </table>
+                                    {s.balance > 0 && (
+                                      <span style={{ color: "var(--xp-red)" }}>
+                                        Balance:{" "}
+                                        <strong>PKR {fmt(s.balance)}</strong>
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
-            </div>
+            </>
           )}
 
-          {/* ── Payment Tab ── */}
+          {/* PAYMENT TAB */}
           {activeTab === "pay" && (
-            <div className="ccp-pay-tab">
-              <div className="ccp-pay-outstanding">
-                Outstanding Due:{" "}
-                <span className={`bold ${outstanding > 0 ? "red" : "green"}`}>
-                  PKR {fmt(outstanding)}
-                </span>
+            <div className="cc-pay-form">
+              <div className="cc-due-banner">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z" />
+                  <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+                </svg>
+                <span>Outstanding Due</span>
+                <strong>PKR {fmt(outstanding)}</strong>
               </div>
+
               {payMsg.text && (
-                <div className={`ccp-msg ${payMsg.type}`}>{payMsg.text}</div>
-              )}
-              <div className="ccp-pay-form">
-                <div className="ccp-pay-field">
-                  <label>Payment Amount (PKR)</label>
-                  <input
-                    ref={payRef}
-                    type="number"
-                    className="ccp-pay-input"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handlePay();
-                    }}
-                    placeholder="Amount enter karo…"
-                  />
+                <div
+                  className={`xp-alert ${payMsg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
+                  style={{ marginBottom: 10 }}
+                >
+                  {payMsg.text}
                 </div>
-                <div className="ccp-pay-field">
-                  <label>Remarks</label>
+              )}
+
+              <div className="cc-pay-form-row">
+                <div className="xp-form-grp">
+                  <label className="xp-label">Payment Amount (PKR)</label>
+                  <div className="cc-pfx-wrap">
+                    <span className="cc-pfx">PKR</span>
+                    <input
+                      ref={payRef}
+                      type="number"
+                      className="xp-input xp-input-lg"
+                      value={payAmount}
+                      onChange={(e) => setPayAmount(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handlePay();
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="xp-form-grp">
+                  <label className="xp-label">Remarks</label>
                   <input
                     type="text"
-                    className="ccp-pay-input"
+                    className="xp-input xp-input-lg"
                     value={payRemarks}
                     onChange={(e) => setPayRemarks(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handlePay();
                     }}
-                    placeholder="e.g. Cash received, Cheque no…"
+                    placeholder="e.g. Cash, Cheque no…"
                   />
                 </div>
-                <button
-                  className="ccp-btn ccp-btn-primary"
-                  onClick={handlePay}
-                  disabled={paying}
-                >
-                  {paying ? "Processing…" : "✅ Record Payment"}
-                </button>
               </div>
+
+              <button
+                className="xp-btn xp-btn-success xp-btn-lg"
+                onClick={handlePay}
+                disabled={paying}
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                  <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
+                </svg>
+                {paying ? "Processing…" : "Record Payment"}
+              </button>
             </div>
           )}
         </div>
 
-        <div className="ccp-detail-footer">
-          <button className="ccp-btn" onClick={onClose}>
-            ✕ Close
+        {/* ── Footer ── */}
+        <div className="xp-modal-footer">
+          <button className="xp-btn xp-btn-lg" onClick={onClose}>
+            Close
           </button>
         </div>
       </div>
@@ -422,17 +505,16 @@ _Asim Electric and Electronic Store_`;
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN PAGE — Credit Customers List
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────────────────────── */
 export default function CreditCustomersPage() {
   const navigate = useNavigate();
-
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("all"); // all | due | clear
-  const [sortBy, setSortBy] = useState("name"); // name | balance | date
+  const [filterType, setFilterType] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [msg, setMsg] = useState({ text: "", type: "" });
   const searchRef = useRef(null);
@@ -459,7 +541,6 @@ export default function CreditCustomersPage() {
     setTimeout(() => setMsg({ text: "", type: "" }), 3000);
   };
 
-  // ── Summary stats ─────────────────────────────────────────────────────────
   const totalCustomers = customers.length;
   const dueCustomers = customers.filter((c) => (c.currentBalance || 0) > 0);
   const clearCustomers = customers.filter((c) => (c.currentBalance || 0) <= 0);
@@ -472,7 +553,6 @@ export default function CreditCustomersPage() {
     0,
   );
 
-  // ── Filter + Sort ─────────────────────────────────────────────────────────
   const filtered = customers
     .filter((c) => {
       const q = search.toLowerCase();
@@ -491,257 +571,378 @@ export default function CreditCustomersPage() {
     .sort((a, b) => {
       if (sortBy === "balance")
         return (b.currentBalance || 0) - (a.currentBalance || 0);
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      return 0;
+      return a.name.localeCompare(b.name);
     });
 
-  // ── WhatsApp to ALL due customers ─────────────────────────────────────────
   const sendBulkReminder = () => {
     const dueList = filtered.filter((c) => (c.currentBalance || 0) > 0);
     if (!dueList.length) {
-      showMsg("Koi due customer nahi", "error");
+      showMsg("No due customers", "error");
       return;
     }
     const lines = dueList
       .map(
         (c, i) =>
-          `${i + 1}. ${c.name}${c.phone ? " (" + c.phone + ")" : ""} — *PKR ${fmt(c.currentBalance)}*`,
+          `${i + 1}. ${c.name}${c.phone ? " (" + c.phone + ")" : ""} - *PKR ${fmt(c.currentBalance)}*`,
       )
       .join("\n");
-    const text = `🏪 *ASIM ELECTRIC & ELECTRONIC STORE*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 *OUTSTANDING DUE CUSTOMERS*
-📅 Date: ${isoD()}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${lines}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*Total Outstanding: PKR ${fmt(totalDue)}*
-*Customers with Due: ${dueList.length}*`;
+    const text = `*ASIM ELECTRIC & ELECTRONIC STORE*\n*OUTSTANDING DUE CUSTOMERS*\nDate: ${isoD()}\n${"─".repeat(30)}\n${lines}\n${"─".repeat(30)}\n*Total Outstanding: PKR ${fmt(totalDue)}*`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   return (
-    <div className="ccp-page">
-      {/* Customer Detail Modal */}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100%",
+        background: "var(--xp-silver-1)",
+      }}
+    >
       {selectedCustomer && (
         <CustomerDetailModal
           customer={selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
-          onUpdated={() => {
-            loadCustomers();
-          }}
+          onUpdated={() => loadCustomers()}
         />
       )}
 
-      {/* ── Header ── */}
-      <div className="ccp-header">
-        <div className="ccp-header-left">
+      {/* ── Page Titlebar (theme.css) ── */}
+      <div className="xp-titlebar">
+        <button
+          className="xp-cap-btn"
+          onClick={() => navigate("/credit-sale")}
+          title="Back"
+          style={{ marginRight: 2 }}
+        >
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              fillRule="evenodd"
+              d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"
+            />
+          </svg>
+        </button>
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 16 16"
+          fill="rgba(255,255,255,0.85)"
+        >
+          <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002A.274.274 0 0 1 15 13zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4" />
+        </svg>
+        <span className="xp-tb-title">
+          Credit Customers — Asim Electric &amp; Electronic Store
+        </span>
+        <div className="xp-tb-actions">
           <button
-            className="ccp-back-btn"
-            onClick={() => navigate("/credit-sale")}
-            title="Credit Sale page"
-          >
-            ← Credit Sale
-          </button>
-          <div className="ccp-title">👥 Credit Customers</div>
-        </div>
-        <div className="ccp-header-right">
-          <button
-            className="ccp-btn ccp-btn-wa"
+            className="xp-btn xp-btn-wa xp-btn-sm"
             onClick={sendBulkReminder}
-            title="Send bulk due reminder"
           >
-            📱 Bulk Due Reminder
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326z" />
+            </svg>
+            Bulk Reminder
           </button>
           <button
-            className="ccp-btn ccp-btn-primary"
+            className="xp-btn xp-btn-primary xp-btn-sm"
             onClick={() => navigate("/customers")}
-            title="Manage all customers"
           >
-            ➕ Add Customer
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
+            </svg>
+            Add Customer
+          </button>
+          <div className="xp-tb-divider" />
+          <button className="xp-cap-btn" title="Minimize">
+            ─
+          </button>
+          <button className="xp-cap-btn" title="Maximize">
+            □
+          </button>
+          <button className="xp-cap-btn xp-cap-close" title="Close">
+            ✕
           </button>
         </div>
       </div>
 
-      {msg.text && <div className={`ccp-msg ${msg.type}`}>{msg.text}</div>}
+      {/* ── Global Alert ── */}
+      {msg.text && (
+        <div
+          className={`xp-alert ${msg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
+          style={{ margin: "6px 12px 0" }}
+        >
+          {msg.text}
+        </div>
+      )}
 
-      {/* ── Summary Cards ── */}
-      <div className="ccp-summary">
-        <div className="ccp-sum-card">
-          <div className="ccp-sum-label">Total Customers</div>
-          <div className="ccp-sum-value">{totalCustomers}</div>
-        </div>
-        <div className="ccp-sum-card danger">
-          <div className="ccp-sum-label">With Due Balance</div>
-          <div className="ccp-sum-value red">{dueCustomers.length}</div>
-        </div>
-        <div className="ccp-sum-card ok">
-          <div className="ccp-sum-label">Clear / Paid</div>
-          <div className="ccp-sum-value green">{clearCustomers.length}</div>
-        </div>
-        <div className="ccp-sum-card danger">
-          <div className="ccp-sum-label">Total Outstanding</div>
-          <div className="ccp-sum-value red bold">PKR {fmt(totalDue)}</div>
-        </div>
-        <div className="ccp-sum-card ok">
-          <div className="ccp-sum-label">Total Recovered</div>
-          <div className="ccp-sum-value green bold">
-            PKR {fmt(totalRecovered)}
+      <div className="xp-page-body">
+        {/* ── Stats (cc- classes) ── */}
+        <div className="cc-stat-grid">
+          <div className="cc-stat-card">
+            <div className="cc-stat-label">Total Customers</div>
+            <div className="cc-stat-val">{totalCustomers}</div>
+          </div>
+          <div className="cc-stat-card red">
+            <div className="cc-stat-label">With Due Balance</div>
+            <div className="cc-stat-val danger">{dueCustomers.length}</div>
+          </div>
+          <div className="cc-stat-card green">
+            <div className="cc-stat-label">Clear / Paid</div>
+            <div className="cc-stat-val success">{clearCustomers.length}</div>
+          </div>
+          <div className="cc-stat-card red">
+            <div className="cc-stat-label">Total Outstanding</div>
+            <div className="cc-stat-val danger" style={{ fontSize: 15 }}>
+              PKR {fmt(totalDue)}
+            </div>
+          </div>
+          <div className="cc-stat-card green">
+            <div className="cc-stat-label">Total Recovered</div>
+            <div className="cc-stat-val success" style={{ fontSize: 15 }}>
+              PKR {fmt(totalRecovered)}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Filters Bar ── */}
-      <div className="ccp-filters">
-        <input
-          ref={searchRef}
-          type="text"
-          className="ccp-search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Name / phone / code / area search…"
-        />
-        <div className="ccp-filter-btns">
-          <button
-            className={`ccp-filter-btn ${filterType === "all" ? "active" : ""}`}
-            onClick={() => setFilterType("all")}
+        {/* ── Toolbar (theme.css) ── */}
+        <div className="xp-toolbar">
+          <div className="xp-search-wrap" style={{ flex: 1, minWidth: 200 }}>
+            <svg
+              className="xp-search-icon"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+            >
+              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+            </svg>
+            <input
+              ref={searchRef}
+              type="text"
+              className="xp-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, phone, code or area…"
+            />
+          </div>
+
+          <div className="xp-toolbar-divider" />
+
+          <div className="xp-filter-group">
+            <button
+              className={`xp-filter-btn${filterType === "all" ? " active" : ""}`}
+              onClick={() => setFilterType("all")}
+            >
+              All <span className="xp-filter-cnt">{totalCustomers}</span>
+            </button>
+            <button
+              className={`xp-filter-btn${filterType === "due" ? " active" : ""}`}
+              onClick={() => setFilterType("due")}
+            >
+              Due <span className="xp-filter-cnt">{dueCustomers.length}</span>
+            </button>
+            <button
+              className={`xp-filter-btn${filterType === "clear" ? " active" : ""}`}
+              onClick={() => setFilterType("clear")}
+            >
+              Clear{" "}
+              <span className="xp-filter-cnt">{clearCustomers.length}</span>
+            </button>
+          </div>
+
+          <div className="xp-toolbar-divider" />
+
+          <label
+            className="xp-label"
+            style={{ marginBottom: 0, whiteSpace: "nowrap" }}
           >
-            All ({totalCustomers})
-          </button>
-          <button
-            className={`ccp-filter-btn red-btn ${filterType === "due" ? "active" : ""}`}
-            onClick={() => setFilterType("due")}
-          >
-            ⚠️ Due ({dueCustomers.length})
-          </button>
-          <button
-            className={`ccp-filter-btn green-btn ${filterType === "clear" ? "active" : ""}`}
-            onClick={() => setFilterType("clear")}
-          >
-            ✅ Clear ({clearCustomers.length})
-          </button>
-        </div>
-        <div className="ccp-sort">
-          <span>Sort:</span>
+            Sort by:
+          </label>
           <select
-            className="ccp-sort-sel"
+            className="xp-select"
+            style={{ width: "auto" }}
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="name">Name A-Z</option>
-            <option value="balance">Balance High-Low</option>
+            <option value="name">Name A–Z</option>
+            <option value="balance">Balance High–Low</option>
           </select>
+
+          <div className="xp-toolbar-divider" />
+          <span
+            style={{
+              fontSize: "var(--xp-fs-xs)",
+              color: "#555",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {filtered.length} record(s)
+          </span>
         </div>
-        <span className="ccp-result-count">{filtered.length} showing</span>
+
+        {/* ── Customer Table (theme.css) ── */}
+        <div className="xp-table-panel">
+          {loading && <div className="xp-loading">Loading customers…</div>}
+          {!loading && filtered.length === 0 && (
+            <div className="xp-empty">No customers found</div>
+          )}
+          {!loading && filtered.length > 0 && (
+            <div className="xp-table-scroll">
+              <table className="xp-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 32 }}>#</th>
+                    <th>Code</th>
+                    <th>Customer Name</th>
+                    <th>Phone</th>
+                    <th>Area</th>
+                    <th className="r">Outstanding (PKR)</th>
+                    <th>Status</th>
+                    <th style={{ width: 90 }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((c, i) => (
+                    <tr
+                      key={c._id}
+                      className={
+                        (c.currentBalance || 0) > 0 ? "cc-row-due" : ""
+                      }
+                    >
+                      <td
+                        className="text-muted"
+                        style={{ fontSize: "var(--xp-fs-xs)" }}
+                      >
+                        {i + 1}
+                      </td>
+                      <td>
+                        {c.code ? (
+                          <span className="xp-code">{c.code}</span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className="xp-link-btn"
+                          onClick={() => setSelectedCustomer(c)}
+                        >
+                          {c.name}
+                        </button>
+                      </td>
+                      <td className="text-muted">{c.phone || "—"}</td>
+                      <td className="text-muted">{c.area || "—"}</td>
+                      <td className="r">
+                        <span
+                          className={`xp-amt${(c.currentBalance || 0) > 0 ? " danger" : " muted"}`}
+                        >
+                          {fmt(c.currentBalance || 0)}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={`xp-badge ${(c.currentBalance || 0) > 0 ? "xp-badge-due" : "xp-badge-clear"}`}
+                        >
+                          {(c.currentBalance || 0) > 0 ? "Due" : "Clear"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="cc-act">
+                          <button
+                            className="xp-btn xp-btn-sm xp-btn-ico"
+                            title="View details"
+                            onClick={() => setSelectedCustomer(c)}
+                          >
+                            <svg
+                              width="11"
+                              height="11"
+                              viewBox="0 0 16 16"
+                              fill="currentColor"
+                            >
+                              <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5zM8 6.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zM4 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 2a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 2a1 1 0 1 0 0-2 1 1 0 0 0 0 2" />
+                            </svg>
+                          </button>
+                          {c.phone && (
+                            <button
+                              className="xp-btn xp-btn-sm xp-btn-ico cc-btn-wa-sm"
+                              title="WhatsApp"
+                              onClick={() => {
+                                const text = `Assalam-o-Alaikum *${c.name}* ji!\n\nAap ka outstanding amount: *PKR ${fmt(c.currentBalance)}*\n\nKindly clear karein.\n\n_Asim Electric and Electronic Store_`;
+                                window.open(
+                                  `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
+                                  "_blank",
+                                );
+                              }}
+                            >
+                              <svg
+                                width="11"
+                                height="11"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                              >
+                                <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326z" />
+                              </svg>
+                            </button>
+                          )}
+                          <button
+                            className="xp-btn xp-btn-sm xp-btn-ico"
+                            title="New credit sale"
+                            onClick={() => navigate("/credit-sale")}
+                          >
+                            <svg
+                              width="11"
+                              height="11"
+                              viewBox="0 0 16 16"
+                              fill="currentColor"
+                            >
+                              <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={5} className="text-muted">
+                      Total — {filtered.length} customers
+                    </td>
+                    <td className="r xp-amt danger">
+                      {fmt(
+                        filtered.reduce(
+                          (s, c) => s + Math.max(0, c.currentBalance || 0),
+                          0,
+                        ),
+                      )}
+                    </td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ── Customers Table ── */}
-      <div className="ccp-table-wrap">
-        {loading && <div className="ccp-loading">Loading customers…</div>}
-        {!loading && filtered.length === 0 && (
-          <div className="ccp-empty">Koi customer nahi mili</div>
-        )}
-        {!loading && filtered.length > 0 && (
-          <table className="ccp-table">
-            <thead>
-              <tr>
-                <th style={{ width: 36 }}>#</th>
-                <th style={{ width: 80 }}>Code</th>
-                <th>Name</th>
-                <th style={{ width: 120 }}>Phone</th>
-                <th style={{ width: 110 }}>Area</th>
-                <th className="r" style={{ width: 110 }}>
-                  Outstanding
-                </th>
-                <th style={{ width: 70 }}>Status</th>
-                <th style={{ width: 120 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c, i) => (
-                <tr
-                  key={c._id}
-                  className={`${i % 2 === 0 ? "even" : "odd"} ${(c.currentBalance || 0) > 0 ? "due-row" : ""}`}
-                >
-                  <td className="c">{i + 1}</td>
-                  <td className="blue bold">{c.code || "—"}</td>
-                  <td>
-                    <span
-                      className="ccp-cust-name"
-                      onClick={() => setSelectedCustomer(c)}
-                      title="Click for details"
-                    >
-                      {c.name}
-                    </span>
-                  </td>
-                  <td>{c.phone || "—"}</td>
-                  <td>{c.area || "—"}</td>
-                  <td
-                    className={`r bold ${(c.currentBalance || 0) > 0 ? "red" : "green"}`}
-                  >
-                    {fmt(c.currentBalance || 0)}
-                  </td>
-                  <td className="c">
-                    <span
-                      className={`ccp-badge ${(c.currentBalance || 0) > 0 ? "due" : "clear"}`}
-                    >
-                      {(c.currentBalance || 0) > 0 ? "Due" : "Clear"}
-                    </span>
-                  </td>
-                  <td className="c">
-                    <div className="ccp-row-actions">
-                      <button
-                        className="ccp-action-btn"
-                        onClick={() => setSelectedCustomer(c)}
-                        title="View details"
-                      >
-                        📋
-                      </button>
-                      {c.phone && (
-                        <button
-                          className="ccp-action-btn wa"
-                          onClick={() => {
-                            const text = `Assalam-o-Alaikum *${c.name}* ji!\n\nAap ka hamare yahan outstanding amount hai:\n*PKR ${fmt(c.currentBalance)}*\n\nKindly clear karein. Shukriya!\n\n_Asim Electric and Electronic Store_`;
-                            window.open(
-                              `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
-                              "_blank",
-                            );
-                          }}
-                          title="Send WhatsApp reminder"
-                        >
-                          📱
-                        </button>
-                      )}
-                      <button
-                        className="ccp-action-btn sale"
-                        onClick={() => navigate("/credit-sale")}
-                        title="New sale for this customer"
-                      >
-                        🛒
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="ccp-tfoot">
-                <td colSpan={5} className="bold">
-                  Total ({filtered.length} customers)
-                </td>
-                <td className="r bold red">
-                  {fmt(
-                    filtered.reduce(
-                      (s, c) => s + Math.max(0, c.currentBalance || 0),
-                      0,
-                    ),
-                  )}
-                </td>
-                <td colSpan={2}></td>
-              </tr>
-            </tfoot>
-          </table>
-        )}
+      {/* ── Status Bar (theme.css) ── */}
+      <div className="xp-statusbar" style={{ marginTop: "auto" }}>
+        <div className="xp-status-pane">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1z" />
+            <path d="M11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4" />
+          </svg>
+          {totalCustomers} customers
+        </div>
+        <div className="xp-status-pane">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="var(--xp-red)">
+            <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+          </svg>
+          {dueCustomers.length} due
+        </div>
+        <div className="xp-status-pane">Outstanding: PKR {fmt(totalDue)}</div>
       </div>
     </div>
   );

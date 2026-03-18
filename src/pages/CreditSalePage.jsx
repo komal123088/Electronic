@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/CreditSalePage.css";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
+import "../styles/theme.css";
+import "../styles/CreditSalePage.css";
 
 const isoDate = () => new Date().toISOString().split("T")[0];
 const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
@@ -18,9 +19,9 @@ const EMPTY_ROW = {
   amount: 0,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CUSTOMER SEARCH MODAL — exact match auto-selects
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   CUSTOMER SEARCH MODAL
+───────────────────────────────────────────────────────────── */
 function CustomerSearchModal({ searchTerm, onSelect, onAddNew, onClose }) {
   const [query, setQuery] = useState(searchTerm || "");
   const [results, setResults] = useState([]);
@@ -43,11 +44,9 @@ function CustomerSearchModal({ searchTerm, onSelect, onAddNew, onClose }) {
     try {
       const { data } = await api.get(EP.CUSTOMERS.GET_CREDIT(q.trim()));
       if (data.success) {
-        // Client-side bhi filter karo — sirf credit type
         const list = (data.data || []).filter((c) => c.type === "credit");
         setResults(list);
         setHiIdx(0);
-        // ── EXACT MATCH: phone, name, or code exactly matches → auto-select ──
         const ql = q.trim().toLowerCase();
         const exact = list.find(
           (c) =>
@@ -114,9 +113,7 @@ function CustomerSearchModal({ searchTerm, onSelect, onAddNew, onClose }) {
       e.preventDefault();
       if (results[hiIdx]) onSelect(results[hiIdx]);
     }
-    if (e.key === "Escape") {
-      onClose();
-    }
+    if (e.key === "Escape") onClose();
   };
 
   useEffect(() => {
@@ -125,118 +122,155 @@ function CustomerSearchModal({ searchTerm, onSelect, onAddNew, onClose }) {
 
   return (
     <div
-      className="cs-overlay"
+      className="xp-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="csm-window">
-        <div className="csm-titlebar">
-          <span>👤 Search Credit Customer</span>
-          <button className="cs-close-x" onClick={onClose} tabIndex={-1}>
+      <div className="xp-modal xp-modal-md">
+        <div className="xp-modal-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4" />
+          </svg>
+          <span className="xp-modal-title">Search Credit Customer</span>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="csm-search-row">
-          <span className="csm-label">Search:</span>
-          <input
-            ref={inputRef}
-            className="csm-input"
-            value={query}
-            onChange={handleQueryChange}
-            onKeyDown={inputKeyDown}
-            placeholder="Name / phone / code… (exact match auto-selects)"
-            autoComplete="off"
-          />
-          {loading && <span className="csm-loading">…</span>}
-          <span className="csm-count">{results.length} found</span>
-          <button
-            className="cs-btn cs-btn-primary"
-            onClick={() => onAddNew(query)}
-            tabIndex={-1}
-          >
-            ➕ Add New
-          </button>
-          <button className="cs-btn" onClick={onClose} tabIndex={-1}>
-            Cancel
-          </button>
-        </div>
-        <div className="csm-table-wrap">
-          <table className="csm-table">
-            <thead>
-              <tr>
-                <th style={{ width: 32 }}>#</th>
-                <th>Name</th>
-                <th style={{ width: 120 }}>Phone</th>
-                <th className="r" style={{ width: 100 }}>
-                  Current Due
-                </th>
-                <th style={{ width: 70 }}>Status</th>
-              </tr>
-            </thead>
-            <tbody
-              ref={tbodyRef}
-              tabIndex={0}
-              onKeyDown={tableKeyDown}
-              style={{ outline: "none" }}
+
+        <div className="cs-modal-filters">
+          <div className="cs-modal-filter-grp" style={{ flex: 2 }}>
+            <label className="xp-label">Search (Name / Phone / Code)</label>
+            <div className="xp-search-wrap">
+              <svg
+                className="xp-search-icon"
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+              </svg>
+              <input
+                ref={inputRef}
+                className="xp-input"
+                value={query}
+                onChange={handleQueryChange}
+                onKeyDown={inputKeyDown}
+                placeholder="Exact match auto-selects…"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 5 }}>
+            <span style={{ fontSize: "var(--xp-fs-xs)", color: "#555" }}>
+              {results.length} found
+            </span>
+            <button
+              className="xp-btn xp-btn-primary xp-btn-sm"
+              onClick={() => onAddNew(query)}
+              tabIndex={-1}
             >
-              {!loading && results.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="cs-empty">
-                    No customer found — press ➕ Add New to create
-                  </td>
-                </tr>
-              )}
-              {results.map((c, i) => (
-                <tr
-                  key={c._id}
-                  className={
-                    i === hiIdx ? "csm-hi" : i % 2 === 0 ? "even" : "odd"
-                  }
-                  onClick={() => setHiIdx(i)}
-                  onDoubleClick={() => onSelect(c)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <td className="c">{i + 1}</td>
-                  <td className="bold">{c.name}</td>
-                  <td>{c.phone || "—"}</td>
-                  <td
-                    className={`r bold ${(c.currentBalance || 0) > 0 ? "red" : "green"}`}
-                  >
-                    {fmt(c.currentBalance || 0)}
-                  </td>
-                  <td className="c">
-                    <span
-                      className={`cs-badge ${(c.currentBalance || 0) > 0 ? "sale" : ""}`}
-                    >
-                      {(c.currentBalance || 0) > 0 ? "Due" : "Clear"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              + Add New
+            </button>
+            <button
+              className="xp-btn xp-btn-sm"
+              onClick={onClose}
+              tabIndex={-1}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-        <div className="csm-footer">
-          ↑↓ navigate | Enter / Double-click = select | Exact match =
-          auto-select | Esc = close
+
+        <div className="xp-modal-body" style={{ padding: 0 }}>
+          <div className="xp-table-panel" style={{ border: "none" }}>
+            <div className="xp-table-scroll">
+              <table className="xp-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 32 }}>#</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th className="r">Current Due</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody ref={tbodyRef} tabIndex={0} onKeyDown={tableKeyDown}>
+                  {loading && (
+                    <tr>
+                      <td colSpan={5} className="xp-loading">
+                        Searching…
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && results.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="xp-empty">
+                        No customer found — press Add New to create
+                      </td>
+                    </tr>
+                  )}
+                  {results.map((c, i) => (
+                    <tr
+                      key={c._id}
+                      style={{
+                        background: i === hiIdx ? "#c3d9f5" : undefined,
+                      }}
+                      onClick={() => setHiIdx(i)}
+                      onDoubleClick={() => onSelect(c)}
+                    >
+                      <td className="text-muted">{i + 1}</td>
+                      <td>
+                        <button className="xp-link-btn">{c.name}</button>
+                      </td>
+                      <td className="text-muted">{c.phone || "—"}</td>
+                      <td className="r">
+                        <span
+                          className={`xp-amt${(c.currentBalance || 0) > 0 ? " danger" : " muted"}`}
+                        >
+                          {fmt(c.currentBalance || 0)}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={`xp-badge ${(c.currentBalance || 0) > 0 ? "xp-badge-due" : "xp-badge-clear"}`}
+                        >
+                          {(c.currentBalance || 0) > 0 ? "Due" : "Clear"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="cs-modal-hint">
+          ↑↓ navigate &nbsp;|&nbsp; Enter / Double-click = select &nbsp;|&nbsp;
+          Exact match = auto-select &nbsp;|&nbsp; Esc = close
         </div>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PRODUCT SEARCH MODAL
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   PRODUCT SEARCH MODAL
+───────────────────────────────────────────────────────────── */
 function SearchModal({ allProducts, onSelect, onClose }) {
   const [desc, setDesc] = useState("");
   const [cat, setCat] = useState("");
   const [company, setCompany] = useState("");
   const [rows, setRows] = useState([]);
   const [hiIdx, setHiIdx] = useState(0);
-  const rDesc = useRef(null),
-    rCat = useRef(null),
-    rCompany = useRef(null),
-    tbodyRef = useRef(null);
+  const rDesc = useRef(null);
+  const rCat = useRef(null);
+  const rCompany = useRef(null);
+  const tbodyRef = useRef(null);
 
   const buildFlat = useCallback((products, d, c, co) => {
     const ld = d.trim().toLowerCase(),
@@ -321,9 +355,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
       e.preventDefault();
       if (hiIdx >= 0 && rows[hiIdx]) onSelect(rows[hiIdx]);
     }
-    if (e.key === "Escape") {
-      onClose();
-    }
+    if (e.key === "Escape") onClose();
     if (e.key === "Tab") {
       e.preventDefault();
       rDesc.current?.focus();
@@ -332,25 +364,32 @@ function SearchModal({ allProducts, onSelect, onClose }) {
 
   return (
     <div
-      className="sm-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="xp-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="sm-window">
-        <div className="sm-titlebar">
-          <span>🔍 Search Products</span>
-          <button className="sm-close-btn" onClick={onClose} tabIndex={-1}>
+      <div className="xp-modal xp-modal-lg">
+        <div className="xp-modal-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+          </svg>
+          <span className="xp-modal-title">Search Products</span>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="sm-filters">
-          <div className="sm-filter-field">
-            <span className="sm-filter-label">Description</span>
+
+        <div className="cs-modal-filters">
+          <div className="cs-modal-filter-grp">
+            <label className="xp-label">Description / Code</label>
             <input
               ref={rDesc}
               type="text"
-              className="sm-filter-input w200"
+              className="xp-input"
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               onKeyDown={(e) => filterKey(e, rCat)}
@@ -358,12 +397,12 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               autoComplete="off"
             />
           </div>
-          <div className="sm-filter-field">
-            <span className="sm-filter-label">Category</span>
+          <div className="cs-modal-filter-grp">
+            <label className="xp-label">Category</label>
             <input
               ref={rCat}
               type="text"
-              className="sm-filter-input w140"
+              className="xp-input"
               value={cat}
               onChange={(e) => setCat(e.target.value)}
               onKeyDown={(e) => filterKey(e, rCompany)}
@@ -371,12 +410,12 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               autoComplete="off"
             />
           </div>
-          <div className="sm-filter-field">
-            <span className="sm-filter-label">Company</span>
+          <div className="cs-modal-filter-grp">
+            <label className="xp-label">Company</label>
             <input
               ref={rCompany}
               type="text"
-              className="sm-filter-input w130"
+              className="xp-input"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               onKeyDown={(e) => filterKey(e, null)}
@@ -384,81 +423,84 @@ function SearchModal({ allProducts, onSelect, onClose }) {
               autoComplete="off"
             />
           </div>
-          <div className="sm-filters-right">
-            <span className="sm-count">{rows.length} result(s)</span>
-            <button className="cs-btn" onClick={onClose}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6 }}>
+            <span
+              style={{
+                fontSize: "var(--xp-fs-xs)",
+                color: "#555",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {rows.length} result(s)
+            </span>
+            <button className="xp-btn xp-btn-sm" onClick={onClose}>
               Close
             </button>
           </div>
         </div>
-        <div className="sm-products-box">
-          <span className="sm-products-legend">Products</span>
-          <div className="sm-products-scroll">
-            <table className="sm-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 40 }}>Sr.#</th>
-                  <th style={{ width: 75 }}>Barcode</th>
-                  <th>Name</th>
-                  <th style={{ width: 90 }}>Measurement</th>
-                  <th className="r" style={{ width: 70 }}>
-                    Rate
-                  </th>
-                  <th className="r" style={{ width: 70 }}>
-                    Stock
-                  </th>
-                  <th className="r" style={{ width: 55 }}>
-                    Pack
-                  </th>
-                </tr>
-              </thead>
-              <tbody
-                ref={tbodyRef}
-                tabIndex={0}
-                onKeyDown={tableKey}
-                style={{ outline: "none" }}
-              >
-                {rows.length === 0 && (
+
+        <div className="xp-modal-body" style={{ padding: 0 }}>
+          <div className="xp-table-panel" style={{ border: "none" }}>
+            <div className="xp-table-scroll">
+              <table className="xp-table">
+                <thead>
                   <tr>
-                    <td className="empty" colSpan={7}>
-                      No products found
-                    </td>
+                    <th style={{ width: 36 }}>Sr.#</th>
+                    <th>Barcode</th>
+                    <th>Name</th>
+                    <th>Measurement</th>
+                    <th className="r">Rate</th>
+                    <th className="r">Stock</th>
+                    <th className="r">Pack</th>
                   </tr>
-                )}
-                {rows.map((r, i) => (
-                  <tr
-                    key={`${r._id}-${r._pi}`}
-                    className={
-                      i === hiIdx ? "hi" : i % 2 === 0 ? "even" : "odd"
-                    }
-                    onClick={() => setHiIdx(i)}
-                    onDoubleClick={() => onSelect(r)}
-                  >
-                    <td style={{ textAlign: "center" }}>{i + 1}</td>
-                    <td style={{ fontWeight: "bold" }}>{r.code}</td>
-                    <td>{r._name}</td>
-                    <td>{r._meas}</td>
-                    <td className="r">{r._rate}</td>
-                    <td className="r">{r._stock}</td>
-                    <td className="r">{r._pack}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody ref={tbodyRef} tabIndex={0} onKeyDown={tableKey}>
+                  {rows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="xp-empty">
+                        No products found
+                      </td>
+                    </tr>
+                  )}
+                  {rows.map((r, i) => (
+                    <tr
+                      key={`${r._id}-${r._pi}`}
+                      style={{
+                        background: i === hiIdx ? "#c3d9f5" : undefined,
+                      }}
+                      onClick={() => setHiIdx(i)}
+                      onDoubleClick={() => onSelect(r)}
+                    >
+                      <td className="text-muted">{i + 1}</td>
+                      <td>
+                        <span className="xp-code">{r.code}</span>
+                      </td>
+                      <td>
+                        <button className="xp-link-btn">{r._name}</button>
+                      </td>
+                      <td className="text-muted">{r._meas}</td>
+                      <td className="r xp-amt">{fmt(r._rate)}</td>
+                      <td className="r">{r._stock}</td>
+                      <td className="r">{r._pack}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <div className="sm-footer">
-          ↑↓ navigate | Enter / Double-click = select | Esc = close | Tab =
-          filters
+        <div className="cs-modal-hint">
+          ↑↓ navigate &nbsp;|&nbsp; Enter / Double-click = select &nbsp;|&nbsp;
+          Esc = close &nbsp;|&nbsp; Tab = back to filters
         </div>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INVOICE MODAL — Thermal, A4/PDF, WhatsApp detailed
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   INVOICE MODAL
+───────────────────────────────────────────────────────────── */
 function InvoiceModal({ sale, shopName, onClose }) {
   const buildA4Html = () => {
     const rows = sale.items
@@ -469,43 +511,12 @@ function InvoiceModal({ sale, shopName, onClose }) {
       .join("");
     const totalDue = (sale.netTotal || 0) + (sale.prevBalance || 0);
     return `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title>
-    <style>
-      body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#000}
-      h2{text-align:center;font-size:22px;margin:0 0 2px}
-      .sub{text-align:center;font-size:11px;color:#555;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}
-      .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;border:1px solid #ccc;padding:6px 10px;margin:8px 0;background:#f9f9f9;font-size:11px}
-      table{width:100%;border-collapse:collapse;margin-top:10px}
-      th{background:#e8e8e8;border:1px solid #ccc;padding:5px 7px;text-align:left;font-size:11px}
-      td{border:1px solid #ddd;padding:4px 7px;font-size:11px}
-      .tots{float:right;min-width:240px;margin-top:12px;border:1px solid #ccc;padding:8px 12px;background:#f9f9f9}
-      .tr{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px dotted #eee}
-      .tr.b{font-weight:bold;font-size:14px;border-top:2px solid #000;border-bottom:none;margin-top:6px;padding-top:6px}
-      .tr.red{color:#c0392b}.tr.green{color:#27ae60}
-      .thanks{text-align:center;margin-top:30px;font-size:11px;color:#888;clear:both;border-top:1px dashed #ccc;padding-top:10px}
-      @media print{body{margin:5mm}@page{margin:10mm}}
-    </style></head><body>
-    <h2>${shopName}</h2>
-    <div class="sub">◆ Credit Sale Invoice ◆</div>
-    <div class="meta">
-      <span><b>Invoice #:</b> ${sale.invoiceNo}</span>
-      <span><b>Date:</b> ${sale.invoiceDate}</span>
-      <span><b>Customer:</b> ${sale.customerName}${sale.customerPhone ? " | " + sale.customerPhone : ""}</span>
-      <span><b>Prev Balance:</b> PKR ${Number(sale.prevBalance || 0).toLocaleString()}</span>
-    </div>
-    <table><thead><tr><th>#</th><th>Description</th><th>Meas.</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <div class="tots">
-      <div class="tr"><span>Sub Total</span><span>PKR ${Number(sale.subTotal).toLocaleString()}</span></div>
-      ${sale.discAmount > 0 ? `<div class="tr"><span>Discount</span><span style="color:red">-PKR ${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}
-      <div class="tr b"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
-      <div class="tr red"><span>Previous Balance</span><span>PKR ${Number(sale.prevBalance || 0).toLocaleString()}</span></div>
-      <div class="tr b red"><span>Total Due</span><span>PKR ${Number(totalDue).toLocaleString()}</span></div>
-      <div class="tr green"><span>Paid This Time</span><span>PKR ${Number(sale.paidAmount || 0).toLocaleString()}</span></div>
-      <div class="tr b red"><span>Remaining Balance</span><span>PKR ${Number(sale.balance || 0).toLocaleString()}</span></div>
-    </div>
-    <br style="clear:both">
-    <div class="thanks">Thank you for your business! — ${shopName}</div>
-    </body></html>`;
+    <style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#000}h2{text-align:center;font-size:22px;margin:0 0 2px}.sub{text-align:center;font-size:11px;color:#555;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;border:1px solid #ccc;padding:6px 10px;margin:8px 0;background:#f9f9f9;font-size:11px}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e8e8e8;border:1px solid #ccc;padding:5px 7px;text-align:left;font-size:11px}td{border:1px solid #ddd;padding:4px 7px;font-size:11px}.tots{float:right;min-width:240px;margin-top:12px;border:1px solid #ccc;padding:8px 12px;background:#f9f9f9}.tr{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px dotted #eee}.tr.b{font-weight:bold;font-size:14px;border-top:2px solid #000;border-bottom:none;margin-top:6px;padding-top:6px}.tr.red{color:#c0392b}.tr.green{color:#27ae60}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888;clear:both;border-top:1px dashed #ccc;padding-top:10px}@media print{body{margin:5mm}@page{margin:10mm}}</style></head><body>
+    <h2>${shopName}</h2><div class="sub">◆ Credit Sale Invoice ◆</div>
+    <div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Customer:</b> ${sale.customerName}${sale.customerPhone ? " | " + sale.customerPhone : ""}</span><span><b>Prev Balance:</b> PKR ${Number(sale.prevBalance || 0).toLocaleString()}</span></div>
+    <table><thead><tr><th>#</th><th>Description</th><th>Meas.</th><th align="right">Qty</th><th align="right">Rate</th><th align="right">Disc%</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="tots"><div class="tr"><span>Sub Total</span><span>PKR ${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="tr"><span>Discount</span><span style="color:red">-PKR ${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div><div class="tr red"><span>Previous Balance</span><span>PKR ${Number(sale.prevBalance || 0).toLocaleString()}</span></div><div class="tr b red"><span>Total Due</span><span>PKR ${Number(totalDue).toLocaleString()}</span></div><div class="tr green"><span>Paid This Time</span><span>PKR ${Number(sale.paidAmount || 0).toLocaleString()}</span></div><div class="tr b red"><span>Remaining Balance</span><span>PKR ${Number(sale.balance || 0).toLocaleString()}</span></div></div>
+    <br style="clear:both"><div class="thanks">Thank you for your business! — ${shopName}</div></body></html>`;
   };
 
   const buildThermalHtml = () => {
@@ -516,32 +527,14 @@ function InvoiceModal({ sale, shopName, onClose }) {
       )
       .join("");
     const totalDue = (sale.netTotal || 0) + (sale.prevBalance || 0);
-    return `<!DOCTYPE html><html><head><title>Receipt</title>
-    <style>
-      body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}
-      h3{text-align:center;font-size:14px;margin:4px 0}
-      .c{text-align:center;font-size:10px}
-      hr{border:none;border-top:1px dashed #000;margin:4px 0}
-      table{width:100%;font-size:10px;border-collapse:collapse}
-      .t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}
-      .t.b{font-weight:bold;font-size:12px;border-top:1px dashed #000;padding-top:3px;margin-top:2px}
-      .t.red{color:#c0392b}.t.green{color:#27ae60}
-      @media print{@page{size:80mm auto;margin:3mm}}
-    </style></head><body>
-    <h3>${shopName}</h3>
-    <div class="c">★ CREDIT SALE RECEIPT ★</div><hr>
+    return `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px;border-collapse:collapse}.t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.t.b{font-weight:bold;font-size:12px;border-top:1px dashed #000;padding-top:3px;margin-top:2px}.t.red{color:#c0392b}.t.green{color:#27ae60}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body>
+    <h3>${shopName}</h3><div class="c">★ CREDIT SALE RECEIPT ★</div><hr>
     <div class="c">Invoice: <b>${sale.invoiceNo}</b> | ${sale.invoiceDate}</div>
     <div class="c"><b>${sale.customerName}</b>${sale.customerPhone ? " | " + sale.customerPhone : ""}</div><hr>
     <table><tbody>${rows}</tbody></table><hr>
-    <div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>
-    ${sale.discAmount > 0 ? `<div class="t"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}
-    <div class="t b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div>
-    <div class="t red"><span>Prev Balance</span><span>${Number(sale.prevBalance || 0).toLocaleString()}</span></div>
-    <div class="t b red"><span>Total Due</span><span>${Number(totalDue).toLocaleString()}</span></div>
-    <div class="t green"><span>Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div>
-    <div class="t b red"><span>Balance</span><span>${Number(sale.balance || 0).toLocaleString()}</span></div><hr>
-    <div class="c" style="font-size:10px;margin-top:4px">Thank you! — ${shopName}</div>
-    </body></html>`;
+    <div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.discAmount > 0 ? `<div class="t"><span>Discount</span><span>-${Number(sale.discAmount).toLocaleString()}</span></div>` : ""}
+    <div class="t b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div><div class="t red"><span>Prev Balance</span><span>${Number(sale.prevBalance || 0).toLocaleString()}</span></div><div class="t b red"><span>Total Due</span><span>${Number(totalDue).toLocaleString()}</span></div><div class="t green"><span>Paid</span><span>${Number(sale.paidAmount || 0).toLocaleString()}</span></div><div class="t b red"><span>Balance</span><span>${Number(sale.balance || 0).toLocaleString()}</span></div><hr>
+    <div class="c" style="font-size:10px;margin-top:4px">Thank you! — ${shopName}</div></body></html>`;
   };
 
   const printA4 = () => {
@@ -561,31 +554,12 @@ function InvoiceModal({ sale, shopName, onClose }) {
     const lines = sale.items
       .map(
         (it, i) =>
-          `${i + 1}. ${it.description}\n    ${it.qty} × PKR ${Number(it.rate).toLocaleString()}${it.disc ? ` (-${it.disc}%)` : ""} = *PKR ${Number(it.amount).toLocaleString()}*`,
+          `${i + 1}. ${it.description}\n ${it.qty} × PKR ${Number(it.rate).toLocaleString()}${it.disc ? ` (-${it.disc}%)` : ""} = *PKR ${Number(it.amount).toLocaleString()}*`,
       )
       .join("\n");
     const totalDue = (sale.netTotal || 0) + (sale.prevBalance || 0);
     const sep = "━".repeat(28);
-    const text = `🏪 *${shopName}*
-${"─".repeat(32)}
-🧾 *Invoice #${sale.invoiceNo}*
-📅 Date: ${sale.invoiceDate}
-👤 Customer: *${sale.customerName}*${sale.customerPhone ? "\n📞 Phone: " + sale.customerPhone : ""}
-${sep}
-*ITEMS PURCHASED:*
-${lines}
-${sep}
-📊 *BILL SUMMARY*
-Sub Total:         PKR ${Number(sale.subTotal).toLocaleString()}${sale.discAmount > 0 ? `\nDiscount:         -PKR ${Number(sale.discAmount).toLocaleString()}` : ""}
-Net Total:         *PKR ${Number(sale.netTotal).toLocaleString()}*
-Previous Balance:  PKR ${Number(sale.prevBalance || 0).toLocaleString()}
-${"─".repeat(30)}
-*Total Due:        PKR ${Number(totalDue).toLocaleString()}*
-Paid This Time:    PKR ${Number(sale.paidAmount || 0).toLocaleString()}
-*⚠️ Remaining:    PKR ${Number(sale.balance || 0).toLocaleString()}*
-${sep}
-_Thank you for your business!_
-_${shopName}_`;
+    const text = `*${shopName}*\n${"─".repeat(32)}\n*Invoice #${sale.invoiceNo}*\nDate: ${sale.invoiceDate}\nCustomer: *${sale.customerName}*${sale.customerPhone ? "\nPhone: " + sale.customerPhone : ""}\n${sep}\n*ITEMS PURCHASED:*\n${lines}\n${sep}\nSub Total: PKR ${Number(sale.subTotal).toLocaleString()}${sale.discAmount > 0 ? `\nDiscount: -PKR ${Number(sale.discAmount).toLocaleString()}` : ""}\nNet Total: *PKR ${Number(sale.netTotal).toLocaleString()}*\nPrevious Balance: PKR ${Number(sale.prevBalance || 0).toLocaleString()}\n${"─".repeat(30)}\n*Total Due: PKR ${Number(totalDue).toLocaleString()}*\nPaid This Time: PKR ${Number(sale.paidAmount || 0).toLocaleString()}\n*Remaining: PKR ${Number(sale.balance || 0).toLocaleString()}*\n${sep}\n_Thank you! — ${shopName}_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -593,102 +567,138 @@ _${shopName}_`;
 
   return (
     <div
-      className="cs-overlay"
+      className="xp-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="cs-inv-modal">
-        <div className="cs-modal-title">
-          🧾 Invoice #{sale.invoiceNo} — {sale.customerName}
-          <button className="cs-close-x" onClick={onClose}>
+      <div className="xp-modal xp-modal-lg">
+        <div className="xp-modal-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+          </svg>
+          <span className="xp-modal-title">
+            Invoice #{sale.invoiceNo} — {sale.customerName}
+          </span>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="cs-inv-preview">
-          <div className="cs-inv-shop">{shopName}</div>
-          <div className="cs-inv-sub">CREDIT SALE INVOICE</div>
-          <div className="cs-inv-meta">
-            <span>
-              Invoice: <b>{sale.invoiceNo}</b>
-            </span>
-            <span>
-              Date: <b>{sale.invoiceDate}</b>
-            </span>
-            <span>
-              Customer: <b>{sale.customerName}</b> {sale.customerPhone}
-            </span>
-          </div>
-          <table className="cs-inv-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Description</th>
-                <th>Meas</th>
-                <th className="r">Qty</th>
-                <th className="r">Rate</th>
-                <th className="r">Disc</th>
-                <th className="r">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sale.items.map((it, i) => (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td>{it.description}</td>
-                  <td>{it.measurement}</td>
-                  <td className="r">{it.qty}</td>
-                  <td className="r">{fmt(it.rate)}</td>
-                  <td className="r">{it.disc || 0}%</td>
-                  <td className="r bold">{fmt(it.amount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="cs-inv-totals">
-            <div className="cs-inv-tr">
-              <span>Sub Total</span>
-              <span>{fmt(sale.subTotal)}</span>
+
+        <div className="xp-modal-body">
+          <div className="cs-inv-preview">
+            <div className="cs-inv-shop">{shopName}</div>
+            <div className="cs-inv-sub">◆ Credit Sale Invoice ◆</div>
+            <div className="cs-inv-meta">
+              <span>
+                Invoice: <strong>{sale.invoiceNo}</strong>
+              </span>
+              <span>
+                Date: <strong>{sale.invoiceDate}</strong>
+              </span>
+              <span>
+                Customer: <strong>{sale.customerName}</strong>{" "}
+                {sale.customerPhone}
+              </span>
             </div>
-            {sale.discAmount > 0 && (
-              <div className="cs-inv-tr">
-                <span>Discount</span>
-                <span>-{fmt(sale.discAmount)}</span>
+            <div className="xp-table-panel">
+              <table className="xp-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th>Meas</th>
+                    <th className="r">Qty</th>
+                    <th className="r">Rate</th>
+                    <th className="r">Disc</th>
+                    <th className="r">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sale.items.map((it, i) => (
+                    <tr key={i}>
+                      <td className="text-muted">{i + 1}</td>
+                      <td>{it.description}</td>
+                      <td className="text-muted">{it.measurement}</td>
+                      <td className="r">{it.qty}</td>
+                      <td className="r xp-amt">{fmt(it.rate)}</td>
+                      <td className="r">{it.disc || 0}%</td>
+                      <td className="r xp-amt">{fmt(it.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="cs-inv-totals">
+              <div className="cs-inv-total-row">
+                <span>Sub Total</span>
+                <span className="xp-amt">{fmt(sale.subTotal)}</span>
               </div>
-            )}
-            <div className="cs-inv-tr bold">
-              <span>Net Total</span>
-              <span>{fmt(sale.netTotal)}</span>
+              {sale.discAmount > 0 && (
+                <div className="cs-inv-total-row danger">
+                  <span>Discount</span>
+                  <span>-{fmt(sale.discAmount)}</span>
+                </div>
+              )}
+              <div className="cs-inv-total-row bold">
+                <span>Net Total</span>
+                <span className="xp-amt">{fmt(sale.netTotal)}</span>
+              </div>
+              <div className="cs-inv-total-row danger">
+                <span>Prev Balance</span>
+                <span className="xp-amt danger">
+                  {fmt(sale.prevBalance || 0)}
+                </span>
+              </div>
+              <div className="cs-inv-total-row bold danger">
+                <span>Total Due</span>
+                <span className="xp-amt danger">{fmt(totalDue)}</span>
+              </div>
+              <div className="cs-inv-total-row success">
+                <span>Paid</span>
+                <span className="xp-amt success">
+                  {fmt(sale.paidAmount || 0)}
+                </span>
+              </div>
+              <div className="cs-inv-total-row bold danger">
+                <span>Balance</span>
+                <span className="xp-amt danger">{fmt(sale.balance || 0)}</span>
+              </div>
             </div>
-            <div className="cs-inv-tr red">
-              <span>Prev Balance</span>
-              <span>{fmt(sale.prevBalance || 0)}</span>
-            </div>
-            <div className="cs-inv-tr bold red">
-              <span>Total Due</span>
-              <span>{fmt(totalDue)}</span>
-            </div>
-            <div className="cs-inv-tr green">
-              <span>Paid</span>
-              <span>{fmt(sale.paidAmount || 0)}</span>
-            </div>
-            <div className="cs-inv-tr bold red">
-              <span>Balance</span>
-              <span>{fmt(sale.balance || 0)}</span>
+            <div className="cs-inv-thanks">
+              Thank you for your business! — {shopName}
             </div>
           </div>
-          <div className="cs-inv-thanks">Thank you for your business!</div>
         </div>
-        <div className="cs-inv-actions">
-          <button className="cs-btn" onClick={printThermal}>
-            🖨 Thermal Print
+
+        <div className="xp-modal-footer">
+          <button className="xp-btn xp-btn-sm" onClick={printThermal}>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
+              <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zm4 7h2v3H5v-3h4zm-4 2V9h4v1H5zm4-2H5V8h4v1zm-4 4v-1h4v1H5zm0 1v1h4v-1H5z" />
+            </svg>
+            Thermal Print
           </button>
-          <button className="cs-btn" onClick={printA4}>
-            📄 A4 Print / PDF
+          <button className="xp-btn xp-btn-sm" onClick={printA4}>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+            </svg>
+            A4 Print / PDF
           </button>
-          <button className="cs-btn cs-btn-wa" onClick={shareWhatsApp}>
-            📱 WhatsApp (Full Detail)
+          <button
+            className="xp-btn xp-btn-wa xp-btn-sm"
+            onClick={shareWhatsApp}
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326z" />
+            </svg>
+            WhatsApp
           </button>
-          <button className="cs-btn" onClick={onClose}>
-            ✕ Close
+          <button className="xp-btn xp-btn-lg" onClick={onClose}>
+            Close
           </button>
         </div>
       </div>
@@ -696,9 +706,9 @@ _${shopName}_`;
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CUSTOMER DETAIL MODAL — click history row
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   CUSTOMER DETAIL / PAYMENT MODAL
+───────────────────────────────────────────────────────────── */
 function CustomerDetailModal({ sale, customer, onClose, onPaymentDone }) {
   const [payAmount, setPayAmount] = useState("");
   const [payRemarks, setPayRemarks] = useState("");
@@ -746,7 +756,7 @@ function CustomerDetailModal({ sale, customer, onClose, onPaymentDone }) {
         paymentDate: isoDate(),
       });
       if (data.success) {
-        showPayMsg(`✅ Payment of PKR ${fmt(amt)} recorded!`, "success");
+        showPayMsg(`PKR ${fmt(amt)} recorded`, "success");
         setPayAmount("");
         setPayRemarks("");
         loadPayments();
@@ -764,178 +774,210 @@ function CustomerDetailModal({ sale, customer, onClose, onPaymentDone }) {
 
   return (
     <div
-      className="cs-overlay"
+      className="xp-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="cdm-modal">
-        <div className="cdm-titlebar">
-          <span>
-            🧾 Invoice #{sale.invoiceNo} &nbsp;|&nbsp; 👤 {customer?.name}
+      <div className="xp-modal xp-modal-lg">
+        <div className="xp-modal-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+          </svg>
+          <span className="xp-modal-title">
+            Invoice #{sale.invoiceNo} — {customer?.name}
           </span>
-          <button className="cs-close-x" onClick={onClose}>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="cdm-body">
-          <div className="cdm-left">
-            <div className="cdm-section-title">📦 Items Purchased</div>
-            <div className="cdm-items-wrap">
-              <table className="cdm-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 28 }}>#</th>
-                    <th>Description</th>
-                    <th style={{ width: 70 }}>Meas</th>
-                    <th className="r" style={{ width: 45 }}>
-                      Qty
-                    </th>
-                    <th className="r" style={{ width: 72 }}>
-                      Rate
-                    </th>
-                    <th className="r" style={{ width: 48 }}>
-                      Disc%
-                    </th>
-                    <th className="r" style={{ width: 80 }}>
-                      Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(sale.items || []).map((it, i) => (
-                    <tr key={i} className={i % 2 === 0 ? "even" : "odd"}>
-                      <td className="c">{i + 1}</td>
-                      <td>{it.description}</td>
-                      <td>{it.measurement}</td>
-                      <td className="r">{it.qty}</td>
-                      <td className="r">{fmt(it.rate)}</td>
-                      <td className="r">{it.disc || 0}%</td>
-                      <td className="r bold">{fmt(it.amount)}</td>
-                    </tr>
-                  ))}
-                  {(!sale.items || sale.items.length === 0) && (
+
+        <div className="xp-modal-body" style={{ padding: 0 }}>
+          <div className="cs-pay-two-col">
+            {/* items side */}
+            <div>
+              <div className="cs-pay-section-title">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5" />
+                </svg>
+                Items Purchased
+              </div>
+              <div className="xp-table-panel">
+                <table
+                  className="xp-table"
+                  style={{ fontSize: "var(--xp-fs-xs)" }}
+                >
+                  <thead>
                     <tr>
-                      <td colSpan={7} className="cs-empty">
-                        No items
-                      </td>
+                      <th>#</th>
+                      <th>Description</th>
+                      <th>Meas</th>
+                      <th className="r">Qty</th>
+                      <th className="r">Rate</th>
+                      <th className="r">Disc%</th>
+                      <th className="r">Amount</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="cdm-totals-box">
-              <div className="cdm-tot-row">
-                <span>Sub Total</span>
-                <span>{fmt(sale.subTotal)}</span>
+                  </thead>
+                  <tbody>
+                    {(sale.items || []).map((it, i) => (
+                      <tr key={i}>
+                        <td className="text-muted">{i + 1}</td>
+                        <td>{it.description}</td>
+                        <td className="text-muted">{it.measurement}</td>
+                        <td className="r">{it.qty}</td>
+                        <td className="r xp-amt">{fmt(it.rate)}</td>
+                        <td className="r">{it.disc || 0}%</td>
+                        <td className="r xp-amt">{fmt(it.amount)}</td>
+                      </tr>
+                    ))}
+                    {(!sale.items || sale.items.length === 0) && (
+                      <tr>
+                        <td colSpan={7} className="xp-empty">
+                          No items
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              {sale.discAmount > 0 && (
-                <div className="cdm-tot-row">
-                  <span>Discount</span>
-                  <span className="red">-{fmt(sale.discAmount)}</span>
+              <div className="cs-totals-box" style={{ marginTop: 8 }}>
+                <div className="cs-total-row">
+                  <label>Sub Total</label>
+                  <span className="val">{fmt(sale.subTotal)}</span>
                 </div>
-              )}
-              <div className="cdm-tot-row bold">
-                <span>Net Total</span>
-                <span>{fmt(sale.netTotal)}</span>
-              </div>
-              <div className="cdm-tot-row">
-                <span>Prev Balance</span>
-                <span className="red">{fmt(sale.prevBalance || 0)}</span>
-              </div>
-              <div className="cdm-tot-row bold big red">
-                <span>Total Due</span>
-                <span>
-                  {fmt((sale.netTotal || 0) + (sale.prevBalance || 0))}
-                </span>
-              </div>
-              <div className="cdm-tot-row green">
-                <span>Initial Paid</span>
-                <span>{fmt(sale.paidAmount || 0)}</span>
-              </div>
-              <div className="cdm-tot-row green">
-                <span>Later Payments</span>
-                <span>{fmt(totalPaidLater)}</span>
-              </div>
-              <div
-                className={`cdm-tot-row bold big ${currentBalance > 0 ? "red" : "green"}`}
-              >
-                <span>Current Balance</span>
-                <span>{fmt(currentBalance)}</span>
+                {sale.discAmount > 0 && (
+                  <div className="cs-total-row">
+                    <label>Discount</label>
+                    <span className="val danger">-{fmt(sale.discAmount)}</span>
+                  </div>
+                )}
+                <div className="cs-total-row highlight">
+                  <label>Net Total</label>
+                  <span className="val">{fmt(sale.netTotal)}</span>
+                </div>
+                <div className="cs-total-row">
+                  <label>Prev Balance</label>
+                  <span className="val danger">
+                    {fmt(sale.prevBalance || 0)}
+                  </span>
+                </div>
+                <div className="cs-total-row">
+                  <label>Total Due</label>
+                  <span className="val danger">
+                    {fmt((sale.netTotal || 0) + (sale.prevBalance || 0))}
+                  </span>
+                </div>
+                <div className="cs-total-row">
+                  <label>Initial Paid</label>
+                  <span className="val success">
+                    {fmt(sale.paidAmount || 0)}
+                  </span>
+                </div>
+                <div className="cs-total-row">
+                  <label>Later Payments</label>
+                  <span className="val success">{fmt(totalPaidLater)}</span>
+                </div>
+                <div className="cs-total-row highlight">
+                  <label>Current Balance</label>
+                  <span className="val danger">{fmt(currentBalance)}</span>
+                </div>
               </div>
             </div>
-            <div className="cdm-meta-row">
-              <span>
-                📅 <b>{sale.invoiceDate}</b>
-              </span>
-              <span>
-                📞 <b>{customer?.phone || "—"}</b>
-              </span>
-              <span>
-                💳 <b>{sale.paymentMode || "Credit"}</b>
-              </span>
-            </div>
-            {sale.remarks && (
-              <div className="cdm-remarks">📝 {sale.remarks}</div>
-            )}
-          </div>
-          <div className="cdm-right">
-            <div className="cdm-pay-box">
-              <div className="cdm-section-title">💰 Record Credit Payment</div>
-              <div className="cdm-pay-balance">
-                Outstanding:{" "}
-                <span className="red bold">PKR {fmt(currentBalance)}</span>
+
+            {/* payment side */}
+            <div>
+              <div className="cs-pay-section-title">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M12.136.326A1.5 1.5 0 0 1 14 1.78V3h.5A1.5 1.5 0 0 1 16 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13.5v-9A1.5 1.5 0 0 1 1.432 3.001L12.136.326z" />
+                </svg>
+                Record Payment
+              </div>
+              <div className="cs-pay-outstanding">
+                <span>Outstanding</span>
+                <strong>PKR {fmt(currentBalance)}</strong>
               </div>
               {payMsg.text && (
                 <div
-                  className={`cs-msg ${payMsg.type}`}
-                  style={{ margin: "4px 0", fontSize: 12 }}
+                  className={`xp-alert ${payMsg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
+                  style={{ marginBottom: 8 }}
                 >
                   {payMsg.text}
                 </div>
               )}
-              <div className="cdm-pay-form">
-                <div className="cdm-pay-field">
-                  <label>Amount (PKR)</label>
-                  <input
-                    ref={payRef}
-                    type="number"
-                    className="cdm-pay-input"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handlePay();
-                    }}
-                    placeholder="Enter amount…"
-                  />
-                </div>
-                <div className="cdm-pay-field">
-                  <label>Remarks</label>
-                  <input
-                    type="text"
-                    className="cdm-pay-input"
-                    value={payRemarks}
-                    onChange={(e) => setPayRemarks(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handlePay();
-                    }}
-                    placeholder="e.g. Cash received…"
-                  />
-                </div>
-                <button
-                  className="cs-btn cs-btn-primary cdm-pay-btn"
-                  onClick={handlePay}
-                  disabled={paying}
+              <div className="xp-form-grp" style={{ marginBottom: 8 }}>
+                <label className="xp-label">Amount (PKR)</label>
+                <input
+                  ref={payRef}
+                  type="number"
+                  className="xp-input xp-input-lg"
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handlePay();
+                  }}
+                  placeholder="Enter amount…"
+                />
+              </div>
+              <div className="xp-form-grp" style={{ marginBottom: 10 }}>
+                <label className="xp-label">Remarks</label>
+                <input
+                  type="text"
+                  className="xp-input xp-input-lg"
+                  value={payRemarks}
+                  onChange={(e) => setPayRemarks(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handlePay();
+                  }}
+                  placeholder="e.g. Cash received…"
+                />
+              </div>
+              <button
+                className="xp-btn xp-btn-success xp-btn-lg"
+                onClick={handlePay}
+                disabled={paying}
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
                 >
-                  {paying ? "Processing…" : "✅ Record Payment"}
-                </button>
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                  <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05" />
+                </svg>
+                {paying ? "Processing…" : "Record Payment"}
+              </button>
+
+              <div className="cs-pay-section-title" style={{ marginTop: 14 }}>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zM8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z" />
+                  <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5" />
+                </svg>
+                Payment History ({payments.length})
               </div>
-            </div>
-            <div className="cdm-pay-history">
-              <div className="cdm-section-title">
-                🕒 Payment History{" "}
-                <span className="cdm-ph-count">({payments.length})</span>
-              </div>
-              <div className="cdm-ph-scroll">
-                <table className="cdm-ph-table">
+              <div className="xp-table-panel">
+                <table
+                  className="xp-table"
+                  style={{ fontSize: "var(--xp-fs-xs)" }}
+                >
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -946,43 +988,50 @@ function CustomerDetailModal({ sale, customer, onClose, onPaymentDone }) {
                   <tbody>
                     {loadingPay && (
                       <tr>
-                        <td colSpan={3} className="cs-empty">
+                        <td colSpan={3} className="xp-loading">
                           Loading…
                         </td>
                       </tr>
                     )}
                     {!loadingPay && payments.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="cs-empty">
+                        <td colSpan={3} className="xp-empty">
                           No payments yet
                         </td>
                       </tr>
                     )}
                     {payments.map((p, i) => (
-                      <tr
-                        key={p._id || i}
-                        className={i % 2 === 0 ? "even" : "odd"}
-                      >
-                        <td>{p.paymentDate || p.createdAt?.split("T")[0]}</td>
-                        <td className="r green bold">{fmt(p.amount)}</td>
-                        <td>{p.remarks || "—"}</td>
+                      <tr key={p._id || i}>
+                        <td className="text-muted">
+                          {p.paymentDate || p.createdAt?.split("T")[0]}
+                        </td>
+                        <td className="r xp-amt success">{fmt(p.amount)}</td>
+                        <td className="text-muted">{p.remarks || "—"}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {payments.length > 0 && (
-                <div className="cdm-ph-total">
-                  Total Paid Later:{" "}
-                  <span className="green bold">{fmt(totalPaidLater)}</span>
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontSize: "var(--xp-fs-xs)",
+                    fontWeight: 700,
+                    padding: "4px 0",
+                    color: "var(--xp-green)",
+                  }}
+                >
+                  Total Paid Later: PKR {fmt(totalPaidLater)}
                 </div>
               )}
             </div>
           </div>
         </div>
-        <div className="cdm-footer">
-          <button className="cs-btn" onClick={onClose}>
-            ✕ Close
+
+        <div className="xp-modal-footer">
+          <button className="xp-btn xp-btn-lg" onClick={onClose}>
+            Close
           </button>
         </div>
       </div>
@@ -990,9 +1039,9 @@ function CustomerDetailModal({ sale, customer, onClose, onPaymentDone }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// HISTORY PANEL (right side) — with WhatsApp history + Manage Customers btn
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   HISTORY PANEL
+───────────────────────────────────────────────────────────── */
 function HistoryPanel({
   customer,
   currentSaleTotal,
@@ -1016,7 +1065,6 @@ function HistoryPanel({
     setLoad(false);
   };
 
-  // Send full purchasing history via WhatsApp
   const sendHistoryWhatsApp = () => {
     if (!customer || !sales.length) return;
     const saleTxns = sales.filter((s) => s.saleType === "sale");
@@ -1027,50 +1075,40 @@ function HistoryPanel({
       .slice(0, 20)
       .map(
         (s, i) =>
-          `${i + 1}. ${s.invoiceNo} | ${s.invoiceDate}\n    Amount: PKR ${Number(s.netTotal || 0).toLocaleString()} | Paid: ${Number(s.paidAmount || 0).toLocaleString()} | *Bal: ${Number(s.balance || 0).toLocaleString()}*`,
+          `${i + 1}. ${s.invoiceNo} | ${s.invoiceDate}\n Amount: PKR ${Number(s.netTotal || 0).toLocaleString()} | Paid: ${Number(s.paidAmount || 0).toLocaleString()} | *Bal: ${Number(s.balance || 0).toLocaleString()}*`,
       )
       .join("\n");
-    const text = `🏪 *ASIM ELECTRIC & ELECTRONIC STORE*
-${sep}
-👤 *Customer: ${customer.name}*${customer.phone ? "\n📞 Phone: " + customer.phone : ""}
-📅 Statement Date: ${isoDate()}
-${sep}
-📋 *TRANSACTION HISTORY*
-(Showing last ${Math.min(sales.length, 20)} of ${sales.length} records)
-
-${invoiceLines}
-${sep}
-📊 *ACCOUNT SUMMARY*
-Total Purchases:   PKR ${Number(totalSales).toLocaleString()}
-Total Paid:        PKR ${Number(totalPaid).toLocaleString()}
-*Outstanding Due:  PKR ${Number(customer.currentBalance || 0).toLocaleString()}*
-${sep}
-_For queries, please contact us._
-_Thank you for your business!_`;
-
-    const phoneNum = customer.phone?.replace(/\D/g, "") || "";
+    const text = `*ASIM ELECTRIC & ELECTRONIC STORE*\n${sep}\nCustomer: *${customer.name}*${customer.phone ? "\nPhone: " + customer.phone : ""}\nStatement Date: ${isoDate()}\n${sep}\n*TRANSACTION HISTORY*\n(Showing last ${Math.min(sales.length, 20)} of ${sales.length} records)\n${invoiceLines}\n${sep}\nTotal Purchases: PKR ${Number(totalSales).toLocaleString()}\nTotal Paid: PKR ${Number(totalPaid).toLocaleString()}\n*Outstanding Due: PKR ${Number(customer.currentBalance || 0).toLocaleString()}*\n${sep}\n_Thank you for your business!_`;
     window.open(
-      `https://wa.me/${phoneNum}?text=${encodeURIComponent(text)}`,
+      `https://wa.me/${(customer.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(text)}`,
       "_blank",
     );
   };
 
   if (!customer) {
     return (
-      <div className="cs-hist-empty">
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>👤</div>
-          <div
-            style={{
-              marginBottom: 16,
-              color: "var(--text-muted)",
-              fontStyle: "italic",
-            }}
-          >
-            Enter phone to load customer
+      <div className="cs-history-panel">
+        <div className="cs-history-empty">
+          <div className="cs-history-empty-icon">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 16 16"
+              fill="var(--xp-silver-5)"
+            >
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4" />
+            </svg>
           </div>
-          <button className="cs-btn cs-manage-btn" onClick={onManageCustomers}>
-            👥 Manage Customers
+          <div>Select a customer to view history</div>
+          <button
+            className="xp-btn xp-btn-primary xp-btn-sm"
+            onClick={onManageCustomers}
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1z" />
+              <path d="M11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4" />
+            </svg>
+            Manage Customers
           </button>
         </div>
       </div>
@@ -1085,115 +1123,122 @@ _Thank you for your business!_`;
   const prevBalance = customer.currentBalance || 0;
 
   return (
-    <div className="cs-hist-panel">
-      {/* Customer header + action buttons */}
-      <div className="cs-hist-header">
+    <div className="cs-history-panel">
+      {/* customer header */}
+      <div className="cs-hist-customer">
         <div className="cs-hist-name">{customer.name}</div>
-        <div className="cs-hist-phone">
+        <div className="cs-hist-sub">
           {customer.phone}
           {customer.code && ` | ${customer.code}`}
         </div>
-        <div className="cs-hist-panel-actions">
+        <div className="cs-hist-actions">
           <button
-            className="cs-hist-action-btn cs-hist-wa-btn"
+            className="xp-btn xp-btn-wa xp-btn-sm"
             onClick={sendHistoryWhatsApp}
-            title="Send full purchase history via WhatsApp"
             disabled={!sales.length}
           >
-            📱 WhatsApp History
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326z" />
+            </svg>
+            WhatsApp
           </button>
-          <button
-            className="cs-hist-action-btn"
-            onClick={onManageCustomers}
-            title="Go to Manage Customers page"
-          >
-            👥 Manage
+          <button className="xp-btn xp-btn-sm" onClick={onManageCustomers}>
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1z" />
+              <path d="M11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4" />
+            </svg>
+            Manage
           </button>
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="cs-hist-cards">
-        <div className="cs-hcard">
-          <div className="cs-hcard-l">Total Sales</div>
-          <div className="cs-hcard-v">{fmt(totalSales)}</div>
+      {/* mini stats */}
+      <div className="cs-hist-stats">
+        <div className="cs-hstat">
+          <div className="cs-hstat-lbl">Total Sales</div>
+          <div className="cs-hstat-val">{fmt(totalSales)}</div>
         </div>
-        <div className="cs-hcard">
-          <div className="cs-hcard-l">Total Paid</div>
-          <div className="cs-hcard-v green">{fmt(totalPaid)}</div>
+        <div className="cs-hstat">
+          <div className="cs-hstat-lbl">Total Paid</div>
+          <div className="cs-hstat-val success">{fmt(totalPaid)}</div>
         </div>
-        <div className="cs-hcard">
-          <div className="cs-hcard-l">Returns</div>
-          <div className="cs-hcard-v green">{fmt(totalReturn)}</div>
+        <div className="cs-hstat">
+          <div className="cs-hstat-lbl">Returns</div>
+          <div className="cs-hstat-val warning">{fmt(totalReturn)}</div>
         </div>
-        <div className={`cs-hcard ${prevBalance > 0 ? "danger" : "ok"}`}>
-          <div className="cs-hcard-l">Current Due</div>
-          <div className="cs-hcard-v bold">{fmt(prevBalance)}</div>
+        <div className="cs-hstat">
+          <div className="cs-hstat-lbl">Current Due</div>
+          <div className="cs-hstat-val danger">{fmt(prevBalance)}</div>
         </div>
         {currentSaleTotal > 0 && (
-          <div className="cs-hcard danger">
-            <div className="cs-hcard-l">After This Sale</div>
-            <div className="cs-hcard-v bold">
+          <div className="cs-hstat" style={{ gridColumn: "1 / -1" }}>
+            <div className="cs-hstat-lbl">After This Sale</div>
+            <div className="cs-hstat-val danger">
               {fmt(prevBalance + currentSaleTotal)}
             </div>
           </div>
         )}
       </div>
 
-      <div className="cs-hist-label">
+      {/* section title */}
+      <div className="cs-hist-section-title">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z" />
+          <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5" />
+        </svg>
         Transaction History ({sales.length})
-        <span className="cs-hist-hint"> — Click for details & payment</span>
+        <span style={{ fontWeight: 400, color: "#777" }}>
+          {" "}
+          — Click for details
+        </span>
       </div>
+
+      {/* history table */}
       <div className="cs-hist-table-wrap">
         <table className="cs-hist-table">
           <thead>
             <tr>
-              <th style={{ width: 95 }}>Invoice</th>
-              <th style={{ width: 85 }}>Date</th>
-              <th className="r" style={{ width: 78 }}>
-                Amount
-              </th>
-              <th className="r" style={{ width: 70 }}>
-                Paid
-              </th>
-              <th className="r" style={{ width: 72 }}>
-                Balance
-              </th>
-              <th style={{ width: 46 }}>Type</th>
+              <th>Invoice</th>
+              <th>Date</th>
+              <th className="r">Amount</th>
+              <th className="r">Balance</th>
+              <th>Type</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="cs-empty">
+                <td colSpan={5} className="xp-loading">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && sales.length === 0 && (
               <tr>
-                <td colSpan={6} className="cs-empty">
+                <td colSpan={5} className="xp-empty">
                   No history yet
                 </td>
               </tr>
             )}
-            {sales.map((s, i) => (
-              <tr
-                key={s._id}
-                className={`cs-hist-row ${i % 2 === 0 ? "even" : "odd"}`}
-                onClick={() => onSaleClick && onSaleClick(s)}
-                title="Click to view details & record payment"
-                style={{ cursor: "pointer" }}
-              >
-                <td className="blue">{s.invoiceNo}</td>
-                <td>{s.invoiceDate}</td>
-                <td className="r bold">{fmt(s.netTotal)}</td>
-                <td className="r">{fmt(s.paidAmount)}</td>
-                <td className={`r ${s.balance > 0 ? "red" : ""}`}>
-                  {fmt(s.balance)}
+            {sales.map((s) => (
+              <tr key={s._id} onClick={() => onSaleClick && onSaleClick(s)}>
+                <td className="mono">{s.invoiceNo}</td>
+                <td className="text-muted">{s.invoiceDate}</td>
+                <td className="r mono">{fmt(s.netTotal)}</td>
+                <td className="r">
+                  <span
+                    className={`xp-amt${(s.balance || 0) > 0 ? " danger" : " muted"}`}
+                  >
+                    {fmt(s.balance)}
+                  </span>
                 </td>
-                <td className="c">
-                  <span className={`cs-badge ${s.saleType}`}>{s.saleType}</span>
+                <td>
+                  <span
+                    className={`xp-badge ${s.saleType === "return" ? "xp-badge-ret" : "xp-badge-sale"}`}
+                    style={{ fontSize: 9 }}
+                  >
+                    {s.saleType === "return" ? "Ret" : "Sale"}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -1204,9 +1249,9 @@ _Thank you for your business!_`;
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────────────────────── */
 export default function CreditSalePage() {
   const SHOP_NAME = "Asim Electric and Electronic Store";
   const navigate = useNavigate();
@@ -1249,6 +1294,7 @@ export default function CreditSalePage() {
     fetchInvoiceNo();
     fetchProducts();
   }, []);
+
   useEffect(() => {
     const h = (e) => {
       if (e.key === "F3") {
@@ -1295,7 +1341,7 @@ export default function CreditSalePage() {
     setCustomer(c);
     setPhone(c.phone || "");
     setShowCustSearch(false);
-    showMsg(`✅ ${c.name} — Due: ${fmt(c.currentBalance || 0)}`);
+    showMsg(`${c.name} — Due: PKR ${fmt(c.currentBalance || 0)}`);
     setTimeout(() => searchRef.current?.focus(), 80);
   };
 
@@ -1312,7 +1358,7 @@ export default function CreditSalePage() {
         setCustomer(data.data);
         setPhone(data.data.phone || phone.trim());
         setShowCustSearch(false);
-        showMsg(`✅ Customer added: ${data.data.name}`);
+        showMsg(`Customer added: ${data.data.name}`);
       } else showMsg(data.message || "Add failed", "error");
     } catch {
       showMsg("Add failed", "error");
@@ -1320,8 +1366,8 @@ export default function CreditSalePage() {
   };
 
   const handleProductSelect = (product) => {
-    const qty = rows[activeRow]?.qty || 1,
-      rate = product._rate || 0;
+    const qty = rows[activeRow]?.qty || 1;
+    const rate = product._rate || 0;
     const item = {
       productId: product._id || "",
       code: product.code || "",
@@ -1344,18 +1390,19 @@ export default function CreditSalePage() {
 
   const updateRow = (i, field, val) => {
     setRows((prev) => {
-      const next = [...prev],
-        r = { ...next[i], [field]: val };
+      const next = [...prev];
+      const r = { ...next[i], [field]: val };
       if (["qty", "rate", "disc"].includes(field)) {
-        const q = field === "qty" ? Number(val) : Number(r.qty),
-          rt = field === "rate" ? Number(val) : Number(r.rate),
-          d = field === "disc" ? Number(val) : Number(r.disc);
+        const q = field === "qty" ? Number(val) : Number(r.qty);
+        const rt = field === "rate" ? Number(val) : Number(r.rate);
+        const d = field === "disc" ? Number(val) : Number(r.disc);
         r.amount = Math.round(q * rt * (1 - d / 100));
       }
       next[i] = r;
       return next;
     });
   };
+
   const addRowAfter = (i) => {
     setRows((p) => {
       const n = [...p];
@@ -1363,8 +1410,9 @@ export default function CreditSalePage() {
       return n;
     });
     setActiveRow(i + 1);
-    setTimeout(() => rowRefs.current[i + 1]?.code?.focus(), 30);
+    setTimeout(() => setShowSearch(true), 30);
   };
+
   const deleteRow = (i) => {
     if (rows.length === 1) {
       setRows([{ ...EMPTY_ROW }]);
@@ -1402,16 +1450,17 @@ export default function CreditSalePage() {
       else rowRefs.current[i + 1]?.code?.focus();
     }
   };
+
   const onCodeBlur = async (i, code) => {
     if (!code.trim()) return;
     const found = products.find(
       (p) => p.code?.toLowerCase() === code.toLowerCase(),
     );
     if (found) {
-      const pk = found.packingInfo?.[0] || {},
-        desc = [found.category, found.description, found.company]
-          .filter(Boolean)
-          .join(" ");
+      const pk = found.packingInfo?.[0] || {};
+      const desc = [found.category, found.description, found.company]
+        .filter(Boolean)
+        .join(" ");
       setRows((prev) => {
         const next = [...prev];
         next[i] = {
@@ -1438,8 +1487,9 @@ export default function CreditSalePage() {
       { id: Date.now(), rows, customer, phone, extraDisc, paid, remarks },
     ]);
     resetForm();
-    showMsg("Bill held (F8)");
+    showMsg("Bill held");
   };
+
   const resumeHold = (id) => {
     const h = holds.find((x) => x.id === id);
     if (!h) return;
@@ -1451,6 +1501,7 @@ export default function CreditSalePage() {
     setRemarks(h.remarks);
     setHolds((p) => p.filter((x) => x.id !== id));
   };
+
   const resetForm = () => {
     setRows([{ ...EMPTY_ROW }]);
     setCustomer(null);
@@ -1480,7 +1531,7 @@ export default function CreditSalePage() {
         invoiceDate,
         saleType: "sale",
         paymentMode: "Credit",
-        saleSource: "credit", 
+        saleSource: "credit",
         customerId: customer._id,
         customerName: customer.name,
         customerPhone: customer.phone || phone,
@@ -1507,7 +1558,7 @@ export default function CreditSalePage() {
           balance,
         });
         setShowInvoice(true);
-        showMsg(`✅ ${data.data.invoiceNo} saved`);
+        showMsg(`${data.data.invoiceNo} saved`);
         resetForm();
       } else showMsg(data.message, "error");
     } catch (e) {
@@ -1520,6 +1571,7 @@ export default function CreditSalePage() {
     setSelectedSale(sale);
     setShowDetailModal(true);
   };
+
   const handlePaymentDone = async () => {
     if (!customer?._id) return;
     try {
@@ -1530,6 +1582,7 @@ export default function CreditSalePage() {
 
   return (
     <div className="cs-page">
+      {/* ── Modals ── */}
       {showSearch && (
         <SearchModal
           allProducts={products}
@@ -1567,44 +1620,109 @@ export default function CreditSalePage() {
         />
       )}
 
-      <div className="cs-shortcuts">
-        F2=New | F3=Search | F5=Save | F8=Hold | Enter=Next field |
-        Ctrl+Del=Remove row
+      {/* ── Titlebar ── */}
+      <div className="xp-titlebar">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 16 16"
+          fill="rgba(255,255,255,0.85)"
+        >
+          <path d="M12.136.326A1.5 1.5 0 0 1 14 1.78V3h.5A1.5 1.5 0 0 1 16 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13.5v-9A1.5 1.5 0 0 1 1.432 3.001L12.136.326z" />
+        </svg>
+        <span className="xp-tb-title">Credit Sale — {SHOP_NAME}</span>
+        <div className="xp-tb-actions">
+          <div className="xp-tb-divider" />
+          <button className="xp-cap-btn" title="Minimize">
+            ─
+          </button>
+          <button className="xp-cap-btn" title="Maximize">
+            □
+          </button>
+          <button className="xp-cap-btn xp-cap-close" title="Close">
+            ✕
+          </button>
+        </div>
       </div>
-      {msg.text && <div className={`cs-msg ${msg.type}`}>{msg.text}</div>}
 
+      {/* ── Hint bar ── */}
+      <div className="cs-hint-bar">
+        <span>
+          <kbd>F2</kbd> New
+        </span>
+        <span>
+          <kbd>F3</kbd> Search Product
+        </span>
+        <span>
+          <kbd>F5</kbd> Save
+        </span>
+        <span>
+          <kbd>F8</kbd> Hold Bill
+        </span>
+        <span>
+          <kbd>Enter</kbd> Next Field
+        </span>
+        <span>
+          <kbd>Ctrl+Del</kbd> Remove Row
+        </span>
+      </div>
+
+      {/* ── Global alert ── */}
+      {msg.text && (
+        <div
+          className={`xp-alert ${msg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
+          style={{ margin: "4px 10px 0" }}
+        >
+          {msg.text}
+        </div>
+      )}
+
+      {/* ── Two-column body ── */}
       <div className="cs-body">
+        {/* ════ LEFT PANEL ════ */}
         <div className="cs-left">
-          <div className="cs-header-bar">
-            <div className="cs-header-title">💳 Credit Sale</div>
-            <div className="cs-header-fields">
-              <div className="cs-hf">
-                <span>Invoice #</span>
-                <input
-                  className="cs-hinput bold"
-                  value={invoiceNo}
-                  readOnly
-                  tabIndex={-1}
-                />
-              </div>
-              <div className="cs-hf">
-                <span>Date</span>
-                <input
-                  type="date"
-                  className="cs-hinput"
-                  value={invoiceDate}
-                  onChange={(e) => setInvoiceDate(e.target.value)}
-                  tabIndex={-1}
-                />
-              </div>
+          {/* header: title + invoice + date */}
+          <div className="cs-header">
+            <div className="cs-header-title">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="var(--xp-blue-dark)"
+              >
+                <path d="M12.136.326A1.5 1.5 0 0 1 14 1.78V3h.5A1.5 1.5 0 0 1 16 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13.5v-9A1.5 1.5 0 0 1 1.432 3.001L12.136.326z" />
+              </svg>
+              Credit Sale
+            </div>
+            <div className="cs-field-row">
+              <label>Invoice #</label>
+              <input
+                className="cs-input-sm"
+                value={invoiceNo}
+                readOnly
+                style={{ width: 110 }}
+                tabIndex={-1}
+              />
+            </div>
+            <div className="cs-field-row">
+              <label>Date</label>
+              <input
+                type="date"
+                className="cs-input-sm"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+                style={{ width: 130 }}
+                tabIndex={-1}
+              />
             </div>
           </div>
 
-          <div className="cs-cust-bar">
-            <span className="cs-cust-label">📞 Phone/Code</span>
+          {/* customer strip */}
+          <div className="cs-customer-strip">
+            <label>Phone / Code</label>
             <input
               ref={phoneRef}
-              className="cs-cust-phone"
+              className="cs-phone-input"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onKeyDown={(e) => {
@@ -1614,21 +1732,39 @@ export default function CreditSalePage() {
               tabIndex={1}
             />
             <button
-              className="cs-btn"
+              className="xp-btn xp-btn-sm"
               onClick={handlePhoneSearch}
               tabIndex={-1}
             >
-              🔍 Search
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+              </svg>
+              Search
             </button>
+
             {customer ? (
-              <div className="cs-cust-loaded">
-                <span className="cs-cust-name">✅ {customer.name}</span>
-                <span className="cs-cust-bal">
-                  Due:{" "}
-                  <b className="red">{fmt(customer.currentBalance || 0)}</b>
+              <div className="cs-customer-tag">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                >
+                  <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                  <path d="M8 9c-5.333 0-8 2.667-8 4v1h16v-1c0-1.333-2.667-4-8-4" />
+                </svg>
+                {customer.name}
+                <span className="due">
+                  PKR {fmt(customer.currentBalance || 0)}
                 </span>
                 <button
-                  className="cs-cust-clear"
+                  className="xp-btn xp-btn-sm xp-btn-ico"
+                  style={{ width: 18, height: 18, fontSize: 9 }}
                   onClick={() => {
                     setCustomer(null);
                     setPhone("");
@@ -1639,27 +1775,51 @@ export default function CreditSalePage() {
                 </button>
               </div>
             ) : (
-              <span className="cs-cust-none">⚠️ No customer selected</span>
-            )}
-            {holds.length > 0 &&
-              holds.map((h) => (
-                <button
-                  key={h.id}
-                  className="cs-hold-btn"
-                  onClick={() => resumeHold(h.id)}
-                  tabIndex={-1}
+              <div className="cs-no-customer">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
                 >
-                  📋 {h.customer?.name || "Hold"}
-                </button>
-              ))}
+                  <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z" />
+                  <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+                </svg>
+                No customer selected
+              </div>
+            )}
+
+            {holds.length > 0 && (
+              <div className="cs-hold-pills">
+                {holds.map((h) => (
+                  <button
+                    key={h.id}
+                    className="cs-hold-pill"
+                    onClick={() => resumeHold(h.id)}
+                    tabIndex={-1}
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 16 16"
+                      fill="currentColor"
+                    >
+                      <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+                    </svg>
+                    {h.customer?.name || "Hold"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="cs-search-bar">
-            <span className="cs-search-label">Select Product</span>
+          {/* product search row */}
+          <div className="cs-product-row">
+            <label>Select Product</label>
             <input
               ref={searchRef}
               type="text"
-              className={`cs-search-input${searchText ? " filled" : ""}`}
+              className="cs-product-input"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               onClick={() => setShowSearch(true)}
@@ -1675,27 +1835,51 @@ export default function CreditSalePage() {
             />
             {searchText && (
               <button
-                className="cs-btn"
+                className="xp-btn xp-btn-sm"
                 onClick={() => setSearchText("")}
                 tabIndex={-1}
               >
                 ✕ Clear
               </button>
             )}
+            <button
+              className="xp-btn xp-btn-primary xp-btn-sm"
+              onClick={() => setShowSearch(true)}
+              tabIndex={-1}
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+              </svg>
+              F3
+            </button>
           </div>
 
-          <div className="cs-table-wrap">
-            <table className="cs-table">
+          {/* items table */}
+          <div className="cs-items-panel">
+            <table className="cs-items-table">
               <thead>
                 <tr>
                   <th style={{ width: 30 }}>#</th>
-                  <th style={{ width: 78 }}>Code</th>
+                  <th style={{ width: 75 }}>Code</th>
                   <th>Description</th>
-                  <th style={{ width: 78 }}>Meas.</th>
-                  <th style={{ width: 62 }}>Qty</th>
-                  <th style={{ width: 82 }}>Rate</th>
-                  <th style={{ width: 58 }}>Disc%</th>
-                  <th style={{ width: 88 }}>Amount</th>
+                  <th style={{ width: 65 }}>Meas.</th>
+                  <th style={{ width: 60 }} className="r">
+                    Qty
+                  </th>
+                  <th style={{ width: 80 }} className="r">
+                    Rate
+                  </th>
+                  <th style={{ width: 55 }} className="r">
+                    Disc%
+                  </th>
+                  <th style={{ width: 90 }} className="r">
+                    Amount
+                  </th>
                   <th style={{ width: 26 }}></th>
                 </tr>
               </thead>
@@ -1705,19 +1889,21 @@ export default function CreditSalePage() {
                   return (
                     <tr
                       key={i}
-                      className={
-                        i === activeRow
-                          ? "cs-row-active"
-                          : i % 2 === 0
-                            ? "cs-row-even"
-                            : "cs-row-odd"
-                      }
+                      className={activeRow === i ? "active-row" : ""}
                       onClick={() => setActiveRow(i)}
                     >
-                      <td className="c">{i + 1}</td>
+                      <td
+                        className="text-muted"
+                        style={{
+                          fontSize: "var(--xp-fs-xs)",
+                          textAlign: "center",
+                        }}
+                      >
+                        {i + 1}
+                      </td>
                       <td>
                         <input
-                          className="cs-cell full"
+                          className="cs-cell-input w-code"
                           ref={(el) => {
                             if (rowRefs.current[i])
                               rowRefs.current[i].code = el;
@@ -1731,7 +1917,7 @@ export default function CreditSalePage() {
                       </td>
                       <td>
                         <input
-                          className="cs-cell full"
+                          className="cs-cell-input w-desc"
                           ref={(el) => {
                             if (rowRefs.current[i])
                               rowRefs.current[i].description = el;
@@ -1752,7 +1938,7 @@ export default function CreditSalePage() {
                       </td>
                       <td>
                         <input
-                          className="cs-cell"
+                          className="cs-cell-input w-meas"
                           ref={(el) => {
                             if (rowRefs.current[i])
                               rowRefs.current[i].measurement = el;
@@ -1768,7 +1954,7 @@ export default function CreditSalePage() {
                       <td>
                         <input
                           type="number"
-                          className="cs-cell r"
+                          className="cs-cell-input w-num"
                           ref={(el) => {
                             if (rowRefs.current[i]) rowRefs.current[i].qty = el;
                           }}
@@ -1781,7 +1967,7 @@ export default function CreditSalePage() {
                       <td>
                         <input
                           type="number"
-                          className="cs-cell r"
+                          className="cs-cell-input w-num"
                           ref={(el) => {
                             if (rowRefs.current[i])
                               rowRefs.current[i].rate = el;
@@ -1795,7 +1981,7 @@ export default function CreditSalePage() {
                       <td>
                         <input
                           type="number"
-                          className="cs-cell r"
+                          className="cs-cell-input w-num"
                           ref={(el) => {
                             if (rowRefs.current[i])
                               rowRefs.current[i].disc = el;
@@ -1806,12 +1992,18 @@ export default function CreditSalePage() {
                           tabIndex={100 + i * 10 + 6}
                         />
                       </td>
-                      <td className="r bold">{fmt(row.amount)}</td>
-                      <td className="c">
+                      <td className="amt">{fmt(row.amount)}</td>
+                      <td style={{ textAlign: "center" }}>
                         <button
-                          className="cs-del-row"
+                          className="xp-btn xp-btn-sm xp-btn-ico"
                           onClick={() => deleteRow(i)}
                           tabIndex={-1}
+                          style={{
+                            width: 20,
+                            height: 20,
+                            fontSize: 9,
+                            color: "var(--xp-red)",
+                          }}
                         >
                           ✕
                         </button>
@@ -1823,10 +2015,11 @@ export default function CreditSalePage() {
             </table>
           </div>
 
-          <div className="cs-footer">
-            <div className="cs-footer-left">
+          {/* bottom: remarks + buttons + totals */}
+          <div className="cs-bottom">
+            <div className="cs-actions-col">
               <div className="cs-remarks-row">
-                <span>Remarks</span>
+                <label>Remarks</label>
                 <input
                   className="cs-remarks-input"
                   value={remarks}
@@ -1837,68 +2030,110 @@ export default function CreditSalePage() {
                   tabIndex={90}
                 />
               </div>
-              <div className="cs-footer-btns">
+              <div className="cs-btn-row">
                 <button
-                  className="cs-btn"
+                  className="xp-btn xp-btn-sm"
                   onClick={() => setShowSearch(true)}
                   tabIndex={-1}
                 >
-                  🔍 F3
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1z" />
+                  </svg>
+                  F3 Search
                 </button>
-                <button className="cs-btn" onClick={holdBill} tabIndex={-1}>
-                  📋 F8
+                <button
+                  className="xp-btn xp-btn-sm"
+                  onClick={holdBill}
+                  tabIndex={-1}
+                >
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
+                    <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+                  </svg>
+                  F8 Hold
                 </button>
-                <button className="cs-btn" onClick={resetForm} tabIndex={-1}>
-                  🔄 F2
+                <button
+                  className="xp-btn xp-btn-sm"
+                  onClick={resetForm}
+                  tabIndex={-1}
+                >
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
+                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
+                  </svg>
+                  F2 New
                 </button>
                 <button
                   ref={saveRef}
-                  className="cs-btn cs-btn-primary"
+                  className="xp-btn xp-btn-primary xp-btn-lg"
                   onClick={handleSave}
                   disabled={saving}
                   tabIndex={91}
                 >
-                  {saving ? "Saving…" : "💾 F5 Save"}
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
+                    <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v7.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L7.5 9.293V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" />
+                  </svg>
+                  {saving ? "Saving…" : "F5 Save"}
                 </button>
               </div>
             </div>
-            <div className="cs-totals">
-              <div className="cs-tr">
-                <span>Sub Total</span>
-                <span>{fmt(subTotal)}</span>
+
+            <div className="cs-totals-box">
+              <div className="cs-total-row">
+                <label>Sub Total</label>
+                <span className="val">{fmt(subTotal)}</span>
               </div>
-              <div className="cs-tr">
-                <span>Extra Disc%</span>
+              <div className="cs-total-row">
+                <label>Extra Disc %</label>
                 <input
                   type="number"
-                  className="cs-tot-input"
+                  className="cs-disc-input"
                   value={extraDisc}
                   onChange={(e) => setExtraDisc(e.target.value)}
                   tabIndex={89}
                 />
               </div>
-              <div className="cs-tr">
-                <span>Disc Amt</span>
-                <span className="red">-{fmt(discAmt)}</span>
+              <div className="cs-total-row">
+                <label>Disc Amt</label>
+                <span className="val danger">-{fmt(discAmt)}</span>
               </div>
-              <div className="cs-tr bold big">
-                <span>Net Total</span>
-                <span>{fmt(netTotal)}</span>
+              <div className="cs-total-row highlight">
+                <label>Net Total</label>
+                <span className="val">{fmt(netTotal)}</span>
               </div>
-              <div className="cs-tr">
-                <span>Prev Balance</span>
-                <span className="red">{fmt(prevBal)}</span>
+              <div className="cs-total-row">
+                <label>Prev Balance</label>
+                <span className="val danger">{fmt(prevBal)}</span>
               </div>
-              <div className="cs-tr bold red">
-                <span>Total Due</span>
-                <span>{fmt(totalDue)}</span>
+              <div className="cs-total-row">
+                <label>Total Due</label>
+                <span className="val danger">{fmt(totalDue)}</span>
               </div>
-              <div className="cs-tr">
-                <span>Paid</span>
+              <div className="cs-total-row">
+                <label>Paid</label>
                 <input
                   ref={paidRef}
                   type="number"
-                  className="cs-tot-input green"
+                  className="cs-paid-input"
                   value={paid}
                   onChange={(e) => setPaid(e.target.value)}
                   onKeyDown={(e) => {
@@ -1907,14 +2142,15 @@ export default function CreditSalePage() {
                   tabIndex={90}
                 />
               </div>
-              <div className={`cs-tr bold ${balance > 0 ? "red" : "green"}`}>
-                <span>Balance</span>
-                <span>{fmt(balance)}</span>
+              <div className="cs-total-row highlight">
+                <label>Balance</label>
+                <span className="val danger">{fmt(balance)}</span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* ════ RIGHT PANEL ════ */}
         <div className="cs-right">
           <HistoryPanel
             customer={customer}
@@ -1923,6 +2159,36 @@ export default function CreditSalePage() {
             onManageCustomers={() => navigate("/credit-customers")}
           />
         </div>
+      </div>
+
+      {/* ── Status Bar ── */}
+      <div className="xp-statusbar">
+        <div className="xp-status-pane">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+          </svg>
+          Invoice: {invoiceNo || "—"}
+        </div>
+        <div className="xp-status-pane">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+          </svg>
+          {customer ? customer.name : "No customer"}
+        </div>
+        <div className="xp-status-pane">
+          Items: {rows.filter((r) => r.description).length}
+        </div>
+        <div className="xp-status-pane">
+          Net:{" "}
+          <strong style={{ fontFamily: "var(--xp-mono)", marginLeft: 3 }}>
+            PKR {fmt(netTotal)}
+          </strong>
+        </div>
+        {balance > 0 && (
+          <div className="xp-status-pane" style={{ color: "var(--xp-red)" }}>
+            Balance: PKR {fmt(balance)}
+          </div>
+        )}
       </div>
     </div>
   );
