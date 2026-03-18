@@ -1309,28 +1309,36 @@ export default function DebitSalePage() {
     if (!phone.trim() || phone.length < 3) return;
     setPhoneLoading(true);
     try {
-      const { data } = await api.get(EP.CUSTOMERS.GET_WALKIN(phone.trim()));
+      const { data } = await api.get(
+        `${EP.CUSTOMERS.GET_ALL}?search=${encodeURIComponent(phone.trim())}&type=walkin`,
+      );
       if (data.success && data.data.length > 0) {
-        const list = (data.data || []).filter((c) => c.type === "walkin");
-        if (!list.length) {
-          await createWalkinCustomer();
-          return;
-        }
+        const list = data.data;
+        // 1. Exact phone match → auto select
         const exact = list.find((c) => c.phone?.trim() === phone.trim());
         if (exact) {
           selectCustomer(exact);
           showMsg(`${exact.name} selected`);
-        } else {
-          setCustMatches(list);
-          setShowCustSel(true);
+          return;
         }
+        // 2. Single result → auto select
+        if (list.length === 1) {
+          selectCustomer(list[0]);
+          showMsg(`${list[0].name} selected`);
+          return;
+        }
+        // 3. Multiple → table modal
+        setCustMatches(list);
+        setShowCustSel(true);
       } else {
+        // 4. Koi match nahi → auto create
         await createWalkinCustomer();
       }
     } catch {
       showMsg("Search failed", "error");
+    } finally {
+      setPhoneLoading(false); // ← hamesha reset hoga
     }
-    setPhoneLoading(false);
   };
 
   const createWalkinCustomer = async () => {

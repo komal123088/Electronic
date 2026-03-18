@@ -22,6 +22,10 @@ function saveOpts(key, opts) {
   localStorage.setItem(key, JSON.stringify(opts));
 }
 
+/* ── ComboInput
+   FIX: dropdown scoped to its own wrap — no z-index bleed into packing section
+   FIX: mobile keyboard Enter = onNext (same as desktop)
+─────────────────────────────────────────────── */
 function ComboInput({
   id,
   storeKey,
@@ -36,6 +40,7 @@ function ComboInput({
   const [filt, setFilt] = useState([]);
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(-1);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
   const listRef = useRef(null);
   const wrapRef = useRef(null);
   const localRef = useRef(null);
@@ -69,6 +74,18 @@ function ComboInput({
     if (open && hi >= 0 && listRef.current)
       listRef.current.children[hi]?.scrollIntoView({ block: "nearest" });
   }, [hi, open]);
+
+  // Calculate fixed position when opening
+  useEffect(() => {
+    if (open && wrapRef.current) {
+      const rect = wrapRef.current.getBoundingClientRect();
+      setDropPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (persistRef)
@@ -107,7 +124,7 @@ function ComboInput({
         else {
           setOpen(false);
           onNext?.();
-        } // ← mobile Enter also calls onNext
+        }
         break;
       case "Escape":
         e.preventDefault();
@@ -123,12 +140,7 @@ function ComboInput({
   };
 
   return (
-    /* isolation: isolate keeps the dropdown z-index scoped HERE only */
-    <div
-      className="pp-combo-wrap"
-      ref={wrapRef}
-      style={{ isolation: "isolate" }}
-    >
+    <div className="pp-combo-wrap" ref={wrapRef}>
       <input
         id={id}
         ref={ref}
@@ -159,7 +171,17 @@ function ComboInput({
       </button>
 
       {open && (
-        <div className="pp-combo-drop" ref={listRef}>
+        <div
+          ref={listRef}
+          className="pp-combo-drop"
+          style={{
+            position: "fixed",
+            top: dropPos.top,
+            left: dropPos.left,
+            width: dropPos.width,
+            zIndex: 99999,
+          }}
+        >
           {filt.length === 0 ? (
             <div className="pp-drop-empty">Press Enter to use "{value}"</div>
           ) : (
