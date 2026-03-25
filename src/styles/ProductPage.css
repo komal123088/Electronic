@@ -539,3 +539,7 @@ table.pp-list-table tbody td.r {
     grid-template-columns: 1fr;
   }
 }
+.pp-highlighted {
+  background-color: #fff3cd !important;
+  font-weight: 600;
+}
