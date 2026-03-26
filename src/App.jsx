@@ -23,7 +23,7 @@ export default function App() {
     <BrowserRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Navigate to="/debit-sale" replace />} />
+          <Route path="/" element={<Navigate to="/sale" replace />} />
           <Route path="/sale" element={<SalePage />} />
           <Route path="/debit-sale" element={<DebitSalePage />} />
           <Route path="/debit-customers" element={<DebitCustomersPage />} />

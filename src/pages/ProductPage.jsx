@@ -1,5 +1,6 @@
 // pages/ProductPage.jsx
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
 import "../styles/theme.css";
@@ -88,6 +89,7 @@ const DEFS = {
    MAIN PAGE
 ───────────────────────────────────────────── */
 export default function ProductPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY_FORM);
   const [packRows, setPRows] = useState([]);
   const [packForm, setPForm] = useState(EMPTY_PACK);
@@ -102,13 +104,10 @@ export default function ProductPage() {
   const [nextNum, setNext] = useState(1);
   const [msg, setMsg] = useState({ text: "", type: "" });
 
-  // ── activeField: "company" | "category" | "webCategory" | ""
+  // ── activeField: "company" | "category" | "webCategory" | "orderName" | ""
   const [activeField, setActiveField] = useState("");
-  // ── filterText: jo bhi active field mein type ho raha hai
   const [filterText, setFilterText] = useState("");
-  // ── highlightedIndex: arrow keys se list mein highlight
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  // ── showAllProducts: after selection ya neutral field pe sab dikhao
   const [showAllProducts, setShowAllProducts] = useState(false);
 
   // Refs
@@ -159,7 +158,7 @@ export default function ProductPage() {
   const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const setP = (k, v) => setPForm((p) => ({ ...p, [k]: v }));
 
-  // ── Filter logic: active field ke hisaab se filter
+  // ── Filter logic — orderName bhi shaamil
   const getFilteredProducts = () => {
     if (showAllProducts || !filterText || !activeField) return products;
     return products.filter((p) => {
@@ -169,12 +168,12 @@ export default function ProductPage() {
         return p.category?.toLowerCase().includes(filterText.toLowerCase());
       if (activeField === "webCategory")
         return p.webCategory?.toLowerCase().includes(filterText.toLowerCase());
+      if (activeField === "orderName")
+        return p.orderName?.toLowerCase().includes(filterText.toLowerCase());
       return true;
     });
   };
 
-  // ── LIVE FILL: jab arrow se highlight change ho, turant field mein value fill karo
-  // useRef se latest activeField milega bina stale closure ke
   const activeFieldRef = useRef(activeField);
   useEffect(() => {
     activeFieldRef.current = activeField;
@@ -191,10 +190,11 @@ export default function ProductPage() {
         setForm((p) => ({ ...p, category: row.category || "" }));
       else if (field === "webCategory")
         setForm((p) => ({ ...p, webCategory: row.webCategory || "" }));
+      else if (field === "orderName")
+        setForm((p) => ({ ...p, orderName: row.orderName || "" }));
     }
   };
 
-  // ── Field focus karo
   const focusField = (field, currentVal) => {
     setActiveField(field);
     activeFieldRef.current = field;
@@ -203,7 +203,6 @@ export default function ProductPage() {
     setHighlightedIndex(-1);
   };
 
-  // ── Field change handler
   const handleFieldChange = (field, v) => {
     setF(field, v);
     setFilterText(v);
@@ -211,7 +210,6 @@ export default function ProductPage() {
     setHighlightedIndex(-1);
   };
 
-  // ── makeFieldKeyDown: company/category/webCategory ke liye common keydown
   const makeFieldKeyDown = (field, nextRef) => (e) => {
     const filtered = getFilteredProducts();
 
@@ -233,7 +231,6 @@ export default function ProductPage() {
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      // Jo bhi ab field mein hai (live fill ya typed) — confirm kar do, aage jao
       setFilterText("");
       setShowAllProducts(true);
       setHighlightedIndex(-1);
@@ -241,7 +238,6 @@ export default function ProductPage() {
     }
   };
 
-  // ── List div keydown (jab list focused ho arrows se)
   const handleListKeyDown = (e) => {
     const filtered = getFilteredProducts();
     if (filtered.length === 0) return;
@@ -265,11 +261,13 @@ export default function ProductPage() {
       if (field === "company") rCat.current?.focus();
       else if (field === "category") rWebCat.current?.focus();
       else if (field === "webCategory") rRack.current?.focus();
+      else if (field === "orderName") rRem.current?.focus();
     } else if (e.key === "Escape") {
       const field = activeFieldRef.current;
       if (field === "company") rCompany.current?.focus();
       else if (field === "category") rCat.current?.focus();
       else if (field === "webCategory") rWebCat.current?.focus();
+      else if (field === "orderName") rOrder.current?.focus();
     }
   };
 
@@ -280,6 +278,7 @@ export default function ProductPage() {
     else if (field === "category") setF("category", product.category || "");
     else if (field === "webCategory")
       setF("webCategory", product.webCategory || "");
+    else if (field === "orderName") setF("orderName", product.orderName || "");
 
     setSelId(product._id);
     setFilterText("");
@@ -537,10 +536,9 @@ export default function ProductPage() {
                 onFocusField={() => focusField("category", form.category)}
               />
 
-              {/* ── WEB CATEGORY + RACK # — ek hi row mein, label-aligned ── */}
+              {/* ── WEB CATEGORY + RACK # ── */}
               <div className="pp-frow">
                 <label htmlFor="f_webcat">Web Cat.</label>
-                {/* Web Cat. combo + Rack # dono ek flex row mein */}
                 <div
                   style={{
                     display: "flex",
@@ -549,7 +547,6 @@ export default function ProductPage() {
                     alignItems: "center",
                   }}
                 >
-                  {/* Web Cat. combo — flex grow karo */}
                   <div
                     className="pp-combo-wrap"
                     style={{ position: "relative", flex: 1 }}
@@ -577,7 +574,6 @@ export default function ProductPage() {
                       ▼
                     </button>
                   </div>
-                  {/* Rack # — fixed width */}
                   <label
                     style={{
                       whiteSpace: "nowrap",
@@ -643,21 +639,15 @@ export default function ProductPage() {
                 />
               </div>
 
+              {/* ── ORDER NAME — ab filter/autocomplete ke saath ── */}
               <ComboLikeInput
                 id="f_order"
                 label="Order Name"
                 inputRef={rOrder}
                 value={form.orderName}
-                onChange={(v) => setF("orderName", v)}
-                onNext={(e) => {
-                  if (e.key === "Enter") rRem.current?.focus();
-                }}
-                onFocusField={() => {
-                  setActiveField("");
-                  activeFieldRef.current = "";
-                  setShowAllProducts(true);
-                  setHighlightedIndex(-1);
-                }}
+                onChange={(v) => handleFieldChange("orderName", v)}
+                onNext={makeFieldKeyDown("orderName", rRem)}
+                onFocusField={() => focusField("orderName", form.orderName)}
               />
 
               <div className="pp-frow">
@@ -692,7 +682,7 @@ export default function ProductPage() {
               <div className="pp-cmd-grid">
                 <button
                   className="xp-btn xp-btn-sm"
-                  onClick={fetchProducts}
+                  onClick={refresh}
                   disabled={loading}
                 >
                   Refresh
@@ -716,19 +706,14 @@ export default function ProductPage() {
                 >
                   Delete
                 </button>
-                {(editId ||
-                  form.company ||
-                  form.category ||
-                  form.description) && (
-                  <button
-                    className="xp-btn xp-btn-sm pp-close-btn"
-                    style={{ gridColumn: "1 / -1" }}
-                    onClick={refresh}
-                    title="Current entry discard karo aur form clear karo"
-                  >
-                    ✕ Close / Cancel
-                  </button>
-                )}
+                <button
+                  className="xp-btn xp-btn-sm pp-close-btn"
+                  style={{ gridColumn: "1 / -1" }}
+                  onClick={() => navigate("/")}
+                  title="Sale page par wapas jao"
+                >
+                  ✕ Close
+                </button>
               </div>
             </fieldset>
           </div>
@@ -823,7 +808,7 @@ export default function ProductPage() {
                   style={{ textAlign: "right" }}
                   value={packForm.packing}
                   onChange={(e) => setP("packing", e.target.value)}
-                  onKeyDown={pkGo(rReorder)}
+                  onKeyDown={pkGo(rPDisc)}
                 />
               </div>
 
@@ -1029,23 +1014,27 @@ export default function ProductPage() {
               onKeyDown={handleListKeyDown}
               style={{ outline: "none" }}
             >
-              <table className="pp-list-table">
+              <table
+                className="pp-list-table"
+                style={{ tableLayout: "fixed", width: "100%" }}
+              >
                 <thead>
                   <tr>
                     <th style={{ width: 30 }}>ID</th>
                     <th style={{ width: 50 }}>Code</th>
-                    <th style={{ width: 130 }}>Company</th>
-                    <th style={{ width: 100 }}>Category</th>
-                    <th style={{ width: 120 }}>Web Category</th>
-                    <th>Description</th>
-                    <th style={{ width: 90 }}>Measurement</th>
-                    <th className="r" style={{ width: 70 }}>
+                    <th style={{ width: 110 }}>Company</th>
+                    <th style={{ width: 90 }}>Category</th>
+                    <th style={{ width: 100 }}>Web Category</th>
+                    <th style={{ width: 160 }}>Description</th>
+                    <th style={{ width: 90 }}>Order Name</th>
+                    <th style={{ width: 75 }}>Measurement</th>
+                    <th className="r" style={{ width: 65 }}>
                       Purchase
                     </th>
-                    <th className="r" style={{ width: 55 }}>
+                    <th className="r" style={{ width: 50 }}>
                       P.Disc
                     </th>
-                    <th className="r" style={{ width: 60 }}>
+                    <th className="r" style={{ width: 55 }}>
                       Sale
                     </th>
                   </tr>
@@ -1053,7 +1042,7 @@ export default function ProductPage() {
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={10} className="xp-loading">
+                      <td colSpan={11} className="xp-loading">
                         Loading products…
                       </td>
                     </tr>
@@ -1068,7 +1057,7 @@ export default function ProductPage() {
                         >
                           {i + 1}
                         </td>
-                        <td colSpan={9} />
+                        <td colSpan={10} />
                       </tr>
                     ))}
                   {!loading &&
@@ -1096,21 +1085,91 @@ export default function ProductPage() {
                         >
                           <td
                             className="text-muted"
-                            style={{ textAlign: "center" }}
+                            style={{
+                              textAlign: "center",
+                              whiteSpace: "nowrap",
+                            }}
                           >
                             {idx + 1}
                           </td>
-                          <td className="text-muted">{p.code}</td>
-                          <td style={{ fontWeight: 700 }}>{p.company}</td>
-                          <td>{p.category}</td>
-                          <td className="text-muted">{p.webCategory}</td>
-                          <td>{p.description}</td>
-                          <td className="text-muted">
+                          <td
+                            className="text-muted"
+                            style={{ whiteSpace: "nowrap" }}
+                          >
+                            {p.code}
+                          </td>
+                          <td
+                            style={{
+                              fontWeight: 700,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 110,
+                            }}
+                          >
+                            {p.company}
+                          </td>
+                          <td
+                            style={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 90,
+                            }}
+                          >
+                            {p.category}
+                          </td>
+                          <td
+                            className="text-muted"
+                            style={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 100,
+                            }}
+                          >
+                            {p.webCategory}
+                          </td>
+                          <td
+                            style={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 160,
+                            }}
+                          >
+                            {p.description}
+                          </td>
+                          <td
+                            className="text-muted"
+                            style={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 90,
+                            }}
+                          >
+                            {p.orderName || ""}
+                          </td>
+                          <td
+                            className="text-muted"
+                            style={{ whiteSpace: "nowrap" }}
+                          >
                             {pk?.measurement || ""}
                           </td>
-                          <td className="r xp-amt">{pk?.purchaseRate || ""}</td>
-                          <td className="r">{pk?.pDisc || ""}</td>
-                          <td className="r xp-amt success">
+                          <td
+                            className="r xp-amt"
+                            style={{ whiteSpace: "nowrap" }}
+                          >
+                            {pk?.purchaseRate || ""}
+                          </td>
+                          <td className="r" style={{ whiteSpace: "nowrap" }}>
+                            {pk?.pDisc || ""}
+                          </td>
+                          <td
+                            className="r xp-amt success"
+                            style={{ whiteSpace: "nowrap" }}
+                          >
                             {pk?.saleRate || ""}
                           </td>
                         </tr>
