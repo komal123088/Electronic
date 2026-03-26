@@ -303,10 +303,7 @@ export default function CustomersPage() {
         ...form,
         type: "credit",
         creditLimit: parseFloat(form.creditLimit) || 0,
-        openingBalance:
-          form.openingBalanceType === "Credit"
-            ? -Math.abs(parseFloat(form.openingBalance) || 0)
-            : Math.abs(parseFloat(form.openingBalance) || 0),
+        openingBalance: Math.abs(parseFloat(form.openingBalance) || 0),
       };
       const { data } = selId
         ? await api.put(EP.CUSTOMERS.UPDATE(selId), payload)
@@ -828,18 +825,6 @@ export default function CustomersPage() {
                 style={{ width: 120 }}
                 tabIndex={13}
               />
-              <button
-                className={`cp-ob-type-btn${form.openingBalanceType === "Debit" ? " active-debit" : ""}`}
-                onClick={() => set("openingBalanceType", "Debit")}
-              >
-                Debit
-              </button>
-              <button
-                className={`cp-ob-type-btn${form.openingBalanceType === "Credit" ? " active-credit" : ""}`}
-                onClick={() => set("openingBalanceType", "Credit")}
-              >
-                Credit
-              </button>
             </div>
             <div className="cp-ob-row">
               <label className="xp-label" style={{ whiteSpace: "nowrap" }}>

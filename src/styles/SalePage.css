@@ -1,4 +1,7 @@
-/* ── PAGE SHELL ──────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   SalePage.css
+═══════════════════════════════════════════════ */
+
 .sl-page {
   display: flex;
   flex-direction: column;
@@ -8,16 +11,15 @@
   font-size: var(--xp-fs-sm);
 }
 
-/* ── MAIN BODY — two columns ─────────────────── */
 .sl-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 230px;
+  grid-template-columns: 1fr 210px;
   overflow: hidden;
   min-height: 0;
 }
 
-/* ════ LEFT COLUMN ════ */
+/* ════ LEFT ════ */
 .sl-left {
   display: flex;
   flex-direction: column;
@@ -27,44 +29,76 @@
   box-shadow: 2px 0 0 #fff;
 }
 
-/* ── Invoice header strip ── */
-.sl-inv-header {
+/* shortcut hints in titlebar */
+.sl-shortcut-hints {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sl-shortcut-hints span {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+/* Row 1 */
+.sl-top-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 10px;
+  padding: 4px 8px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #d7e4f2 0%, #c0d4ec 100%);
-  border-bottom: 2px solid #7aabda;
+  background: var(--xp-silver-3);
+  border-bottom: 1px solid var(--xp-silver-5);
+  box-shadow: 0 1px 0 #fff;
 }
-.sl-inv-title {
-  font-size: var(--xp-fs-lg);
+.sl-sale-title-box {
+  background: linear-gradient(180deg, #4a90d9 0%, #1e5fa8 100%);
+  color: #fff;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--xp-blue-dark);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  letter-spacing: 0.04em;
+  padding: 4px 28px;
+  border: 2px solid #1a4a8a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    var(--xp-shadow-btn);
+  white-space: nowrap;
+  user-select: none;
 }
-.sl-inv-field {
+.sl-inv-field-grp {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--xp-fs-xs);
 }
-.sl-inv-field label {
+.sl-inv-field-grp label {
+  font-size: var(--xp-fs-xs);
   font-weight: 700;
   color: #444;
   white-space: nowrap;
 }
-.sl-time {
+.sl-inv-input {
+  width: 110px !important;
+  font-family: var(--xp-mono) !important;
+  font-weight: 700 !important;
+}
+.sl-date-input {
+  width: 130px !important;
+}
+.sl-time-box {
   font-family: var(--xp-mono);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--xp-blue-dark);
   padding: 2px 8px;
   background: #fff;
   border: 1px solid #93c5fd;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 .sl-edit-badge {
   display: inline-flex;
@@ -79,50 +113,68 @@
   border-radius: 2px;
 }
 
-/* ── Product entry strip ── */
+/* Row 2: Entry strip */
 .sl-entry-strip {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 6px;
-  padding: 5px 8px;
+  padding: 4px 8px 5px;
   flex-shrink: 0;
-  background: var(--xp-silver-3);
-  border-bottom: 1px solid var(--xp-silver-2);
+  background: var(--xp-silver-2);
+  border-bottom: 2px solid var(--xp-silver-5);
   box-shadow: 0 1px 0 #fff;
-  flex-wrap: wrap;
 }
-.sl-entry-strip label {
-  font-size: var(--xp-fs-xs);
+.sl-entry-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sl-entry-cell label {
+  font-size: 10px;
   font-weight: 700;
   color: #444;
   white-space: nowrap;
 }
-.sl-product-input {
+.sl-entry-cell label kbd {
+  background: #ddd;
+  border: 1px solid #bbb;
+  border-radius: 2px;
+  padding: 0 3px;
+  font-size: 9px;
+  font-family: var(--xp-mono);
+  color: #555;
+}
+.sl-entry-product {
   flex: 1;
   min-width: 160px;
-  height: 24px;
+}
+.sl-entry-btns-cell {
+  flex-shrink: 0;
+}
+.sl-product-input {
+  width: 100%;
+  height: 22px;
   padding: 0 7px;
   font-family: var(--xp-font);
   font-size: var(--xp-fs-sm);
   color: #000;
-  background: #fff;
-  cursor: pointer;
+  background: #fff8e1;
   border-top: 1px solid var(--xp-silver-5);
   border-left: 1px solid var(--xp-silver-5);
   border-right: 1px solid #fff;
   border-bottom: 1px solid #fff;
   outline: none;
+  cursor: pointer;
 }
 .sl-product-input:focus {
-  outline: 2px solid #3b80f0;
+  background: #fff3cd;
+  outline: 2px solid #f59e0b;
 }
 .sl-product-input::placeholder {
   color: #aaa;
 }
-
 .sl-num-input {
-  width: 70px;
-  height: 24px;
+  height: 22px;
   padding: 0 5px;
   font-family: var(--xp-mono);
   font-size: var(--xp-fs-sm);
@@ -143,9 +195,8 @@
   background: #f5f3ee;
   color: #555;
 }
-
 .sl-uom-select {
-  height: 26px;
+  height: 22px;
   padding: 0 4px;
   font-family: var(--xp-font);
   font-size: var(--xp-fs-sm);
@@ -161,38 +212,47 @@
 .sl-uom-select:focus {
   outline: 2px solid #3b80f0;
 }
+.sl-entry-btns {
+  display: flex;
+  gap: 3px;
+}
 
-/* current product name tag */
-.sl-cur-name {
+/* Table header bar */
+.sl-table-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 8px;
+  background: var(--xp-silver-3);
+  border-bottom: 1px solid var(--xp-silver-5);
+  flex-shrink: 0;
+  min-height: 20px;
+}
+.sl-table-lbl {
   font-size: var(--xp-fs-xs);
+  color: #555;
+  font-style: italic;
+}
+.sl-cur-name-inline {
+  font-style: normal;
   font-weight: 700;
   color: var(--xp-blue-dark);
   background: #dbeafe;
+  padding: 0 6px;
   border: 1px solid #93c5fd;
-  padding: 2px 8px;
-  white-space: nowrap;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.sl-no-product {
+.sl-table-qty {
+  font-family: var(--xp-mono);
   font-size: var(--xp-fs-xs);
-  color: #999;
-  font-style: italic;
+  font-weight: 700;
+  color: #333;
 }
 
-/* entry action buttons */
-.sl-entry-btns {
-  display: flex;
-  gap: 4px;
-}
-
-/* ── Items table ── */
+/* Items table */
 .sl-items-wrap {
   flex: 1;
   overflow-y: auto;
   background: #fff;
-  border-top: 1px solid var(--xp-silver-5);
   border-bottom: 1px solid var(--xp-silver-5);
   min-height: 0;
 }
@@ -209,7 +269,7 @@ table.sl-items-table thead tr {
   z-index: 1;
 }
 table.sl-items-table thead th {
-  padding: 5px 7px;
+  padding: 4px 6px;
   font-size: var(--xp-fs-xs);
   font-weight: 700;
   color: #000;
@@ -227,7 +287,7 @@ table.sl-items-table thead th:last-child {
 table.sl-items-table tbody tr {
   border-bottom: 1px solid #e8e4dc;
   cursor: pointer;
-  height: 24px;
+  height: 22px;
 }
 table.sl-items-table tbody tr:nth-child(even) {
   background: #f5f3ee;
@@ -246,7 +306,7 @@ table.sl-items-table tbody tr.sl-empty-row td {
   border-bottom: 1px solid #e8e4dc;
 }
 table.sl-items-table tbody td {
-  padding: 3px 7px;
+  padding: 2px 6px;
   vertical-align: middle;
 }
 table.sl-items-table tbody td.r {
@@ -258,73 +318,53 @@ table.sl-items-table tbody td.muted {
   color: #888;
 }
 
-/* ════ RIGHT COLUMN ════ */
-.sl-right {
+/* Summary bar */
+.sl-summary-bar {
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-  background: var(--xp-silver-1);
-}
-
-/* ── Totals panel ── */
-.sl-totals-panel {
-  padding: 6px 8px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--xp-silver-2);
-  box-shadow: 0 1px 0 #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.sl-total-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 4px;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  background: var(--xp-silver-2);
+  border-top: 1px solid var(--xp-silver-5);
+  border-bottom: 1px solid var(--xp-silver-5);
+  box-shadow: 0 1px 0 #fff;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.sl-total-row label {
-  font-size: var(--xp-fs-xs);
+.sl-sum-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sl-sum-cell label {
+  font-size: 10px;
   font-weight: 700;
   color: #444;
   white-space: nowrap;
 }
-.sl-total-val {
+.sl-sum-val {
   font-family: var(--xp-mono);
   font-size: var(--xp-fs-sm);
   font-weight: 700;
   text-align: right;
   color: #000;
-  min-width: 90px;
+  width: 80px;
+  height: 20px;
+  padding: 0 5px;
+  background: #f5f3ee;
   border-top: 1px solid var(--xp-silver-5);
   border-left: 1px solid var(--xp-silver-5);
   border-right: 1px solid #fff;
   border-bottom: 1px solid #fff;
-  padding: 1px 5px;
-  background: #fff;
 }
-.sl-total-val[readonly] {
-  background: #f5f3ee;
-}
-.sl-total-val.highlight {
-  background: #dbeafe;
-  color: var(--xp-blue-dark);
-  font-size: 14px;
-}
-.sl-total-val.danger {
-  color: var(--xp-red);
-}
-.sl-total-val.success {
-  color: var(--xp-green);
-}
-.sl-inline-input {
+.sl-sum-input {
   font-family: var(--xp-mono);
   font-size: var(--xp-fs-sm);
   font-weight: 700;
   text-align: right;
   color: var(--xp-blue-dark);
-  min-width: 90px;
-  height: 22px;
+  width: 80px;
+  height: 20px;
   padding: 0 5px;
   background: #fff;
   outline: none;
@@ -333,31 +373,46 @@ table.sl-items-table tbody td.muted {
   border-right: 1px solid #fff;
   border-bottom: 1px solid #fff;
 }
-.sl-inline-input:focus {
+.sl-sum-input:focus {
   outline: 2px solid #3b80f0;
 }
+.sl-bal {
+  background: #dbeafe;
+  color: var(--xp-blue-dark);
+}
+.sl-bal.danger {
+  color: var(--xp-red);
+}
+.sl-bal.success {
+  color: var(--xp-green);
+}
 
-/* ── Customer panel ── */
-.sl-customer-panel {
-  padding: 5px 8px;
+/* ── Customer bar ── */
+.sl-customer-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 4px 8px 5px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--xp-silver-2);
+  background: var(--xp-silver-3);
+  border-top: 1px solid var(--xp-silver-5);
   box-shadow: 0 1px 0 #fff;
+  flex-wrap: wrap;
+}
+.sl-cust-cell {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
-.sl-cust-row {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  align-items: center;
-  gap: 4px;
-}
-.sl-cust-row label {
-  font-size: var(--xp-fs-xs);
+.sl-cust-cell label {
+  font-size: 10px;
   font-weight: 700;
   color: #444;
   white-space: nowrap;
+}
+.sl-cust-buyer {
+  flex: 1;
+  min-width: 200px;
 }
 .sl-cust-input {
   height: 22px;
@@ -376,7 +431,7 @@ table.sl-items-table tbody td.muted {
   outline: 2px solid #3b80f0;
 }
 .sl-cust-select {
-  height: 24px;
+  height: 22px;
   padding: 0 4px;
   font-family: var(--xp-font);
   font-size: var(--xp-fs-xs);
@@ -384,7 +439,6 @@ table.sl-items-table tbody td.muted {
   background: #fff;
   outline: none;
   cursor: pointer;
-  width: 100%;
   border-top: 1px solid var(--xp-silver-5);
   border-left: 1px solid var(--xp-silver-5);
   border-right: 1px solid #fff;
@@ -393,13 +447,19 @@ table.sl-items-table tbody td.muted {
 .sl-cust-select:focus {
   outline: 2px solid #3b80f0;
 }
+.sl-net-recv {
+  font-family: var(--xp-mono) !important;
+}
+
+/* Payment buttons */
 .sl-pay-btns {
   display: flex;
   gap: 3px;
+  align-self: flex-end;
 }
 .sl-pay-btn {
-  flex: 1;
   height: 22px;
+  min-width: 46px;
   font-family: var(--xp-font);
   font-size: 10px;
   font-weight: 700;
@@ -409,6 +469,8 @@ table.sl-items-table tbody td.muted {
   box-shadow: var(--xp-shadow-btn);
   color: #000;
   background: linear-gradient(180deg, #f4f1e8 0%, #dedad0 100%);
+  padding: 0 6px;
+  transition: background 0.1s;
 }
 .sl-pay-btn:hover {
   background: linear-gradient(180deg, #fafaf0 0%, #e8e4d8 100%);
@@ -438,7 +500,131 @@ table.sl-items-table tbody td.muted {
   box-shadow: var(--xp-shadow-btn-dn);
 }
 
-/* ── Hold bills panel ── */
+/* ════════════════════════════════════
+   INLINE CUSTOMER DROPDOWN (combobox)
+════════════════════════════════════ */
+.cdd-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.cdd-input-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.cdd-type-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+.cdd-input {
+  flex: 1 !important;
+  min-width: 0 !important;
+  cursor: text !important;
+}
+
+/* dropdown list */
+.cdd-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #fff;
+  border: 2px solid #316ac5;
+  border-top: 1px solid #c8d8ec;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  max-height: 220px;
+  overflow-y: auto;
+  min-width: 320px;
+}
+.cdd-empty {
+  padding: 6px 10px;
+  font-size: var(--xp-fs-xs);
+  color: #888;
+  font-style: italic;
+}
+.cdd-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0ede6;
+  font-size: var(--xp-fs-xs);
+  min-height: 22px;
+}
+.cdd-item:last-child {
+  border-bottom: none;
+}
+.cdd-item.hi {
+  background: #c3d9f5;
+}
+.cdd-item.hi .cdd-item-name {
+  color: #000;
+}
+
+.cdd-item-code {
+  font-family: var(--xp-mono);
+  font-size: 10px;
+  color: #888;
+  min-width: 48px;
+  flex-shrink: 0;
+}
+.cdd-item-name {
+  flex: 1;
+  font-weight: 500;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cdd-item-type {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.cdd-item-bal {
+  font-family: var(--xp-mono);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 55px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.cdd-add-new {
+  background: #f0f9ff;
+  border-top: 1px dashed #93c5fd !important;
+  color: #1e5fa8;
+  font-style: italic;
+}
+.cdd-add-new.hi {
+  background: #dbeafe;
+}
+.cdd-add-new strong {
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* ════ RIGHT: Hold Bills ════ */
+.sl-right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  background: var(--xp-silver-1);
+}
 .sl-hold-panel {
   flex: 1;
   display: flex;
@@ -450,9 +636,7 @@ table.sl-items-table tbody td.muted {
   font-size: var(--xp-fs-xs);
   font-weight: 700;
   color: var(--xp-blue-dark);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 4px 8px 2px;
+  padding: 4px 8px 3px;
   border-bottom: 2px solid #7aabda;
   background: linear-gradient(180deg, #d7e4f2 0%, #b8d0ec 100%);
   display: flex;
@@ -482,16 +666,33 @@ table.sl-hold-table {
   border-collapse: collapse;
   font-size: var(--xp-fs-xs);
 }
+table.sl-hold-table thead th {
+  background: linear-gradient(180deg, #d7e4f2 0%, #c0d4ec 100%);
+  padding: 3px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  border-bottom: 1px solid #7aabda;
+  border-right: 1px solid #c8d8ec;
+  text-align: left;
+  white-space: nowrap;
+}
+table.sl-hold-table thead th.r {
+  text-align: right;
+}
+table.sl-hold-table thead th:last-child {
+  border-right: none;
+}
 table.sl-hold-table tbody tr {
   border-bottom: 1px solid #e8e4dc;
   cursor: pointer;
   height: 22px;
+  transition: background 0.08s;
 }
 table.sl-hold-table tbody tr:hover {
   background: #c3d9f5;
 }
 table.sl-hold-table tbody td {
-  padding: 3px 6px;
+  padding: 2px 5px;
   vertical-align: middle;
 }
 table.sl-hold-table tbody td.r {
@@ -499,21 +700,34 @@ table.sl-hold-table tbody td.r {
   font-family: var(--xp-mono);
   font-weight: 700;
 }
+table.sl-hold-table tbody td.muted {
+  color: #888;
+}
+.sl-hold-scroll-btns {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--xp-silver-3);
+  border-top: 1px solid var(--xp-silver-5);
+  border-bottom: 1px solid var(--xp-silver-5);
+  flex-shrink: 0;
+}
 .sl-hold-hint {
   font-size: 10px;
   color: #777;
-  padding: 3px 6px;
+  padding: 2px 6px;
   background: var(--xp-silver-3);
   text-align: center;
   flex-shrink: 0;
 }
 
-/* ── COMMANDS BAR ── */
+/* Commands bar */
 .sl-cmd-bar {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 10px;
+  padding: 4px 10px;
   background: var(--xp-silver-1);
   border-top: 2px solid var(--xp-silver-5);
   box-shadow: 0 -1px 0 #fff;
@@ -534,6 +748,7 @@ table.sl-hold-table tbody td.r {
   font-weight: 700;
   color: #444;
   cursor: pointer;
+  white-space: nowrap;
 }
 .sl-check-label input[type="checkbox"],
 .sl-check-label input[type="radio"] {
@@ -545,7 +760,6 @@ table.sl-hold-table tbody td.r {
   align-items: center;
 }
 .sl-inv-info {
-  margin-left: auto;
   font-size: var(--xp-fs-xs);
   color: #555;
   white-space: nowrap;
