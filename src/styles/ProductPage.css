@@ -543,3 +543,47 @@ table.pp-list-table tbody td.r {
   background-color: #fff3cd !important;
   font-weight: 600;
 }
+/* Combo wrap */
+.pp-combo-wrap {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  width: 100%;
+}
+
+/* Input: right padding taake ▼ button text pe overlap na kare */
+.pp-combo-input {
+  width: 100%;
+  padding-right: 22px !important;
+  box-sizing: border-box;
+}
+
+/* ▼ Button: absolute right side pe */
+.pp-combo-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  border: none;
+  background: transparent;
+  cursor: default;
+  font-size: 9px;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  pointer-events: none;
+}
+
+.pp-close-btn {
+  background: #fff5f5 !important;
+  border-color: #c0392b !important;
+  color: #c0392b !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.pp-close-btn:hover {
+  background: #fdecea !important;
+}

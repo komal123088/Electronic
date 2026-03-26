@@ -23,7 +23,7 @@ function ComboLikeInput({
           id={id}
           ref={inputRef}
           type="text"
-          className="xp-input"
+          className="xp-input pp-combo-input"
           value={value}
           autoComplete="off"
           onChange={(e) => onChange(e.target.value)}
@@ -102,9 +102,13 @@ export default function ProductPage() {
   const [nextNum, setNext] = useState(1);
   const [msg, setMsg] = useState({ text: "", type: "" });
 
+  // ── activeField: "company" | "category" | "webCategory" | ""
   const [activeField, setActiveField] = useState("");
+  // ── filterText: jo bhi active field mein type ho raha hai
   const [filterText, setFilterText] = useState("");
+  // ── highlightedIndex: arrow keys se list mein highlight
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  // ── showAllProducts: after selection ya neutral field pe sab dikhao
   const [showAllProducts, setShowAllProducts] = useState(false);
 
   // Refs
@@ -152,201 +156,134 @@ export default function ProductPage() {
     setTimeout(() => setMsg({ text: "", type: "" }), 3000);
   };
 
-  const setF = (k, v) => {
-    setForm((p) => ({ ...p, [k]: v }));
-  };
-
+  const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const setP = (k, v) => setPForm((p) => ({ ...p, [k]: v }));
 
+  // ── Filter logic: active field ke hisaab se filter
   const getFilteredProducts = () => {
     if (showAllProducts || !filterText || !activeField) return products;
-
     return products.filter((p) => {
-      if (activeField === "company") {
+      if (activeField === "company")
         return p.company?.toLowerCase().includes(filterText.toLowerCase());
-      }
-      if (activeField === "category") {
+      if (activeField === "category")
         return p.category?.toLowerCase().includes(filterText.toLowerCase());
-      }
-      if (activeField === "webCategory") {
+      if (activeField === "webCategory")
         return p.webCategory?.toLowerCase().includes(filterText.toLowerCase());
-      }
       return true;
     });
   };
 
-  // Company handlers
-  const handleCompanyChange = (v) => {
-    setF("company", v);
+  // ── LIVE FILL: jab arrow se highlight change ho, turant field mein value fill karo
+  // useRef se latest activeField milega bina stale closure ke
+  const activeFieldRef = useRef(activeField);
+  useEffect(() => {
+    activeFieldRef.current = activeField;
+  }, [activeField]);
+
+  const applyHighlight = (idx, filtered) => {
+    setHighlightedIndex(idx);
+    if (idx >= 0 && filtered[idx]) {
+      const row = filtered[idx];
+      const field = activeFieldRef.current;
+      if (field === "company")
+        setForm((p) => ({ ...p, company: row.company || "" }));
+      else if (field === "category")
+        setForm((p) => ({ ...p, category: row.category || "" }));
+      else if (field === "webCategory")
+        setForm((p) => ({ ...p, webCategory: row.webCategory || "" }));
+    }
+  };
+
+  // ── Field focus karo
+  const focusField = (field, currentVal) => {
+    setActiveField(field);
+    activeFieldRef.current = field;
+    setFilterText(currentVal);
+    setShowAllProducts(!currentVal);
+    setHighlightedIndex(-1);
+  };
+
+  // ── Field change handler
+  const handleFieldChange = (field, v) => {
+    setF(field, v);
     setFilterText(v);
     setShowAllProducts(false);
     setHighlightedIndex(-1);
   };
 
-  const handleCompanyKeyDown = (e) => {
+  // ── makeFieldKeyDown: company/category/webCategory ke liye common keydown
+  const makeFieldKeyDown = (field, nextRef) => (e) => {
     const filtered = getFilteredProducts();
+
     if (e.key === "ArrowDown") {
       e.preventDefault();
       listWrapRef.current?.focus();
-      setHighlightedIndex((prev) =>
-        prev < filtered.length - 1 ? prev + 1 : 0,
-      );
+      const next =
+        highlightedIndex < filtered.length - 1 ? highlightedIndex + 1 : 0;
+      applyHighlight(next, filtered);
       return;
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
       listWrapRef.current?.focus();
-      setHighlightedIndex((prev) =>
-        prev > 0 ? prev - 1 : filtered.length - 1,
-      );
+      const prev =
+        highlightedIndex > 0 ? highlightedIndex - 1 : filtered.length - 1;
+      applyHighlight(prev, filtered);
       return;
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
-        setF("company", filtered[highlightedIndex].company || "");
-        setFilterText("");
-        setShowAllProducts(true);
-        setHighlightedIndex(-1);
-      } else {
-        setShowAllProducts(true);
-      }
-      rCat.current?.focus();
+      // Jo bhi ab field mein hai (live fill ya typed) — confirm kar do, aage jao
+      setFilterText("");
+      setShowAllProducts(true);
+      setHighlightedIndex(-1);
+      nextRef?.current?.focus();
     }
   };
 
-  // Category handlers
-  const handleCategoryChange = (v) => {
-    setF("category", v);
-    setFilterText(v);
-    setShowAllProducts(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleCategoryKeyDown = (e) => {
-    const filtered = getFilteredProducts();
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      listWrapRef.current?.focus();
-      setHighlightedIndex((prev) =>
-        prev < filtered.length - 1 ? prev + 1 : 0,
-      );
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      listWrapRef.current?.focus();
-      setHighlightedIndex((prev) =>
-        prev > 0 ? prev - 1 : filtered.length - 1,
-      );
-      return;
-    }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
-        setF("category", filtered[highlightedIndex].category || "");
-        setFilterText("");
-        setShowAllProducts(true);
-        setHighlightedIndex(-1);
-      } else {
-        setShowAllProducts(true);
-      }
-      rWebCat.current?.focus();
-    }
-  };
-
-  // Web Category handlers (NEW)
-  const handleWebCatChange = (v) => {
-    setF("webCategory", v);
-    setFilterText(v);
-    setShowAllProducts(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleWebCatKeyDown = (e) => {
-    const filtered = getFilteredProducts();
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      listWrapRef.current?.focus();
-      setHighlightedIndex((prev) =>
-        prev < filtered.length - 1 ? prev + 1 : 0,
-      );
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      listWrapRef.current?.focus();
-      setHighlightedIndex((prev) =>
-        prev > 0 ? prev - 1 : filtered.length - 1,
-      );
-      return;
-    }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
-        setF("webCategory", filtered[highlightedIndex].webCategory || "");
-        setFilterText("");
-        setShowAllProducts(true);
-        setHighlightedIndex(-1);
-      } else {
-        setShowAllProducts(true);
-      }
-      rRack.current?.focus();
-    }
-  };
-
-  // List KeyDown
+  // ── List div keydown (jab list focused ho arrows se)
   const handleListKeyDown = (e) => {
     const filtered = getFilteredProducts();
     if (filtered.length === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlightedIndex((prev) =>
-        prev < filtered.length - 1 ? prev + 1 : 0,
-      );
+      const next =
+        highlightedIndex < filtered.length - 1 ? highlightedIndex + 1 : 0;
+      applyHighlight(next, filtered);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlightedIndex((prev) =>
-        prev > 0 ? prev - 1 : filtered.length - 1,
-      );
+      const prev =
+        highlightedIndex > 0 ? highlightedIndex - 1 : filtered.length - 1;
+      applyHighlight(prev, filtered);
     } else if (e.key === "Enter" && highlightedIndex >= 0) {
       e.preventDefault();
-      const selected = filtered[highlightedIndex];
-      if (selected) {
-        if (activeField === "company") {
-          setF("company", selected.company || "");
-        } else if (activeField === "category") {
-          setF("category", selected.category || "");
-        } else if (activeField === "webCategory") {
-          setF("webCategory", selected.webCategory || "");
-        }
-        setFilterText("");
-        setShowAllProducts(true);
-        setHighlightedIndex(-1);
-
-        if (activeField === "company") rCat.current?.focus();
-        else if (activeField === "category") rWebCat.current?.focus();
-        else if (activeField === "webCategory") rRack.current?.focus();
-      }
+      setFilterText("");
+      setShowAllProducts(true);
+      setHighlightedIndex(-1);
+      const field = activeFieldRef.current;
+      if (field === "company") rCat.current?.focus();
+      else if (field === "category") rWebCat.current?.focus();
+      else if (field === "webCategory") rRack.current?.focus();
     } else if (e.key === "Escape") {
-      if (activeField === "company") rCompany.current?.focus();
-      else if (activeField === "category") rCat.current?.focus();
-      else if (activeField === "webCategory") rWebCat.current?.focus();
+      const field = activeFieldRef.current;
+      if (field === "company") rCompany.current?.focus();
+      else if (field === "category") rCat.current?.focus();
+      else if (field === "webCategory") rWebCat.current?.focus();
     }
   };
 
+  // ── Row click — sirf active field fill hoga
   const handleProductClick = (product) => {
-    if (activeField === "company") {
-      setF("company", product.company || "");
-    } else if (activeField === "category") {
-      setF("category", product.category || "");
-    } else if (activeField === "webCategory") {
+    const field = activeFieldRef.current;
+    if (field === "company") setF("company", product.company || "");
+    else if (field === "category") setF("category", product.category || "");
+    else if (field === "webCategory")
       setF("webCategory", product.webCategory || "");
-    }
+
+    setSelId(product._id);
     setFilterText("");
     setShowAllProducts(true);
-    setSelId(product._id);
     setHighlightedIndex(-1);
   };
 
@@ -407,7 +344,6 @@ export default function ProductPage() {
       nr?.current?.focus();
     }
   };
-
   const pkGoSave = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -434,7 +370,6 @@ export default function ProductPage() {
     if (!form.description.trim()) return alert("Description required");
     if (!form.company.trim()) return alert("Company required");
     if (!form.category.trim()) return alert("Category required");
-
     setLoad(true);
     try {
       const payload = { ...form, packingInfo: packRows };
@@ -462,6 +397,7 @@ export default function ProductPage() {
     setEditId(null);
     setFilterText("");
     setActiveField("");
+    activeFieldRef.current = "";
     setHighlightedIndex(-1);
     setShowAllProducts(false);
     setMsg({ text: "", type: "" });
@@ -553,6 +489,7 @@ export default function ProductPage() {
 
       <div className="pp-body">
         <div className="pp-top">
+          {/* LEFT COLUMN */}
           <div className="pp-left-col">
             <fieldset className="pp-fieldset">
               <legend className="pp-legend">
@@ -578,57 +515,83 @@ export default function ProductPage() {
                 />
               </div>
 
+              {/* ── COMPANY ── */}
               <ComboLikeInput
                 id="f_company"
                 label="Company"
                 inputRef={rCompany}
                 value={form.company}
-                onChange={handleCompanyChange}
-                onNext={handleCompanyKeyDown}
-                onFocusField={() => {
-                  setActiveField("company");
-                  setFilterText(form.company);
-                  setShowAllProducts(!form.company);
-                  setHighlightedIndex(-1);
-                }}
+                onChange={(v) => handleFieldChange("company", v)}
+                onNext={makeFieldKeyDown("company", rCat)}
+                onFocusField={() => focusField("company", form.company)}
               />
 
+              {/* ── CATEGORY ── */}
               <ComboLikeInput
                 id="f_cat"
                 label="Category"
                 inputRef={rCat}
                 value={form.category}
-                onChange={handleCategoryChange}
-                onNext={handleCategoryKeyDown}
-                onFocusField={() => {
-                  setActiveField("category");
-                  setFilterText(form.category);
-                  setShowAllProducts(!form.category);
-                  setHighlightedIndex(-1);
-                }}
+                onChange={(v) => handleFieldChange("category", v)}
+                onNext={makeFieldKeyDown("category", rWebCat)}
+                onFocusField={() => focusField("category", form.category)}
               />
 
+              {/* ── WEB CATEGORY + RACK # — ek hi row mein, label-aligned ── */}
               <div className="pp-frow">
-                <ComboLikeInput
-                  id="f_webcat"
-                  label="Web Cat."
-                  inputRef={rWebCat}
-                  value={form.webCategory}
-                  onChange={handleWebCatChange}
-                  onNext={handleWebCatKeyDown}
-                  onFocusField={() => {
-                    setActiveField("webCategory");
-                    setFilterText(form.webCategory);
-                    setShowAllProducts(!form.webCategory);
-                    setHighlightedIndex(-1);
+                <label htmlFor="f_webcat">Web Cat.</label>
+                {/* Web Cat. combo + Rack # dono ek flex row mein */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 4,
+                    flex: 1,
+                    alignItems: "center",
                   }}
-                />
-                <div>
-                  <label>Rack #</label>
+                >
+                  {/* Web Cat. combo — flex grow karo */}
+                  <div
+                    className="pp-combo-wrap"
+                    style={{ position: "relative", flex: 1 }}
+                  >
+                    <input
+                      id="f_webcat"
+                      ref={rWebCat}
+                      type="text"
+                      className="xp-input pp-combo-input"
+                      value={form.webCategory}
+                      autoComplete="off"
+                      onChange={(e) =>
+                        handleFieldChange("webCategory", e.target.value)
+                      }
+                      onKeyDown={makeFieldKeyDown("webCategory", rRack)}
+                      onFocus={() =>
+                        focusField("webCategory", form.webCategory)
+                      }
+                    />
+                    <button
+                      className="pp-combo-btn"
+                      tabIndex={-1}
+                      style={{ pointerEvents: "none" }}
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  {/* Rack # — fixed width */}
+                  <label
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: "var(--xp-fs-xs)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Rack #
+                  </label>
                   <input
                     ref={rRack}
                     className="xp-input xp-input-sm"
                     type="text"
+                    style={{ width: 48 }}
                     value={form.rackNo}
                     onChange={(e) => setF("rackNo", e.target.value)}
                     onKeyDown={(e) =>
@@ -636,6 +599,7 @@ export default function ProductPage() {
                     }
                     onFocus={() => {
                       setActiveField("");
+                      activeFieldRef.current = "";
                       setShowAllProducts(true);
                     }}
                   />
@@ -653,6 +617,7 @@ export default function ProductPage() {
                   onKeyDown={(e) => e.key === "Enter" && rUrdu.current?.focus()}
                   onFocus={() => {
                     setActiveField("");
+                    activeFieldRef.current = "";
                     setShowAllProducts(true);
                   }}
                 />
@@ -672,6 +637,7 @@ export default function ProductPage() {
                   }
                   onFocus={() => {
                     setActiveField("");
+                    activeFieldRef.current = "";
                     setShowAllProducts(true);
                   }}
                 />
@@ -688,6 +654,7 @@ export default function ProductPage() {
                 }}
                 onFocusField={() => {
                   setActiveField("");
+                  activeFieldRef.current = "";
                   setShowAllProducts(true);
                   setHighlightedIndex(-1);
                 }}
@@ -704,6 +671,7 @@ export default function ProductPage() {
                   onKeyDown={handleRemarksKey}
                   onFocus={() => {
                     setActiveField("");
+                    activeFieldRef.current = "";
                     setShowAllProducts(true);
                   }}
                 />
@@ -748,11 +716,24 @@ export default function ProductPage() {
                 >
                   Delete
                 </button>
+                {(editId ||
+                  form.company ||
+                  form.category ||
+                  form.description) && (
+                  <button
+                    className="xp-btn xp-btn-sm pp-close-btn"
+                    style={{ gridColumn: "1 / -1" }}
+                    onClick={refresh}
+                    title="Current entry discard karo aur form clear karo"
+                  >
+                    ✕ Close / Cancel
+                  </button>
+                )}
               </div>
             </fieldset>
           </div>
 
-          {/* RIGHT: Packing Info (same) */}
+          {/* RIGHT: Packing Info */}
           <div className="pp-right-col">
             <fieldset
               className="pp-fieldset"
@@ -1025,7 +1006,7 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Product List */}
+        {/* ── Product List ── */}
         <div className="pp-list-section">
           <fieldset
             className="pp-fieldset"
@@ -1035,6 +1016,9 @@ export default function ProductPage() {
               Product List —{" "}
               <span style={{ color: "var(--xp-blue-mid)" }}>
                 {sorted.length} products
+                {!showAllProducts && filterText && activeField
+                  ? ` (filtered: "${filterText}")`
+                  : ""}
               </span>
             </legend>
 
@@ -1090,10 +1074,12 @@ export default function ProductPage() {
                   {!loading &&
                     sorted.map((p, idx) => {
                       const pk = p.packingInfo?.[0];
+                      const isHighlighted = highlightedIndex === idx;
+                      const isSelected = selId === p._id;
                       return (
                         <tr
                           key={p._id}
-                          className={`${selId === p._id ? "pp-sel-row" : ""} ${highlightedIndex === idx ? "pp-highlighted" : ""}`}
+                          className={`${isSelected ? "pp-sel-row" : ""} ${isHighlighted ? "pp-highlighted" : ""}`}
                           onClick={() => {
                             setSelId(p._id);
                             handleProductClick(p);
@@ -1103,7 +1089,7 @@ export default function ProductPage() {
                             loadForEdit(p._id);
                           }}
                           ref={
-                            highlightedIndex === idx
+                            isHighlighted
                               ? (el) => el?.scrollIntoView({ block: "nearest" })
                               : null
                           }
@@ -1142,7 +1128,10 @@ export default function ProductPage() {
         <div className="xp-status-pane">
           {editId ? `Edit — ${form.productId}` : `Add — Next ID: ${nextId}`}
         </div>
-        <div className="xp-status-pane">{sorted.length} products</div>
+        <div className="xp-status-pane">
+          {sorted.length} / {products.length} products
+          {activeField ? ` | Active: ${activeField}` : ""}
+        </div>
         <div className="xp-status-pane">Pack rows: {packRows.length}</div>
       </div>
     </div>
