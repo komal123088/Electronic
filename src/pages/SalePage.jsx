@@ -13,6 +13,7 @@ const timeNow = () =>
     second: "2-digit",
   });
 const isoDate = () => new Date().toISOString().split("T")[0];
+const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
 
 const EMPTY_ROW = {
   productId: "",
@@ -25,6 +26,8 @@ const EMPTY_ROW = {
   amount: 0,
 };
 
+const SHOP_NAME = "Asim Electric & Electronic Store";
+
 /* customer type → badge colors */
 const TYPE_COLORS = {
   credit: { bg: "#fca5a5", color: "#7f1d1d", border: "#ef4444" },
@@ -34,17 +37,218 @@ const TYPE_COLORS = {
   "raw-purchase": { bg: "#d8b4fe", color: "#3b0764", border: "#a855f7" },
 };
 
-/* derive paymentMode from customer type */
+/* FIX 1: derive paymentMode from customer type */
 const typeToPayment = (t) => {
   if (t === "credit" || t === "raw-sale" || t === "raw-purchase")
     return "Credit";
+  if (t === "debit") return "Bank";
   return "Cash";
 };
-/* derive saleSource from customer type */
+
+/* FIX 1: derive saleSource from customer type — exact match */
 const typeToSource = (t) => {
   if (!t) return "cash";
   return t; // "credit","debit","cash","raw-sale","raw-purchase"
 };
+
+/* ─────────────────────────────────────────────────────────────
+   INVOICE PRINT MODAL  (FIX 3)
+───────────────────────────────────────────────────────────── */
+function InvoiceModal({ sale, printType, onClose }) {
+  const buildA4Html = () => {
+    const rows = sale.items
+      .map(
+        (it, i) =>
+          `<tr><td>${i + 1}</td><td>${it.name || it.description}</td><td>${it.uom || it.measurement || ""}</td><td align="right">${it.pcs || it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+      )
+      .join("");
+    return `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title>
+    <style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#000}h2{text-align:center;font-size:22px;margin:0 0 2px}.sub{text-align:center;font-size:11px;color:#555;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;border:1px solid #ccc;padding:6px 10px;margin:8px 0;background:#f9f9f9;font-size:11px}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e8e8e8;border:1px solid #ccc;padding:5px 7px;text-align:left;font-size:11px}td{border:1px solid #ddd;padding:4px 7px;font-size:11px}.tots{float:right;min-width:240px;margin-top:12px;border:1px solid #ccc;padding:8px 12px;background:#f9f9f9}.tr{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px dotted #eee}.tr.b{font-weight:bold;font-size:14px;border-top:2px solid #000;border-bottom:none;margin-top:6px;padding-top:6px}.tr.red{color:#c0392b}.tr.green{color:#27ae60}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888;clear:both;border-top:1px dashed #ccc;padding-top:10px}@media print{body{margin:5mm}@page{size:A4;margin:10mm}}</style></head><body>
+    <h2>${SHOP_NAME}</h2><div class="sub">◆ Sale Invoice ◆</div>
+    <div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Customer:</b> ${sale.customerName}</span><span><b>Source:</b> ${sale.saleSource} / ${sale.paymentMode}</span></div>
+    <table><thead><tr><th>#</th><th>Description</th><th>UOM</th><th align="right">Pcs</th><th align="right">Rate</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="tots"><div class="tr"><span>Sub Total</span><span>PKR ${Number(sale.subTotal).toLocaleString()}</span></div>${sale.extraDisc > 0 ? `<div class="tr"><span>Discount</span><span style="color:red">-PKR ${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>${sale.prevBalance > 0 ? `<div class="tr red"><span>Previous Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}<div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div><div class="tr b red"><span>Balance</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div></div>
+    <br style="clear:both"><div class="thanks">Thank you! — ${SHOP_NAME}</div></body></html>`;
+  };
+
+  const buildA5Html = () => {
+    const rows = sale.items
+      .map(
+        (it, i) =>
+          `<tr><td>${i + 1}</td><td>${it.name || it.description}</td><td>${it.uom || it.measurement || ""}</td><td align="right">${it.pcs || it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+      )
+      .join("");
+    return `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title>
+    <style>body{font-family:Arial,sans-serif;font-size:10px;margin:8px;color:#000}h2{text-align:center;font-size:16px;margin:0 0 2px}.sub{text-align:center;font-size:9px;color:#555;margin-bottom:6px}.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px;border:1px solid #ccc;padding:4px 8px;margin:5px 0;background:#f9f9f9;font-size:9px}table{width:100%;border-collapse:collapse;margin-top:6px}th{background:#e8e8e8;border:1px solid #ccc;padding:3px 5px;text-align:left;font-size:9px}td{border:1px solid #ddd;padding:2px 5px;font-size:9px}.tots{float:right;min-width:180px;margin-top:8px;border:1px solid #ccc;padding:5px 8px;background:#f9f9f9}.tr{display:flex;justify-content:space-between;padding:2px 0;font-size:9px;border-bottom:1px dotted #eee}.tr.b{font-weight:bold;font-size:11px;border-top:2px solid #000;border-bottom:none;margin-top:4px;padding-top:4px}.tr.red{color:#c0392b}.tr.green{color:#27ae60}.thanks{text-align:center;margin-top:16px;font-size:9px;color:#888;clear:both;border-top:1px dashed #ccc;padding-top:6px}@media print{body{margin:3mm}@page{size:A5;margin:6mm}}</style></head><body>
+    <h2>${SHOP_NAME}</h2><div class="sub">◆ Sale Invoice ◆</div>
+    <div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Customer:</b> ${sale.customerName}</span><span><b>Source:</b> ${sale.saleSource} / ${sale.paymentMode}</span></div>
+    <table><thead><tr><th>#</th><th>Description</th><th>UOM</th><th align="right">Pcs</th><th align="right">Rate</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="tots"><div class="tr"><span>Sub Total</span><span>PKR ${Number(sale.subTotal).toLocaleString()}</span></div>${sale.extraDisc > 0 ? `<div class="tr"><span>Discount</span><span style="color:red">-PKR ${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>${sale.prevBalance > 0 ? `<div class="tr red"><span>Prev Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}<div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div><div class="tr b red"><span>Balance</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div></div>
+    <br style="clear:both"><div class="thanks">Thank you! — ${SHOP_NAME}</div></body></html>`;
+  };
+
+  const buildThermalHtml = () => {
+    const rows = sale.items
+      .map(
+        (it, i) =>
+          `<tr><td style="padding:2px 0">${i + 1}. ${it.name || it.description}</td><td align="right" style="padding:2px 0">${it.pcs || it.qty}×${Number(it.rate).toLocaleString()}</td><td align="right" style="padding:2px 0"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+      )
+      .join("");
+    return `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px;border-collapse:collapse}.t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.t.b{font-weight:bold;font-size:12px;border-top:1px dashed #000;padding-top:3px;margin-top:2px}.t.red{color:#c0392b}.t.green{color:#27ae60}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body>
+    <h3>${SHOP_NAME}</h3><div class="c">★ SALE RECEIPT ★</div><hr>
+    <div class="c">Invoice: <b>${sale.invoiceNo}</b> | ${sale.invoiceDate}</div>
+    <div class="c"><b>${sale.customerName}</b></div><hr>
+    <table><tbody>${rows}</tbody></table><hr>
+    <div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.extraDisc > 0 ? `<div class="t"><span>Discount</span><span>-${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
+    <div class="t b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div>${sale.prevBalance > 0 ? `<div class="t red"><span>Prev Balance</span><span>${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}<div class="t green"><span>Received</span><span>${Number(sale.paidAmount).toLocaleString()}</span></div><div class="t b red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div><hr>
+    <div class="c" style="font-size:10px;margin-top:4px">Thank you! — ${SHOP_NAME}</div></body></html>`;
+  };
+
+  const doPrint = (type) => {
+    let html = "";
+    if (type === "Thermal") html = buildThermalHtml();
+    else if (type === "A5") html = buildA5Html();
+    else html = buildA4Html();
+    const w = window.open(
+      "",
+      "_blank",
+      type === "Thermal" ? "width=400,height=600" : "width=900,height=700",
+    );
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => w.print(), 400);
+  };
+
+  useEffect(() => {
+    // auto print on open
+    doPrint(printType);
+  }, []);
+
+  return (
+    <div
+      className="xp-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="xp-modal xp-modal-lg">
+        <div className="xp-modal-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.8)"
+          >
+            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
+          </svg>
+          <span className="xp-modal-title">
+            Invoice #{sale.invoiceNo} — {sale.customerName}
+          </span>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className="xp-modal-body">
+          <div className="cs-inv-preview">
+            <div className="cs-inv-shop">{SHOP_NAME}</div>
+            <div className="cs-inv-sub">◆ Sale Invoice ◆</div>
+            <div className="cs-inv-meta">
+              <span>
+                Invoice: <strong>{sale.invoiceNo}</strong>
+              </span>
+              <span>
+                Date: <strong>{sale.invoiceDate}</strong>
+              </span>
+              <span>
+                Customer: <strong>{sale.customerName}</strong>
+              </span>
+              <span>
+                Source:{" "}
+                <strong>
+                  {sale.saleSource} / {sale.paymentMode}
+                </strong>
+              </span>
+            </div>
+            <div className="xp-table-panel">
+              <table className="xp-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th>UOM</th>
+                    <th className="r">Pcs</th>
+                    <th className="r">Rate</th>
+                    <th className="r">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sale.items.map((it, i) => (
+                    <tr key={i}>
+                      <td className="text-muted">{i + 1}</td>
+                      <td>{it.name || it.description}</td>
+                      <td className="text-muted">{it.uom || it.measurement}</td>
+                      <td className="r">{it.pcs || it.qty}</td>
+                      <td className="r xp-amt">{fmt(it.rate)}</td>
+                      <td className="r xp-amt">{fmt(it.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="cs-inv-totals">
+              <div className="cs-inv-total-row">
+                <span>Sub Total</span>
+                <span className="xp-amt">{fmt(sale.subTotal)}</span>
+              </div>
+              {sale.extraDisc > 0 && (
+                <div className="cs-inv-total-row danger">
+                  <span>Discount</span>
+                  <span>-{fmt(sale.extraDisc)}</span>
+                </div>
+              )}
+              <div className="cs-inv-total-row bold">
+                <span>Net Total</span>
+                <span className="xp-amt">{fmt(sale.netTotal)}</span>
+              </div>
+              {sale.prevBalance > 0 && (
+                <div className="cs-inv-total-row danger">
+                  <span>Prev Balance</span>
+                  <span className="xp-amt danger">{fmt(sale.prevBalance)}</span>
+                </div>
+              )}
+              <div className="cs-inv-total-row success">
+                <span>Received</span>
+                <span className="xp-amt success">{fmt(sale.paidAmount)}</span>
+              </div>
+              <div className="cs-inv-total-row bold danger">
+                <span>Balance</span>
+                <span className="xp-amt danger">{fmt(sale.balance)}</span>
+              </div>
+            </div>
+            <div className="cs-inv-thanks">Thank you! — {SHOP_NAME}</div>
+          </div>
+        </div>
+
+        <div className="xp-modal-footer">
+          <button
+            className="xp-btn xp-btn-sm"
+            onClick={() => doPrint("Thermal")}
+          >
+            🖨 Thermal
+          </button>
+          <button className="xp-btn xp-btn-sm" onClick={() => doPrint("A5")}>
+            📄 A5 Print
+          </button>
+          <button className="xp-btn xp-btn-sm" onClick={() => doPrint("A4")}>
+            📄 A4 Print
+          </button>
+          <button className="xp-btn xp-btn-lg" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────
    PRODUCT SEARCH MODAL
@@ -385,7 +589,7 @@ function HoldPreviewModal({ bill, onResume, onClose }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   INLINE CUSTOMER COMBOBOX
+   INLINE CUSTOMER COMBOBOX  (FIX 4: dropdown opens upward)
 ───────────────────────────────────────────────────────────── */
 function CustomerDropdown({
   allCustomers,
@@ -403,23 +607,25 @@ function CustomerDropdown({
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  /* filtered list */
-  const filtered = query.trim()
-    ? allCustomers.filter((c) => {
-        const q = query.toLowerCase();
-        return (
-          c.name?.toLowerCase().includes(q) ||
-          c.code?.toLowerCase().includes(q) ||
-          c.phone?.toLowerCase().includes(q)
-        );
-      })
-    : allCustomers;
+  // Exclude COUNTER SALE placeholder, show real customers only
+  const realCustomers = allCustomers.filter(
+    (c) => c.name?.toUpperCase().trim() !== "COUNTER SALE",
+  );
+  const filtered =
+    query.trim().length > 0
+      ? realCustomers.filter((c) => {
+          const q = query.toLowerCase();
+          return (
+            c.name?.toLowerCase().includes(q) ||
+            c.code?.toLowerCase().includes(q) ||
+            c.phone?.toLowerCase().includes(q)
+          );
+        })
+      : realCustomers;
 
-  /* total rows = filtered + optional "add new" at bottom */
   const showAddNew = query.trim().length > 0;
   const totalRows = filtered.length + (showAddNew ? 1 : 0);
 
-  /* close on outside click */
   useEffect(() => {
     const h = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target))
@@ -429,7 +635,6 @@ function CustomerDropdown({
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  /* scroll highlighted into view */
   useEffect(() => {
     if (!listRef.current || !open) return;
     const el = listRef.current.children[hiIdx];
@@ -471,9 +676,7 @@ function CustomerDropdown({
         onAddNew && onAddNew(query);
         setOpen(false);
         setQuery("");
-      } else if (filtered[hiIdx]) {
-        selectCustomer(filtered[hiIdx]);
-      }
+      } else if (filtered[hiIdx]) selectCustomer(filtered[hiIdx]);
     }
   };
 
@@ -487,7 +690,7 @@ function CustomerDropdown({
       : null;
 
   return (
-    <div className="cdd-wrap" ref={wrapRef}>
+    <div className="cdd-wrap" ref={wrapRef} style={{ position: "relative" }}>
       <div className="cdd-input-row">
         {typeStyle && (
           <span className="cdd-type-badge" style={typeStyle}>
@@ -506,7 +709,6 @@ function CustomerDropdown({
           }}
           onFocus={() => {
             setOpen(true);
-            setQuery("");
           }}
           onKeyDown={handleKey}
           autoComplete="off"
@@ -533,8 +735,26 @@ function CustomerDropdown({
         )}
       </div>
 
+      {/* FIX 4: dropdown opens UPWARD — bottom: 100% instead of top: 100% */}
       {open && (
-        <div className="cdd-dropdown" ref={listRef}>
+        <div
+          className="cdd-dropdown"
+          ref={listRef}
+          style={{
+            position: "absolute",
+            bottom: "100%",
+            left: 0,
+            right: 0,
+            marginBottom: 2,
+            maxHeight: 260,
+            overflowY: "auto",
+            zIndex: 9999,
+            background: "#fff",
+            border: "1px solid #b0b8c8",
+            borderRadius: 3,
+            boxShadow: "0 -4px 16px rgba(0,0,0,0.18)",
+          }}
+        >
           {filtered.length === 0 && !showAddNew && (
             <div className="cdd-empty">
               No customers — type a name to add new
@@ -608,7 +828,7 @@ function CustomerDropdown({
 export default function SalePage() {
   const [time, setTime] = useState(timeNow());
   const [allProducts, setAllProducts] = useState([]);
-  const [allCustomers, setAllCustomers] = useState([]); // ALL customers, all types
+  const [allCustomers, setAllCustomers] = useState([]);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showHoldPreview, setShowHoldPreview] = useState(null);
   const [searchText, setSearchText] = useState("");
@@ -628,7 +848,7 @@ export default function SalePage() {
   const [extraDiscount, setExtraDiscount] = useState(0);
   const [received, setReceived] = useState(0);
   const [paymentMode, setPaymentMode] = useState("Cash");
-  const [saleSource, setSaleSource] = useState("cash");
+  const [saleSource, setSaleSource] = useState("cash"); // FIX 1: default cash
 
   /* misc */
   const [holdBills, setHoldBills] = useState([]);
@@ -636,9 +856,13 @@ export default function SalePage() {
   const [selItemIdx, setSelItemIdx] = useState(null);
   const [msg, setMsg] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(false);
-  const [printType, setPrintType] = useState("Thermal");
+  const [printType, setPrintType] = useState("A5"); // FIX 2: default A5
   const [sendSms, setSendSms] = useState(false);
   const [packingOptions, setPackingOptions] = useState([]);
+
+  /* FIX 3: invoice modal after save */
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [savedSale, setSavedSale] = useState(null);
 
   const searchRef = useRef(null);
   const pcsRef = useRef(null);
@@ -662,7 +886,6 @@ export default function SalePage() {
   const balance =
     billAmount + (parseFloat(prevBalance) || 0) - (parseFloat(received) || 0);
 
-  /* auto-fill received for non-credit modes */
   useEffect(() => {
     if (paymentMode !== "Credit") {
       setReceived(billAmount + (parseFloat(prevBalance) || 0));
@@ -684,7 +907,7 @@ export default function SalePage() {
         api.get(EP.SALES.NEXT_INVOICE),
       ]);
       if (pRes.data.success) setAllProducts(pRes.data.data);
-      if (cRes.data.success) setAllCustomers(cRes.data.data); // ← ALL customers
+      if (cRes.data.success) setAllCustomers(cRes.data.data);
       if (invRes.data.success) setInvoiceNo(invRes.data.data.invoiceNo);
     } catch {
       showMsg("Failed to load data", "error");
@@ -704,7 +927,7 @@ export default function SalePage() {
     setTimeout(() => setMsg({ text: "", type: "" }), 3500);
   };
 
-  /* ── Customer select ── */
+  /* ── Customer select — FIX 1: auto saleSource & paymentMode ── */
   const handleCustomerSelect = (c) => {
     const type = c.customerType || c.type || "";
     setCustomerId(c._id);
@@ -712,10 +935,13 @@ export default function SalePage() {
     setBuyerCode(c.code || "");
     setCustomerType(type);
     setPrevBalance(c.currentBalance || 0);
+
+    // FIX 1: auto-derive payment mode and sale source from customer type
     const pm = typeToPayment(type);
     const ss = typeToSource(type);
     setPaymentMode(pm);
     setSaleSource(ss);
+
     if (pm === "Credit") setReceived(0);
     else setReceived(billAmount + (c.currentBalance || 0));
     setTimeout(() => searchRef.current?.focus(), 30);
@@ -728,11 +954,10 @@ export default function SalePage() {
     setCustomerType("");
     setPrevBalance(0);
     setPaymentMode("Cash");
-    setSaleSource("cash");
+    setSaleSource("cash"); // FIX 1: reset to cash
     setReceived(billAmount);
   };
 
-  /* add new customer: save name, user will register from Customers page */
   const handleAddNewCustomer = (name) => {
     setBuyerName(name || "COUNTER SALE");
     setCustomerId("");
@@ -886,13 +1111,14 @@ export default function SalePage() {
     setExtraDiscount(0);
     setReceived(0);
     setPaymentMode("Cash");
-    setSaleSource("cash");
+    setSaleSource("cash"); // FIX 1
     setEditId(null);
     setSelItemIdx(null);
     setMsg({ text: "", type: "" });
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
+  /* FIX 3: saveSale — show invoice after save */
   const saveSale = async () => {
     if (!items.length) {
       alert("Add at least one item");
@@ -933,8 +1159,33 @@ export default function SalePage() {
       const { data } = editId
         ? await api.put(EP.SALES.UPDATE(editId), payload)
         : await api.post(EP.SALES.CREATE, payload);
+
       if (data.success) {
         showMsg(editId ? "Sale updated!" : `Saved: ${data.data.invoiceNo}`);
+
+        // FIX 3: build savedSale object for invoice modal
+        setSavedSale({
+          invoiceNo: data.data.invoiceNo,
+          invoiceDate,
+          customerName: buyerName || "COUNTER SALE",
+          saleSource,
+          paymentMode,
+          items: items.map((r) => ({
+            name: r.name,
+            uom: r.uom,
+            pcs: parseFloat(r.pcs) || 1,
+            rate: parseFloat(r.rate) || 0,
+            amount: parseFloat(r.amount) || 0,
+          })),
+          subTotal,
+          extraDisc: parseFloat(extraDiscount) || 0,
+          netTotal: billAmount,
+          prevBalance: parseFloat(prevBalance) || 0,
+          paidAmount: parseFloat(received) || 0,
+          balance,
+        });
+        setShowInvoice(true); // show invoice modal
+
         fullReset();
         await refreshInvoiceNo();
       } else showMsg(data.message, "error");
@@ -985,6 +1236,17 @@ export default function SalePage() {
           bill={showHoldPreview}
           onResume={resumeHold}
           onClose={() => setShowHoldPreview(null)}
+        />
+      )}
+      {/* FIX 3: Invoice modal after save */}
+      {showInvoice && savedSale && (
+        <InvoiceModal
+          sale={savedSale}
+          printType={printType}
+          onClose={() => {
+            setShowInvoice(false);
+            setSavedSale(null);
+          }}
         />
       )}
 
@@ -1354,7 +1616,6 @@ export default function SalePage() {
               />
             </div>
 
-            {/* Inline customer combobox */}
             <div className="sl-cust-cell sl-cust-buyer">
               <label>Buyer Name</label>
               <CustomerDropdown
@@ -1392,23 +1653,6 @@ export default function SalePage() {
                 value={Number(balance).toLocaleString("en-PK")}
                 readOnly
               />
-            </div>
-
-            {/* Sale Source */}
-            <div className="sl-cust-cell">
-              <label>Sale Source</label>
-              <select
-                className="sl-cust-select"
-                style={{ width: 105 }}
-                value={saleSource}
-                onChange={(e) => setSaleSource(e.target.value)}
-              >
-                <option value="cash">cash</option>
-                <option value="credit">credit</option>
-                <option value="debit">debit</option>
-                <option value="raw-sale">raw-sale</option>
-                <option value="raw-purchase">raw-purchase</option>
-              </select>
             </div>
 
             {/* Payment Mode */}
@@ -1595,6 +1839,7 @@ export default function SalePage() {
           </label>
         </div>
         <div className="xp-toolbar-divider" />
+        {/* FIX 2: default A5 */}
         <div className="sl-print-types">
           {["Thermal", "A4", "A5"].map((pt) => (
             <label key={pt} className="sl-check-label">
