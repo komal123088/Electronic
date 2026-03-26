@@ -158,7 +158,29 @@ export default function ProductPage() {
   const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const setP = (k, v) => setPForm((p) => ({ ...p, [k]: v }));
 
-  // ── Filter logic — orderName bhi shaamil
+  // ── ref-based filter — stale closure se free, hamesha latest values
+  const getFilteredFromRefs = () => {
+    const field = activeFieldRef.current;
+    const text = filterTextRef.current;
+    const showAll = showAllRef.current;
+    const prods = productsRef.current;
+    if (showAll || !text || !field) return prods;
+    return prods.filter((p) => {
+      if (field === "company")
+        return p.company?.toLowerCase().includes(text.toLowerCase());
+      if (field === "category")
+        return p.category?.toLowerCase().includes(text.toLowerCase());
+      if (field === "webCategory")
+        return p.webCategory?.toLowerCase().includes(text.toLowerCase());
+      if (field === "orderName")
+        return p.orderName?.toLowerCase().includes(text.toLowerCase());
+      if (field === "description")
+        return p.description?.toLowerCase().includes(text.toLowerCase());
+      return true;
+    });
+  };
+
+  // ── state-based filter — render ke liye (table display)
   const getFilteredProducts = () => {
     if (showAllProducts || !filterText || !activeField) return products;
     return products.filter((p) => {
@@ -170,14 +192,33 @@ export default function ProductPage() {
         return p.webCategory?.toLowerCase().includes(filterText.toLowerCase());
       if (activeField === "orderName")
         return p.orderName?.toLowerCase().includes(filterText.toLowerCase());
+      if (activeField === "description")
+        return p.description?.toLowerCase().includes(filterText.toLowerCase());
       return true;
     });
   };
 
   const activeFieldRef = useRef(activeField);
+  const filterTextRef = useRef(filterText);
+  const showAllRef = useRef(showAllProducts);
+  const highlightedRef = useRef(highlightedIndex);
+  const productsRef = useRef(products);
+
   useEffect(() => {
     activeFieldRef.current = activeField;
   }, [activeField]);
+  useEffect(() => {
+    filterTextRef.current = filterText;
+  }, [filterText]);
+  useEffect(() => {
+    showAllRef.current = showAllProducts;
+  }, [showAllProducts]);
+  useEffect(() => {
+    highlightedRef.current = highlightedIndex;
+  }, [highlightedIndex]);
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   const applyHighlight = (idx, filtered) => {
     setHighlightedIndex(idx);
@@ -192,6 +233,8 @@ export default function ProductPage() {
         setForm((p) => ({ ...p, webCategory: row.webCategory || "" }));
       else if (field === "orderName")
         setForm((p) => ({ ...p, orderName: row.orderName || "" }));
+      else if (field === "description")
+        setForm((p) => ({ ...p, description: row.description || "" }));
     }
   };
 
@@ -199,33 +242,39 @@ export default function ProductPage() {
     setActiveField(field);
     activeFieldRef.current = field;
     setFilterText(currentVal);
-    setShowAllProducts(!currentVal);
+    filterTextRef.current = currentVal;
+    const showAll = !currentVal;
+    setShowAllProducts(showAll);
+    showAllRef.current = showAll;
     setHighlightedIndex(-1);
+    highlightedRef.current = -1;
   };
 
   const handleFieldChange = (field, v) => {
     setF(field, v);
     setFilterText(v);
+    filterTextRef.current = v;
     setShowAllProducts(false);
+    showAllRef.current = false;
     setHighlightedIndex(-1);
+    highlightedRef.current = -1;
   };
 
   const makeFieldKeyDown = (field, nextRef) => (e) => {
-    const filtered = getFilteredProducts();
+    const filtered = getFilteredFromRefs();
+    const hi = highlightedRef.current;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
       listWrapRef.current?.focus();
-      const next =
-        highlightedIndex < filtered.length - 1 ? highlightedIndex + 1 : 0;
+      const next = hi < filtered.length - 1 ? hi + 1 : 0;
       applyHighlight(next, filtered);
       return;
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
       listWrapRef.current?.focus();
-      const prev =
-        highlightedIndex > 0 ? highlightedIndex - 1 : filtered.length - 1;
+      const prev = hi > 0 ? hi - 1 : filtered.length - 1;
       applyHighlight(prev, filtered);
       return;
     }
@@ -239,35 +288,36 @@ export default function ProductPage() {
   };
 
   const handleListKeyDown = (e) => {
-    const filtered = getFilteredProducts();
+    const filtered = getFilteredFromRefs();
+    const hi = highlightedRef.current;
     if (filtered.length === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const next =
-        highlightedIndex < filtered.length - 1 ? highlightedIndex + 1 : 0;
+      const next = hi < filtered.length - 1 ? hi + 1 : 0;
       applyHighlight(next, filtered);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      const prev =
-        highlightedIndex > 0 ? highlightedIndex - 1 : filtered.length - 1;
+      const prev = hi > 0 ? hi - 1 : filtered.length - 1;
       applyHighlight(prev, filtered);
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+    } else if (e.key === "Enter" && hi >= 0) {
       e.preventDefault();
       setFilterText("");
       setShowAllProducts(true);
       setHighlightedIndex(-1);
-      const field = activeFieldRef.current;
-      if (field === "company") rCat.current?.focus();
-      else if (field === "category") rWebCat.current?.focus();
-      else if (field === "webCategory") rRack.current?.focus();
-      else if (field === "orderName") rRem.current?.focus();
+      const f = activeFieldRef.current;
+      if (f === "company") rCat.current?.focus();
+      else if (f === "category") rWebCat.current?.focus();
+      else if (f === "webCategory") rRack.current?.focus();
+      else if (f === "description") rUrdu.current?.focus();
+      else if (f === "orderName") rRem.current?.focus();
     } else if (e.key === "Escape") {
-      const field = activeFieldRef.current;
-      if (field === "company") rCompany.current?.focus();
-      else if (field === "category") rCat.current?.focus();
-      else if (field === "webCategory") rWebCat.current?.focus();
-      else if (field === "orderName") rOrder.current?.focus();
+      const f = activeFieldRef.current;
+      if (f === "company") rCompany.current?.focus();
+      else if (f === "category") rCat.current?.focus();
+      else if (f === "webCategory") rWebCat.current?.focus();
+      else if (f === "description") rDesc.current?.focus();
+      else if (f === "orderName") rOrder.current?.focus();
     }
   };
 
@@ -279,11 +329,16 @@ export default function ProductPage() {
     else if (field === "webCategory")
       setF("webCategory", product.webCategory || "");
     else if (field === "orderName") setF("orderName", product.orderName || "");
+    else if (field === "description")
+      setF("description", product.description || "");
 
     setSelId(product._id);
     setFilterText("");
+    filterTextRef.current = "";
     setShowAllProducts(true);
+    showAllRef.current = true;
     setHighlightedIndex(-1);
+    highlightedRef.current = -1;
   };
 
   const handlePackRowClick = (i) => {
@@ -395,10 +450,13 @@ export default function ProductPage() {
     setSelId(null);
     setEditId(null);
     setFilterText("");
+    filterTextRef.current = "";
     setActiveField("");
     activeFieldRef.current = "";
     setHighlightedIndex(-1);
+    highlightedRef.current = -1;
     setShowAllProducts(false);
+    showAllRef.current = false;
     setMsg({ text: "", type: "" });
     setTimeout(() => rCompany.current?.focus(), 50);
   };
@@ -603,20 +661,29 @@ export default function ProductPage() {
               </div>
 
               <div className="pp-frow">
-                <label>Description</label>
-                <input
-                  ref={rDesc}
-                  className="xp-input"
-                  type="text"
-                  value={form.description}
-                  onChange={(e) => setF("description", e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && rUrdu.current?.focus()}
-                  onFocus={() => {
-                    setActiveField("");
-                    activeFieldRef.current = "";
-                    setShowAllProducts(true);
-                  }}
-                />
+                <label htmlFor="f_desc">Description</label>
+                <div className="pp-combo-wrap" style={{ position: "relative" }}>
+                  <input
+                    id="f_desc"
+                    ref={rDesc}
+                    type="text"
+                    className="xp-input pp-combo-input"
+                    value={form.description}
+                    autoComplete="off"
+                    onChange={(e) =>
+                      handleFieldChange("description", e.target.value)
+                    }
+                    onKeyDown={makeFieldKeyDown("description", rUrdu)}
+                    onFocus={() => focusField("description", form.description)}
+                  />
+                  <button
+                    className="pp-combo-btn"
+                    tabIndex={-1}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    ▼
+                  </button>
+                </div>
               </div>
 
               <div className="pp-frow">

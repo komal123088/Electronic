@@ -37,7 +37,6 @@ const TYPE_COLORS = {
   "raw-purchase": { bg: "#d8b4fe", color: "#3b0764", border: "#a855f7" },
 };
 
-/* FIX 1: derive paymentMode from customer type */
 const typeToPayment = (t) => {
   if (t === "credit" || t === "raw-sale" || t === "raw-purchase")
     return "Credit";
@@ -45,14 +44,13 @@ const typeToPayment = (t) => {
   return "Cash";
 };
 
-/* FIX 1: derive saleSource from customer type — exact match */
 const typeToSource = (t) => {
   if (!t) return "cash";
-  return t; // "credit","debit","cash","raw-sale","raw-purchase"
+  return t;
 };
 
 /* ─────────────────────────────────────────────────────────────
-   INVOICE PRINT MODAL  (FIX 3)
+   INVOICE PRINT MODAL
 ───────────────────────────────────────────────────────────── */
 function InvoiceModal({ sale, printType, onClose }) {
   const buildA4Html = () => {
@@ -120,7 +118,6 @@ function InvoiceModal({ sale, printType, onClose }) {
   };
 
   useEffect(() => {
-    // auto print on open
     doPrint(printType);
   }, []);
 
@@ -146,7 +143,6 @@ function InvoiceModal({ sale, printType, onClose }) {
             ✕
           </button>
         </div>
-
         <div className="xp-modal-body">
           <div className="cs-inv-preview">
             <div className="cs-inv-shop">{SHOP_NAME}</div>
@@ -227,7 +223,6 @@ function InvoiceModal({ sale, printType, onClose }) {
             <div className="cs-inv-thanks">Thank you! — {SHOP_NAME}</div>
           </div>
         </div>
-
         <div className="xp-modal-footer">
           <button
             className="xp-btn xp-btn-sm"
@@ -310,11 +305,13 @@ function SearchModal({ allProducts, onSelect, onClose }) {
     rDesc.current?.focus();
     setRows(buildFlat(allProducts, "", "", ""));
   }, [allProducts, buildFlat]);
+
   useEffect(() => {
     const f = buildFlat(allProducts, desc, cat, company);
     setRows(f);
     setHiIdx(f.length > 0 ? 0 : -1);
   }, [desc, cat, company, allProducts, buildFlat]);
+
   useEffect(() => {
     if (tbodyRef.current && hiIdx >= 0)
       tbodyRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
@@ -589,7 +586,7 @@ function HoldPreviewModal({ bill, onResume, onClose }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   INLINE CUSTOMER COMBOBOX  (FIX 4: dropdown opens upward)
+   CUSTOMER DROPDOWN — FIXED: instant filter jaise Google
 ───────────────────────────────────────────────────────────── */
 function CustomerDropdown({
   allCustomers,
@@ -607,10 +604,12 @@ function CustomerDropdown({
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  // Exclude COUNTER SALE placeholder, show real customers only
+  // COUNTER SALE ko exclude karo
   const realCustomers = allCustomers.filter(
     (c) => c.name?.toUpperCase().trim() !== "COUNTER SALE",
   );
+
+  // ── FIX: query ke bina bhi sab customers dikhao, type karo tu filter ho
   const filtered =
     query.trim().length > 0
       ? realCustomers.filter((c) => {
@@ -621,11 +620,14 @@ function CustomerDropdown({
             c.phone?.toLowerCase().includes(q)
           );
         })
-      : realCustomers;
+      : realCustomers; // ← koi bhi character type kiye bina sab dikhao
 
-  const showAddNew = query.trim().length > 0;
+  const showAddNew =
+    query.trim().length > 0 &&
+    !filtered.some((c) => c.name?.toLowerCase() === query.trim().toLowerCase());
   const totalRows = filtered.length + (showAddNew ? 1 : 0);
 
+  // Outside click band karo
   useEffect(() => {
     const h = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target))
@@ -635,12 +637,13 @@ function CustomerDropdown({
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  // Highlight scroll
   useEffect(() => {
-    if (!listRef.current || !open) return;
-    const el = listRef.current.children[hiIdx];
-    el?.scrollIntoView({ block: "nearest" });
+    if (!listRef.current || !open || hiIdx < 0) return;
+    listRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
   }, [hiIdx, open]);
 
+  // Query change hone par highlight reset
   useEffect(() => {
     setHiIdx(0);
   }, [query]);
@@ -652,6 +655,7 @@ function CustomerDropdown({
   };
 
   const handleKey = (e) => {
+    // Dropdown band ho tu Arrow/Enter se kholo
     if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
       e.preventDefault();
       setOpen(true);
@@ -665,18 +669,27 @@ function CustomerDropdown({
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setHiIdx((i) => Math.min(i + 1, totalRows - 1));
+      return;
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
       setHiIdx((i) => Math.max(i - 1, 0));
+      return;
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      if (hiIdx === filtered.length && showAddNew) {
+      if (showAddNew && hiIdx === filtered.length) {
         onAddNew && onAddNew(query);
         setOpen(false);
         setQuery("");
-      } else if (filtered[hiIdx]) selectCustomer(filtered[hiIdx]);
+      } else if (filtered[hiIdx]) {
+        selectCustomer(filtered[hiIdx]);
+      }
+      return;
+    }
+    // Tab — band karo
+    if (e.key === "Tab") {
+      setOpen(false);
     }
   };
 
@@ -689,6 +702,9 @@ function CustomerDropdown({
         }
       : null;
 
+  // Input mein kya dikhao
+  const inputDisplayValue = open ? query : value ? displayName : "";
+
   return (
     <div className="cdd-wrap" ref={wrapRef} style={{ position: "relative" }}>
       <div className="cdd-input-row">
@@ -700,15 +716,20 @@ function CustomerDropdown({
         <input
           ref={inputRef}
           className="sl-cust-input cdd-input"
-          style={{ flex: 1, minWidth: 0, cursor: "pointer" }}
-          value={open ? query : value ? displayName : ""}
-          placeholder={value ? displayName : "COUNTER SALE — type or ↓"}
+          style={{ flex: 1, minWidth: 0, cursor: "text" }}
+          value={inputDisplayValue}
+          placeholder={
+            value ? displayName : "Customer ka naam likhein ya ↓ dabayein…"
+          }
           onChange={(e) => {
             setQuery(e.target.value);
+            setHiIdx(0);
             if (!open) setOpen(true);
           }}
           onFocus={() => {
+            // Focus hote hi kholo — sab customers dikhao
             setOpen(true);
+            setHiIdx(0);
           }}
           onKeyDown={handleKey}
           autoComplete="off"
@@ -735,7 +756,7 @@ function CustomerDropdown({
         )}
       </div>
 
-      {/* FIX 4: dropdown opens UPWARD — bottom: 100% instead of top: 100% */}
+      {/* Dropdown — upar ki taraf khulta hai */}
       {open && (
         <div
           className="cdd-dropdown"
@@ -746,7 +767,7 @@ function CustomerDropdown({
             left: 0,
             right: 0,
             marginBottom: 2,
-            maxHeight: 260,
+            maxHeight: 280,
             overflowY: "auto",
             zIndex: 9999,
             background: "#fff",
@@ -755,11 +776,27 @@ function CustomerDropdown({
             boxShadow: "0 -4px 16px rgba(0,0,0,0.18)",
           }}
         >
-          {filtered.length === 0 && !showAddNew && (
-            <div className="cdd-empty">
-              No customers — type a name to add new
+          {/* Koi results nahi aur koi query bhi nahi */}
+          {realCustomers.length === 0 && (
+            <div
+              className="cdd-empty"
+              style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}
+            >
+              Koi customer registered nahi — pehle customer add karein
             </div>
           )}
+
+          {/* Filter ke baad koi nahi mila */}
+          {realCustomers.length > 0 && filtered.length === 0 && !showAddNew && (
+            <div
+              className="cdd-empty"
+              style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}
+            >
+              &ldquo;{query}&rdquo; — koi match nahi mila
+            </div>
+          )}
+
+          {/* Customer list */}
           {filtered.map((c, i) => {
             const tc = c.customerType || c.type || "";
             const ts = TYPE_COLORS[tc];
@@ -767,14 +804,34 @@ function CustomerDropdown({
               <div
                 key={c._id}
                 className={`cdd-item${i === hiIdx ? " hi" : ""}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 10px",
+                  cursor: "pointer",
+                  background: i === hiIdx ? "#dbeafe" : undefined,
+                  borderBottom: "1px solid #f0f0f0",
+                }}
                 onMouseEnter={() => setHiIdx(i)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   selectCustomer(c);
                 }}
               >
-                <span className="cdd-item-code">{c.code || "—"}</span>
-                <span className="cdd-item-name">{c.name}</span>
+                <span
+                  className="cdd-item-code"
+                  style={{ fontSize: 11, color: "#888", minWidth: 36 }}
+                >
+                  {c.code || "—"}
+                </span>
+                <span
+                  className="cdd-item-name"
+                  style={{ flex: 1, fontWeight: 500, fontSize: 13 }}
+                >
+                  {/* ── FIX: matched text bold/highlighted ── */}
+                  {query.trim() ? highlightMatch(c.name, query) : c.name}
+                </span>
                 {tc && ts && (
                   <span
                     className="cdd-item-type"
@@ -782,6 +839,9 @@ function CustomerDropdown({
                       background: ts.bg,
                       color: ts.color,
                       border: `1px solid ${ts.border}`,
+                      fontSize: 10,
+                      padding: "1px 5px",
+                      borderRadius: 3,
                     }}
                   >
                     {tc}
@@ -790,8 +850,11 @@ function CustomerDropdown({
                 <span
                   className="cdd-item-bal"
                   style={{
-                    color:
-                      (c.currentBalance || 0) > 0 ? "var(--xp-red)" : "#999",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: (c.currentBalance || 0) > 0 ? "#dc2626" : "#16a34a",
+                    minWidth: 55,
+                    textAlign: "right",
                   }}
                 >
                   {Number(c.currentBalance || 0).toLocaleString("en-PK")}
@@ -799,9 +862,19 @@ function CustomerDropdown({
               </div>
             );
           })}
+
+          {/* Add new customer option */}
           {showAddNew && (
             <div
               className={`cdd-item cdd-add-new${hiIdx === filtered.length ? " hi" : ""}`}
+              style={{
+                padding: "6px 10px",
+                cursor: "pointer",
+                background: hiIdx === filtered.length ? "#dbeafe" : "#f0fdf4",
+                borderTop: "1px solid #bbf7d0",
+                fontSize: 13,
+                color: "#15803d",
+              }}
               onMouseEnter={() => setHiIdx(filtered.length)}
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -810,15 +883,29 @@ function CustomerDropdown({
                 setQuery("");
               }}
             >
-              <span>
-                ➕ Add &ldquo;<strong>{query}</strong>&rdquo; as new credit
-                customer
-              </span>
+              ➕ <strong>&ldquo;{query}&rdquo;</strong> — naya customer add
+              karein
             </div>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Helper: matched text highlight karo ── */
+function highlightMatch(text, query) {
+  if (!text || !query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ background: "#fef08a", color: "#000", padding: 0 }}>
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
   );
 }
 
@@ -848,7 +935,7 @@ export default function SalePage() {
   const [extraDiscount, setExtraDiscount] = useState(0);
   const [received, setReceived] = useState(0);
   const [paymentMode, setPaymentMode] = useState("Cash");
-  const [saleSource, setSaleSource] = useState("cash"); // FIX 1: default cash
+  const [saleSource, setSaleSource] = useState("cash");
 
   /* misc */
   const [holdBills, setHoldBills] = useState([]);
@@ -856,11 +943,9 @@ export default function SalePage() {
   const [selItemIdx, setSelItemIdx] = useState(null);
   const [msg, setMsg] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(false);
-  const [printType, setPrintType] = useState("A5"); // FIX 2: default A5
+  const [printType, setPrintType] = useState("A5");
   const [sendSms, setSendSms] = useState(false);
   const [packingOptions, setPackingOptions] = useState([]);
-
-  /* FIX 3: invoice modal after save */
   const [showInvoice, setShowInvoice] = useState(false);
   const [savedSale, setSavedSale] = useState(null);
 
@@ -927,7 +1012,6 @@ export default function SalePage() {
     setTimeout(() => setMsg({ text: "", type: "" }), 3500);
   };
 
-  /* ── Customer select — FIX 1: auto saleSource & paymentMode ── */
   const handleCustomerSelect = (c) => {
     const type = c.customerType || c.type || "";
     setCustomerId(c._id);
@@ -935,13 +1019,10 @@ export default function SalePage() {
     setBuyerCode(c.code || "");
     setCustomerType(type);
     setPrevBalance(c.currentBalance || 0);
-
-    // FIX 1: auto-derive payment mode and sale source from customer type
     const pm = typeToPayment(type);
     const ss = typeToSource(type);
     setPaymentMode(pm);
     setSaleSource(ss);
-
     if (pm === "Credit") setReceived(0);
     else setReceived(billAmount + (c.currentBalance || 0));
     setTimeout(() => searchRef.current?.focus(), 30);
@@ -954,7 +1035,7 @@ export default function SalePage() {
     setCustomerType("");
     setPrevBalance(0);
     setPaymentMode("Cash");
-    setSaleSource("cash"); // FIX 1: reset to cash
+    setSaleSource("cash");
     setReceived(billAmount);
   };
 
@@ -969,7 +1050,6 @@ export default function SalePage() {
     setTimeout(() => searchRef.current?.focus(), 30);
   };
 
-  /* ── Product pick ── */
   const pickProduct = (product) => {
     if (!product._id) {
       showMsg("Product ID missing", "error");
@@ -1111,14 +1191,13 @@ export default function SalePage() {
     setExtraDiscount(0);
     setReceived(0);
     setPaymentMode("Cash");
-    setSaleSource("cash"); // FIX 1
+    setSaleSource("cash");
     setEditId(null);
     setSelItemIdx(null);
     setMsg({ text: "", type: "" });
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
-  /* FIX 3: saveSale — show invoice after save */
   const saveSale = async () => {
     if (!items.length) {
       alert("Add at least one item");
@@ -1162,8 +1241,6 @@ export default function SalePage() {
 
       if (data.success) {
         showMsg(editId ? "Sale updated!" : `Saved: ${data.data.invoiceNo}`);
-
-        // FIX 3: build savedSale object for invoice modal
         setSavedSale({
           invoiceNo: data.data.invoiceNo,
           invoiceDate,
@@ -1184,8 +1261,7 @@ export default function SalePage() {
           paidAmount: parseFloat(received) || 0,
           balance,
         });
-        setShowInvoice(true); // show invoice modal
-
+        setShowInvoice(true);
         fullReset();
         await refreshInvoiceNo();
       } else showMsg(data.message, "error");
@@ -1195,7 +1271,6 @@ export default function SalePage() {
     setLoading(false);
   };
 
-  /* ── Global shortcuts ── */
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "F2") {
@@ -1238,7 +1313,6 @@ export default function SalePage() {
           onClose={() => setShowHoldPreview(null)}
         />
       )}
-      {/* FIX 3: Invoice modal after save */}
       {showInvoice && savedSale && (
         <InvoiceModal
           sale={savedSale}
@@ -1290,7 +1364,6 @@ export default function SalePage() {
         </div>
       </div>
 
-      {/* ALERT */}
       {msg.text && (
         <div
           className={`xp-alert ${msg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
@@ -1300,7 +1373,6 @@ export default function SalePage() {
         </div>
       )}
 
-      {/* MAIN BODY */}
       <div className="sl-body">
         <div className="sl-left">
           {/* Row 1: Invoice info */}
@@ -1604,7 +1676,7 @@ export default function SalePage() {
             </div>
           </div>
 
-          {/* ── CUSTOMER BAR ── */}
+          {/* CUSTOMER BAR */}
           <div className="sl-customer-bar">
             <div className="sl-cust-cell">
               <label>Code</label>
@@ -1615,7 +1687,6 @@ export default function SalePage() {
                 onChange={(e) => setBuyerCode(e.target.value)}
               />
             </div>
-
             <div className="sl-cust-cell sl-cust-buyer">
               <label>Buyer Name</label>
               <CustomerDropdown
@@ -1628,7 +1699,6 @@ export default function SalePage() {
                 onAddNew={handleAddNewCustomer}
               />
             </div>
-
             <div className="sl-cust-cell">
               <label>Prev Balance</label>
               <input
@@ -1640,7 +1710,6 @@ export default function SalePage() {
                 onFocus={(e) => e.target.select()}
               />
             </div>
-
             <div className="sl-cust-cell">
               <label>Net Recv.</label>
               <input
@@ -1654,8 +1723,6 @@ export default function SalePage() {
                 readOnly
               />
             </div>
-
-            {/* Payment Mode */}
             <div className="sl-pay-btns">
               {["Cash", "Credit", "Bank", "Cheque"].map((m) => (
                 <button
@@ -1839,7 +1906,6 @@ export default function SalePage() {
           </label>
         </div>
         <div className="xp-toolbar-divider" />
-        {/* FIX 2: default A5 */}
         <div className="sl-print-types">
           {["Thermal", "A4", "A5"].map((pt) => (
             <label key={pt} className="sl-check-label">
