@@ -20,7 +20,11 @@ const EP = {
     UPDATE: (id) => `/sales/${id}`,
     DELETE: (id) => `/sales/${id}`,
   },
-
+  HOLD_BILLS: {
+    GET_ALL: "/hold-bills",
+    CREATE: "/hold-bills",
+    DELETE: (id) => `/hold-bills/${id}`,
+  },
   // ── Customers ─────────────────────────────────────────────────────────────
   CUSTOMERS: {
     GET_ALL: "/customers",

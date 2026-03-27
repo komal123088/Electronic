@@ -14,6 +14,7 @@ const timeNow = () =>
   });
 const isoDate = () => new Date().toISOString().split("T")[0];
 const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
+const HOLD_KEY = "asim_hold_bills_v1";
 
 const EMPTY_ROW = {
   productId: "",
@@ -25,10 +26,12 @@ const EMPTY_ROW = {
   rate: 0,
   amount: 0,
 };
-
 const SHOP_NAME = "Asim Electric & Electronic Store";
-
-/* customer type → badge colors */
+const SHOP_INFO = {
+  name: "Asim Electric & Electronic Store",
+  address: "Main Bazar, Lahore",
+  phone: "0300-0000000",
+};
 const TYPE_COLORS = {
   credit: { bg: "#fca5a5", color: "#7f1d1d", border: "#ef4444" },
   debit: { bg: "#93c5fd", color: "#1e3a8a", border: "#3b82f6" },
@@ -36,218 +39,549 @@ const TYPE_COLORS = {
   "raw-sale": { bg: "#fde68a", color: "#78350f", border: "#f59e0b" },
   "raw-purchase": { bg: "#d8b4fe", color: "#3b0764", border: "#a855f7" },
 };
-
 const typeToPayment = (t) => {
   if (t === "credit" || t === "raw-sale" || t === "raw-purchase")
     return "Credit";
   if (t === "debit") return "Bank";
   return "Cash";
 };
+const typeToSource = (t) => (!t ? "cash" : t);
 
-const typeToSource = (t) => {
-  if (!t) return "cash";
-  return t;
+/* ── localStorage helpers for hold bills ── */
+const loadHolds = () => {
+  try {
+    return JSON.parse(localStorage.getItem(HOLD_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveHolds = (bills) => {
+  try {
+    localStorage.setItem(HOLD_KEY, JSON.stringify(bills));
+  } catch {}
 };
 
-/* ─────────────────────────────────────────────────────────────
-   INVOICE PRINT MODAL
-───────────────────────────────────────────────────────────── */
-function InvoiceModal({ sale, printType, onClose }) {
-  const buildA4Html = () => {
-    const rows = sale.items
+/* ── shared print HTML builder ── */
+const buildPrintHtml = (sale, type) => {
+  const rows = sale.items.map((it, i) => ({ ...it, sr: i + 1 }));
+  const totalQty = rows.reduce((s, r) => s + (r.pcs || 0), 0);
+
+  /* ── THERMAL ── */
+  if (type === "Thermal") {
+    const itemRows = rows
       .map(
-        (it, i) =>
-          `<tr><td>${i + 1}</td><td>${it.name || it.description}</td><td>${it.uom || it.measurement || ""}</td><td align="right">${it.pcs || it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
+        (it) =>
+          `<tr>
+            <td>${it.sr}</td>
+            <td style="max-width:92px;word-break:break-word">${it.name}${it.uom ? ` <span style="color:#777">(${it.uom})</span>` : ""}</td>
+            <td class="r">${it.pcs}</td>
+            <td class="r">${Number(it.rate).toLocaleString()}</td>
+            <td class="r"><b>${Number(it.amount).toLocaleString()}</b></td>
+          </tr>`,
       )
       .join("");
-    return `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title>
-    <style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#000}h2{text-align:center;font-size:22px;margin:0 0 2px}.sub{text-align:center;font-size:11px;color:#555;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;border:1px solid #ccc;padding:6px 10px;margin:8px 0;background:#f9f9f9;font-size:11px}table{width:100%;border-collapse:collapse;margin-top:10px}th{background:#e8e8e8;border:1px solid #ccc;padding:5px 7px;text-align:left;font-size:11px}td{border:1px solid #ddd;padding:4px 7px;font-size:11px}.tots{float:right;min-width:240px;margin-top:12px;border:1px solid #ccc;padding:8px 12px;background:#f9f9f9}.tr{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px dotted #eee}.tr.b{font-weight:bold;font-size:14px;border-top:2px solid #000;border-bottom:none;margin-top:6px;padding-top:6px}.tr.red{color:#c0392b}.tr.green{color:#27ae60}.thanks{text-align:center;margin-top:30px;font-size:11px;color:#888;clear:both;border-top:1px dashed #ccc;padding-top:10px}@media print{body{margin:5mm}@page{size:A4;margin:10mm}}</style></head><body>
-    <h2>${SHOP_NAME}</h2><div class="sub">◆ Sale Invoice ◆</div>
-    <div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Customer:</b> ${sale.customerName}</span><span><b>Source:</b> ${sale.saleSource} / ${sale.paymentMode}</span></div>
-    <table><thead><tr><th>#</th><th>Description</th><th>UOM</th><th align="right">Pcs</th><th align="right">Rate</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="tots"><div class="tr"><span>Sub Total</span><span>PKR ${Number(sale.subTotal).toLocaleString()}</span></div>${sale.extraDisc > 0 ? `<div class="tr"><span>Discount</span><span style="color:red">-PKR ${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>${sale.prevBalance > 0 ? `<div class="tr red"><span>Previous Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}<div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div><div class="tr b red"><span>Balance</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div></div>
-    <br style="clear:both"><div class="thanks">Thank you! — ${SHOP_NAME}</div></body></html>`;
-  };
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}
+      body{font-family:'Courier New',Courier,monospace;font-size:10.5px;width:78mm;margin:0 auto;padding:3mm;color:#111}
+      .sn{text-align:center;font-size:15px;font-weight:bold;letter-spacing:.5px;margin-bottom:1px}
+      .ss{text-align:center;font-size:9px;color:#555;margin-bottom:1px}
+      .badge{display:block;text-align:center;font-size:9px;border:1px solid #333;padding:1px 0;margin:3px 0;letter-spacing:2px;font-weight:bold}
+      .dash{border:none;border-top:1px dashed #666;margin:3px 0}
+      .solid{border:none;border-top:2px solid #111;margin:3px 0}
+      table{width:100%;border-collapse:collapse}
+      th{border-bottom:1px solid #555;padding:2px 2px;font-size:9px;font-weight:bold;text-align:left}
+      td{padding:2px 2px;font-size:9.5px;vertical-align:top}
+      .r{text-align:right}
+      .row{display:flex;justify-content:space-between;padding:1.5px 0;font-size:10.5px}
+      .row.b{font-weight:bold;font-size:12px}
+      .row.sep{border-top:1px dashed #555;margin-top:2px;padding-top:3px}
+      .red{color:#b00}.green{color:#060}
+      .foot{text-align:center;font-size:9px;color:#666;margin-top:5px;border-top:1px dashed #aaa;padding-top:4px}
+      @media print{@page{size:80mm auto;margin:2mm}body{width:76mm}}
+    </style></head><body>
+      <div class="sn">${SHOP_INFO.name}</div>
+      <div class="ss">${SHOP_INFO.address}</div>
+      <div class="ss">Ph: ${SHOP_INFO.phone}</div>
+      <span class="badge">SALE RECEIPT</span>
+      <hr class="dash">
+      <div class="row" style="font-size:9.5px"><span>Invoice: <b>${sale.invoiceNo}</b></span><span>${sale.invoiceDate}</span></div>
+      <div style="font-size:10.5px;font-weight:bold">${sale.customerName}</div>
+      <div style="font-size:9px;color:#666">Mode: ${sale.paymentMode} / ${sale.saleSource}</div>
+      <hr class="solid">
+      <table>
+        <thead><tr><th>#</th><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amt</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <hr class="dash">
+      <div class="row"><span>Sub Total</span><span><b>${Number(sale.subTotal).toLocaleString()}</b></span></div>
+      ${sale.extraDisc > 0 ? `<div class="row red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
+      <div class="row b sep"><span>NET TOTAL</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
+      ${sale.prevBalance > 0 ? `<div class="row red"><span>(+) Prev. Bal.</span><span>${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
+      <div class="row green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
+      <div class="row b sep ${sale.balance > 0 ? "red" : "green"}"><span>BALANCE</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
+      <div class="foot">Items: ${rows.length} &nbsp;|&nbsp; Total Qty: ${totalQty}<br>Thank you for your business!<br>${SHOP_INFO.name}</div>
+    </body></html>`;
+  }
 
-  const buildA5Html = () => {
-    const rows = sale.items
-      .map(
-        (it, i) =>
-          `<tr><td>${i + 1}</td><td>${it.name || it.description}</td><td>${it.uom || it.measurement || ""}</td><td align="right">${it.pcs || it.qty}</td><td align="right">${Number(it.rate).toLocaleString()}</td><td align="right"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
-      )
-      .join("");
-    return `<!DOCTYPE html><html><head><title>Invoice ${sale.invoiceNo}</title>
-    <style>body{font-family:Arial,sans-serif;font-size:10px;margin:8px;color:#000}h2{text-align:center;font-size:16px;margin:0 0 2px}.sub{text-align:center;font-size:9px;color:#555;margin-bottom:6px}.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px;border:1px solid #ccc;padding:4px 8px;margin:5px 0;background:#f9f9f9;font-size:9px}table{width:100%;border-collapse:collapse;margin-top:6px}th{background:#e8e8e8;border:1px solid #ccc;padding:3px 5px;text-align:left;font-size:9px}td{border:1px solid #ddd;padding:2px 5px;font-size:9px}.tots{float:right;min-width:180px;margin-top:8px;border:1px solid #ccc;padding:5px 8px;background:#f9f9f9}.tr{display:flex;justify-content:space-between;padding:2px 0;font-size:9px;border-bottom:1px dotted #eee}.tr.b{font-weight:bold;font-size:11px;border-top:2px solid #000;border-bottom:none;margin-top:4px;padding-top:4px}.tr.red{color:#c0392b}.tr.green{color:#27ae60}.thanks{text-align:center;margin-top:16px;font-size:9px;color:#888;clear:both;border-top:1px dashed #ccc;padding-top:6px}@media print{body{margin:3mm}@page{size:A5;margin:6mm}}</style></head><body>
-    <h2>${SHOP_NAME}</h2><div class="sub">◆ Sale Invoice ◆</div>
-    <div class="meta"><span><b>Invoice #:</b> ${sale.invoiceNo}</span><span><b>Date:</b> ${sale.invoiceDate}</span><span><b>Customer:</b> ${sale.customerName}</span><span><b>Source:</b> ${sale.saleSource} / ${sale.paymentMode}</span></div>
-    <table><thead><tr><th>#</th><th>Description</th><th>UOM</th><th align="right">Pcs</th><th align="right">Rate</th><th align="right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="tots"><div class="tr"><span>Sub Total</span><span>PKR ${Number(sale.subTotal).toLocaleString()}</span></div>${sale.extraDisc > 0 ? `<div class="tr"><span>Discount</span><span style="color:red">-PKR ${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}<div class="tr b"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>${sale.prevBalance > 0 ? `<div class="tr red"><span>Prev Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}<div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div><div class="tr b red"><span>Balance</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div></div>
-    <br style="clear:both"><div class="thanks">Thank you! — ${SHOP_NAME}</div></body></html>`;
-  };
+  /* ── A4 / A5 ── */
+  const a5 = type === "A5";
+  const sz = a5
+    ? {
+        title: 17,
+        sub: 9,
+        inv: 13,
+        meta: 8.5,
+        th: 8.5,
+        td: 8.5,
+        tot: 9.5,
+        totB: 11.5,
+      }
+    : {
+        title: 22,
+        sub: 10,
+        inv: 15,
+        meta: 10,
+        th: 10,
+        td: 10,
+        tot: 11,
+        totB: 14,
+      };
 
-  const buildThermalHtml = () => {
-    const rows = sale.items
-      .map(
-        (it, i) =>
-          `<tr><td style="padding:2px 0">${i + 1}. ${it.name || it.description}</td><td align="right" style="padding:2px 0">${it.pcs || it.qty}×${Number(it.rate).toLocaleString()}</td><td align="right" style="padding:2px 0"><b>${Number(it.amount).toLocaleString()}</b></td></tr>`,
-      )
-      .join("");
-    return `<!DOCTYPE html><html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:11px;width:72mm;margin:0 auto;padding:4px}h3{text-align:center;font-size:14px;margin:4px 0}.c{text-align:center;font-size:10px}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:10px;border-collapse:collapse}.t{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}.t.b{font-weight:bold;font-size:12px;border-top:1px dashed #000;padding-top:3px;margin-top:2px}.t.red{color:#c0392b}.t.green{color:#27ae60}@media print{@page{size:80mm auto;margin:3mm}}</style></head><body>
-    <h3>${SHOP_NAME}</h3><div class="c">★ SALE RECEIPT ★</div><hr>
-    <div class="c">Invoice: <b>${sale.invoiceNo}</b> | ${sale.invoiceDate}</div>
-    <div class="c"><b>${sale.customerName}</b></div><hr>
-    <table><tbody>${rows}</tbody></table><hr>
-    <div class="t"><span>Sub Total</span><span>${Number(sale.subTotal).toLocaleString()}</span></div>${sale.extraDisc > 0 ? `<div class="t"><span>Discount</span><span>-${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
-    <div class="t b"><span>Net Total</span><span>${Number(sale.netTotal).toLocaleString()}</span></div>${sale.prevBalance > 0 ? `<div class="t red"><span>Prev Balance</span><span>${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}<div class="t green"><span>Received</span><span>${Number(sale.paidAmount).toLocaleString()}</span></div><div class="t b red"><span>Balance</span><span>${Number(sale.balance).toLocaleString()}</span></div><hr>
-    <div class="c" style="font-size:10px;margin-top:4px">Thank you! — ${SHOP_NAME}</div></body></html>`;
-  };
+  const itemRows = rows
+    .map(
+      (it, i) =>
+        `<tr style="background:${i % 2 === 0 ? "#fff" : "#f7faff"}">
+          <td>${it.sr}</td>
+          <td><strong>${it.name}</strong></td>
+          <td>${it.uom || "—"}</td>
+          <td align="right">${it.pcs}</td>
+          <td align="right">${Number(it.rate).toLocaleString()}</td>
+          <td align="right"><strong>${Number(it.amount).toLocaleString()}</strong></td>
+        </tr>`,
+    )
+    .join("");
 
-  const doPrint = (type) => {
-    let html = "";
-    if (type === "Thermal") html = buildThermalHtml();
-    else if (type === "A5") html = buildA5Html();
-    else html = buildA4Html();
-    const w = window.open(
-      "",
-      "_blank",
-      type === "Thermal" ? "width=400,height=600" : "width=900,height=700",
-    );
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => w.print(), 400);
-  };
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:${sz.td}pt;color:#1a1a2e;background:#fff;padding:${a5 ? "7mm" : "12mm"}}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1d3a8a;padding-bottom:${a5 ? "7px" : "11px"};margin-bottom:${a5 ? "8px" : "12px"}}
+    .hn{font-size:${sz.title}pt;font-weight:900;color:#1d3a8a;letter-spacing:-.5px;line-height:1.1}
+    .hs{font-size:${sz.sub}pt;color:#666;margin-top:2px}
+    .ir{text-align:right}
+    .il{font-size:${sz.inv}pt;font-weight:800;color:#dc2626;letter-spacing:1.5px;text-transform:uppercase}
+    .ino{font-size:${sz.inv - 1}pt;font-weight:700;color:#111;margin-top:1px}
+    .idate{font-size:${sz.sub}pt;color:#777}
+    .info{display:flex;gap:${a5 ? "6px" : "10px"};background:#f0f4fb;border:1px solid #c5d2ee;border-radius:4px;padding:${a5 ? "5px 10px" : "7px 14px"};margin-bottom:${a5 ? "8px" : "12px"};font-size:${sz.meta}pt}
+    .ii{display:flex;flex-direction:column;gap:1px}
+    .ilb{font-size:${sz.meta - 1}pt;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+    .iv{font-weight:600;color:#111}
+    table{width:100%;border-collapse:collapse;margin-bottom:${a5 ? "8px" : "14px"}}
+    thead tr{background:#1d3a8a;color:#fff}
+    th{padding:${a5 ? "4px 6px" : "6px 9px"};text-align:left;font-size:${sz.th}pt;font-weight:600;white-space:nowrap}
+    td{padding:${a5 ? "3px 6px" : "5px 9px"};font-size:${sz.td}pt;border-bottom:1px solid #e8edf5}
+    tbody tr:last-child td{border-bottom:2px solid #c5d2ee}
+    .bwrap{display:flex;justify-content:flex-end}
+    .tbox{width:${a5 ? "205px" : "265px"};border:1px solid #c5d2ee;border-radius:4px;overflow:hidden}
+    .tr{display:flex;justify-content:space-between;padding:${a5 ? "4px 10px" : "5px 14px"};font-size:${sz.tot}pt;border-bottom:1px solid #edf0f7}
+    .tr:last-child{border-bottom:none}
+    .tr.b{font-weight:700;font-size:${sz.totB}pt;background:#eef2fb}
+    .tr.sep{border-top:2px solid #1d3a8a}
+    .red{color:#dc2626}.green{color:#15803d}.blue{color:#1d4ed8}
+    .foot{margin-top:${a5 ? "12px" : "22px"};display:flex;justify-content:space-between;align-items:flex-end;border-top:1px dashed #bbb;padding-top:${a5 ? "8px" : "12px"}}
+    .ft{font-size:${sz.sub}pt;color:#888;line-height:1.7}
+    .sig{text-align:center;font-size:${sz.sub}pt;color:#555}
+    .sl{border-top:1px solid #999;width:${a5 ? "100px" : "130px"};margin:0 auto 2px}
+    @media print{@page{size:${a5 ? "A5" : "A4"};margin:${a5 ? "5mm" : "10mm"}}body{padding:0}}
+  </style></head><body>
+    <div class="hdr">
+      <div>
+        <div class="hn">${SHOP_INFO.name}</div>
+        <div class="hs">📍 ${SHOP_INFO.address}</div>
+        <div class="hs">📞 ${SHOP_INFO.phone}</div>
+      </div>
+      <div class="ir">
+        <div class="il">Sale Invoice</div>
+        <div class="ino"># ${sale.invoiceNo}</div>
+        <div class="idate">${sale.invoiceDate}</div>
+      </div>
+    </div>
+    <div class="info">
+      <div class="ii" style="flex:2"><span class="ilb">Customer</span><span class="iv">${sale.customerName}</span></div>
+      <div class="ii" style="flex:1"><span class="ilb">Payment</span><span class="iv">${sale.paymentMode}</span></div>
+      <div class="ii" style="flex:1"><span class="ilb">Type</span><span class="iv">${sale.saleSource}</span></div>
+      <div class="ii" style="flex:1;text-align:right"><span class="ilb">Items / Qty</span><span class="iv">${rows.length} / ${totalQty}</span></div>
+    </div>
+    <table>
+      <thead><tr><th width="24">#</th><th>Description</th><th width="46">UOM</th><th width="38" align="right">Qty</th><th width="68" align="right">Rate</th><th width="78" align="right">Amount</th></tr></thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    <div class="bwrap">
+      <div class="tbox">
+        <div class="tr"><span>Sub Total</span><span class="blue">${Number(sale.subTotal).toLocaleString()}</span></div>
+        ${sale.extraDisc > 0 ? `<div class="tr red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
+        <div class="tr b blue sep"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
+        ${sale.prevBalance > 0 ? `<div class="tr red"><span>(+) Prev. Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
+        <div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
+        <div class="tr b sep ${sale.balance > 0 ? "red" : "green"}"><span>Balance Due</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="ft">Thank you for your business!<br>${SHOP_INFO.name} — Computer Generated Invoice</div>
+      <div class="sig"><div class="sl"></div>Authorized Signature</div>
+    </div>
+  </body></html>`;
+};
+const doPrint = (sale, type) => {
+  const w = window.open(
+    "",
+    "_blank",
+    type === "Thermal" ? "width=420,height=640" : "width=900,height=700",
+  );
+  w.document.write(buildPrintHtml(sale, type));
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SAVE CONFIRM MODAL
+═══════════════════════════════════════════════════════════ */
+function SaveConfirmModal({
+  salePayload,
+  printType: defaultPrintType,
+  onConfirm,
+  onClose,
+}) {
+  const [paidAmount, setPaidAmount] = useState(salePayload.paidAmount || 0);
+  const [selPrintType, setSelPrintType] = useState(defaultPrintType);
+  const [saving, setSaving] = useState(false);
+  const paidRef = useRef(null);
 
   useEffect(() => {
-    doPrint(printType);
+    setTimeout(() => {
+      paidRef.current?.focus();
+      paidRef.current?.select();
+    }, 80);
   }, []);
 
+  useEffect(() => {
+    const h = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const netTotal = salePayload.netTotal;
+  const prevBalance = salePayload.prevBalance || 0;
+  const paid = Number(paidAmount) || 0;
+  const change = paid - (netTotal + prevBalance);
+
+  const handleConfirm = async (withPrint) => {
+    if (saving) return;
+    setSaving(true);
+    await onConfirm({
+      extraDisc: salePayload.extraDisc || 0,
+      netTotal,
+      paidAmount: paid,
+      balance: netTotal + prevBalance - paid,
+      printType: selPrintType,
+      withPrint,
+    });
+    setSaving(false);
+  };
+
   return (
-    <div
-      className="xp-overlay"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="xp-modal xp-modal-lg">
-        <div className="xp-modal-tb">
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 16 16"
-            fill="rgba(255,255,255,0.8)"
-          >
-            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1L14 5.5z" />
-          </svg>
-          <span className="xp-modal-title">
-            Invoice #{sale.invoiceNo} — {sale.customerName}
+    <div className="xp-overlay">
+      <div
+        style={{
+          background: "#1a3a6b",
+          borderRadius: 8,
+          width: 540,
+          maxWidth: "96vw",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.45)",
+          overflow: "hidden",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        {/* Title */}
+        <div
+          style={{
+            background: "#0f2548",
+            padding: "8px 14px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
+            Sale Confirm — {salePayload.customerName} &nbsp;|&nbsp;{" "}
+            {salePayload.invoiceNo}
           </span>
-          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
+          <button
+            onClick={onClose}
+            style={{
+              background: "#c0392b",
+              border: "none",
+              color: "#fff",
+              borderRadius: 3,
+              width: 22,
+              height: 22,
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
             ✕
           </button>
         </div>
-        <div className="xp-modal-body">
-          <div className="cs-inv-preview">
-            <div className="cs-inv-shop">{SHOP_NAME}</div>
-            <div className="cs-inv-sub">◆ Sale Invoice ◆</div>
-            <div className="cs-inv-meta">
-              <span>
-                Invoice: <strong>{sale.invoiceNo}</strong>
-              </span>
-              <span>
-                Date: <strong>{sale.invoiceDate}</strong>
-              </span>
-              <span>
-                Customer: <strong>{sale.customerName}</strong>
-              </span>
-              <span>
-                Source:{" "}
-                <strong>
-                  {sale.saleSource} / {sale.paymentMode}
-                </strong>
-              </span>
+
+        {/* 3 big boxes */}
+        <div style={{ display: "flex", gap: 0, padding: "18px 18px 10px" }}>
+          {/* Bill Amount */}
+          <div
+            style={{
+              flex: 1,
+              background: "#1565c0",
+              borderRadius: "6px 0 0 6px",
+              padding: "14px 10px",
+              textAlign: "center",
+              border: "2px solid #1976d2",
+              borderRight: "none",
+            }}
+          >
+            <div
+              style={{
+                color: "#90caf9",
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 6,
+              }}
+            >
+              Bill Amount
             </div>
-            <div className="xp-table-panel">
-              <table className="xp-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Description</th>
-                    <th>UOM</th>
-                    <th className="r">Pcs</th>
-                    <th className="r">Rate</th>
-                    <th className="r">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sale.items.map((it, i) => (
-                    <tr key={i}>
-                      <td className="text-muted">{i + 1}</td>
-                      <td>{it.name || it.description}</td>
-                      <td className="text-muted">{it.uom || it.measurement}</td>
-                      <td className="r">{it.pcs || it.qty}</td>
-                      <td className="r xp-amt">{fmt(it.rate)}</td>
-                      <td className="r xp-amt">{fmt(it.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div
+              style={{
+                color: "#fff",
+                fontSize: 36,
+                fontWeight: 900,
+                lineHeight: 1,
+              }}
+            >
+              {Number(netTotal + prevBalance).toLocaleString("en-PK")}
             </div>
-            <div className="cs-inv-totals">
-              <div className="cs-inv-total-row">
-                <span>Sub Total</span>
-                <span className="xp-amt">{fmt(sale.subTotal)}</span>
-              </div>
-              {sale.extraDisc > 0 && (
-                <div className="cs-inv-total-row danger">
-                  <span>Discount</span>
-                  <span>-{fmt(sale.extraDisc)}</span>
-                </div>
-              )}
-              <div className="cs-inv-total-row bold">
-                <span>Net Total</span>
-                <span className="xp-amt">{fmt(sale.netTotal)}</span>
-              </div>
-              {sale.prevBalance > 0 && (
-                <div className="cs-inv-total-row danger">
-                  <span>Prev Balance</span>
-                  <span className="xp-amt danger">{fmt(sale.prevBalance)}</span>
-                </div>
-              )}
-              <div className="cs-inv-total-row success">
-                <span>Received</span>
-                <span className="xp-amt success">{fmt(sale.paidAmount)}</span>
-              </div>
-              <div className="cs-inv-total-row bold danger">
-                <span>Balance</span>
-                <span className="xp-amt danger">{fmt(sale.balance)}</span>
-              </div>
+          </div>
+
+          {/* Received — editable */}
+          <div
+            style={{
+              flex: 1,
+              background: "#1565c0",
+              padding: "14px 10px",
+              textAlign: "center",
+              border: "2px solid #1976d2",
+              borderRight: "none",
+            }}
+          >
+            <div
+              style={{
+                color: "#90caf9",
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 6,
+              }}
+            >
+              Received
             </div>
-            <div className="cs-inv-thanks">Thank you! — {SHOP_NAME}</div>
+            <input
+              ref={paidRef}
+              type="number"
+              value={paidAmount}
+              onChange={(e) => setPaidAmount(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirm(true);
+              }}
+              onFocus={(e) => e.target.select()}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                borderBottom: "2px solid #42a5f5",
+                color: "#fff",
+                fontSize: 36,
+                fontWeight: 900,
+                textAlign: "center",
+                outline: "none",
+                lineHeight: 1,
+                padding: 0,
+                MozAppearance: "textfield",
+              }}
+            />
+          </div>
+
+          {/* Change */}
+          <div
+            style={{
+              flex: 1,
+              background: change >= 0 ? "#0d47a1" : "#7f1d1d",
+              borderRadius: "0 6px 6px 0",
+              padding: "14px 10px",
+              textAlign: "center",
+              border: `2px solid ${change >= 0 ? "#1976d2" : "#ef4444"}`,
+            }}
+          >
+            <div
+              style={{
+                color: change >= 0 ? "#90caf9" : "#fca5a5",
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 6,
+              }}
+            >
+              {change >= 0 ? "Change" : "Balance Due"}
+            </div>
+            <div
+              style={{
+                color: change >= 0 ? "#4ade80" : "#f87171",
+                fontSize: 36,
+                fontWeight: 900,
+                lineHeight: 1,
+              }}
+            >
+              {Math.abs(change).toLocaleString("en-PK")}
+            </div>
           </div>
         </div>
-        <div className="xp-modal-footer">
+
+        {/* Print type row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 20,
+            padding: "4px 18px 10px",
+          }}
+        >
+          {["Thermal", "A5", "A4"].map((pt) => (
+            <label
+              key={pt}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                color: "#93c5fd",
+                fontSize: 12.5,
+                cursor: "pointer",
+                fontWeight: selPrintType === pt ? 700 : 400,
+              }}
+            >
+              <input
+                type="radio"
+                name="scm-pt"
+                checked={selPrintType === pt}
+                onChange={() => setSelPrintType(pt)}
+                style={{ accentColor: "#3b82f6" }}
+              />
+              {pt}
+            </label>
+          ))}
+        </div>
+
+        {/* 3 action buttons */}
+        <div style={{ display: "flex", gap: 0, padding: "0 18px 18px" }}>
           <button
-            className="xp-btn xp-btn-sm"
-            onClick={() => doPrint("Thermal")}
+            onClick={() => handleConfirm(true)}
+            disabled={saving}
+            style={{
+              flex: 1,
+              background: "linear-gradient(to bottom, #2563eb, #1d4ed8)",
+              border: "2px solid #3b82f6",
+              borderRight: "none",
+              borderRadius: "6px 0 0 6px",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              padding: "11px 8px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
           >
-            🖨 Thermal
+            🖨 Save and Print
           </button>
-          <button className="xp-btn xp-btn-sm" onClick={() => doPrint("A5")}>
-            📄 A5 Print
+          <button
+            onClick={() => handleConfirm(false)}
+            disabled={saving}
+            style={{
+              flex: 1,
+              background: "linear-gradient(to bottom, #0f766e, #0d6363)",
+              border: "2px solid #14b8a6",
+              borderRight: "none",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              padding: "11px 8px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            💾 Save only
           </button>
-          <button className="xp-btn xp-btn-sm" onClick={() => doPrint("A4")}>
-            📄 A4 Print
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              background: "linear-gradient(to bottom, #374151, #1f2937)",
+              border: "2px solid #6b7280",
+              borderRadius: "0 6px 6px 0",
+              color: "#e5e7eb",
+              fontSize: 13,
+              fontWeight: 700,
+              padding: "11px 8px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            ↩ Return to Invoice
           </button>
-          <button className="xp-btn xp-btn-lg" onClick={onClose}>
-            Close
-          </button>
+        </div>
+
+        {/* Hint */}
+        <div
+          style={{
+            textAlign: "center",
+            color: "#64748b",
+            fontSize: 10.5,
+            padding: "0 0 10px",
+            background: "#0f2548",
+          }}
+        >
+          ↵ Enter = Save &amp; Print &nbsp;|&nbsp; Esc = Return to Invoice
         </div>
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════
    PRODUCT SEARCH MODAL
-───────────────────────────────────────────────────────────── */
+═══════════════════════════════════════════════════════════ */
 function SearchModal({ allProducts, onSelect, onClose }) {
   const [desc, setDesc] = useState("");
   const [cat, setCat] = useState("");
@@ -305,13 +639,11 @@ function SearchModal({ allProducts, onSelect, onClose }) {
     rDesc.current?.focus();
     setRows(buildFlat(allProducts, "", "", ""));
   }, [allProducts, buildFlat]);
-
   useEffect(() => {
     const f = buildFlat(allProducts, desc, cat, company);
     setRows(f);
     setHiIdx(f.length > 0 ? 0 : -1);
   }, [desc, cat, company, allProducts, buildFlat]);
-
   useEffect(() => {
     if (tbodyRef.current && hiIdx >= 0)
       tbodyRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
@@ -479,9 +811,9 @@ function SearchModal({ allProducts, onSelect, onClose }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   HELD BILL PREVIEW MODAL
-───────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   HOLD PREVIEW MODAL
+═══════════════════════════════════════════════════════════ */
 function HoldPreviewModal({ bill, onResume, onClose }) {
   if (!bill) return null;
   return (
@@ -491,9 +823,7 @@ function HoldPreviewModal({ bill, onResume, onClose }) {
     >
       <div className="xp-modal" style={{ width: 560 }}>
         <div className="xp-modal-tb">
-          <span className="xp-modal-title">
-            Hold Bill Preview — {bill.invoiceNo}
-          </span>
+          <span className="xp-modal-title">Hold Bill — {bill.invoiceNo}</span>
           <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
@@ -585,9 +915,14 @@ function HoldPreviewModal({ bill, onResume, onClose }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   CUSTOMER DROPDOWN — FIXED: instant filter jaise Google
-───────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   CUSTOMER DROPDOWN
+   FIX: browser-style inline autocomplete
+   • Focus → sab customers dikhao
+   • Type → instant filter + first match inline suggest
+   • Tab / → → suggestion accept karo
+   • Enter → highlighted select karo
+═══════════════════════════════════════════════════════════ */
 function CustomerDropdown({
   allCustomers,
   value,
@@ -600,34 +935,44 @@ function CustomerDropdown({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [hiIdx, setHiIdx] = useState(0);
+  const [ghost, setGhost] = useState(""); // inline suggestion suffix
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const ghostRef = useRef(null);
 
-  // COUNTER SALE ko exclude karo
   const realCustomers = allCustomers.filter(
     (c) => c.name?.toUpperCase().trim() !== "COUNTER SALE",
   );
 
-  // ── FIX: query ke bina bhi sab customers dikhao, type karo tu filter ho
-  const filtered =
-    query.trim().length > 0
-      ? realCustomers.filter((c) => {
-          const q = query.toLowerCase();
-          return (
-            c.name?.toLowerCase().includes(q) ||
-            c.code?.toLowerCase().includes(q) ||
-            c.phone?.toLowerCase().includes(q)
-          );
-        })
-      : realCustomers; // ← koi bhi character type kiye bina sab dikhao
+  const filtered = query.trim()
+    ? realCustomers.filter((c) => {
+        const q = query.toLowerCase();
+        return (
+          c.name?.toLowerCase().includes(q) ||
+          c.code?.toLowerCase().includes(q) ||
+          c.phone?.toLowerCase().includes(q)
+        );
+      })
+    : realCustomers;
 
   const showAddNew =
     query.trim().length > 0 &&
     !filtered.some((c) => c.name?.toLowerCase() === query.trim().toLowerCase());
-  const totalRows = filtered.length + (showAddNew ? 1 : 0);
 
-  // Outside click band karo
+  // ── ghost text: first customer name that STARTS WITH query
+  useEffect(() => {
+    if (!query.trim()) {
+      setGhost("");
+      return;
+    }
+    const match = realCustomers.find((c) =>
+      c.name?.toLowerCase().startsWith(query.toLowerCase()),
+    );
+    setGhost(match ? match.name.slice(query.length) : "");
+  }, [query, allCustomers]);
+
+  // outside click
   useEffect(() => {
     const h = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target))
@@ -637,25 +982,38 @@ function CustomerDropdown({
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  // Highlight scroll
+  // scroll highlight into view
   useEffect(() => {
     if (!listRef.current || !open || hiIdx < 0) return;
     listRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
   }, [hiIdx, open]);
 
-  // Query change hone par highlight reset
   useEffect(() => {
     setHiIdx(0);
   }, [query]);
 
-  const selectCustomer = (c) => {
+  const pick = (c) => {
     onSelect(c);
     setOpen(false);
     setQuery("");
+    setGhost("");
   };
 
   const handleKey = (e) => {
-    // Dropdown band ho tu Arrow/Enter se kholo
+    // Accept ghost suggestion
+    if (ghost && (e.key === "Tab" || e.key === "ArrowRight")) {
+      e.preventDefault();
+      const full = query + ghost;
+      const match = realCustomers.find(
+        (c) => c.name?.toLowerCase() === full.toLowerCase(),
+      );
+      if (match) pick(match);
+      else {
+        setQuery(full);
+        setGhost("");
+      }
+      return;
+    }
     if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
       e.preventDefault();
       setOpen(true);
@@ -664,11 +1022,12 @@ function CustomerDropdown({
     if (e.key === "Escape") {
       setOpen(false);
       setQuery("");
+      setGhost("");
       return;
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHiIdx((i) => Math.min(i + 1, totalRows - 1));
+      setHiIdx((i) => Math.min(i + 1, filtered.length + (showAddNew ? 0 : -1)));
       return;
     }
     if (e.key === "ArrowUp") {
@@ -679,17 +1038,14 @@ function CustomerDropdown({
     if (e.key === "Enter") {
       e.preventDefault();
       if (showAddNew && hiIdx === filtered.length) {
-        onAddNew && onAddNew(query);
+        onAddNew?.(query);
         setOpen(false);
         setQuery("");
-      } else if (filtered[hiIdx]) {
-        selectCustomer(filtered[hiIdx]);
+        setGhost("");
+        return;
       }
+      if (filtered[hiIdx]) pick(filtered[hiIdx]);
       return;
-    }
-    // Tab — band karo
-    if (e.key === "Tab") {
-      setOpen(false);
     }
   };
 
@@ -702,37 +1058,75 @@ function CustomerDropdown({
         }
       : null;
 
-  // Input mein kya dikhao
-  const inputDisplayValue = open ? query : value ? displayName : "";
+  // what input shows
+  const inputVal = open ? query : value ? displayName : "";
 
   return (
-    <div className="cdd-wrap" ref={wrapRef} style={{ position: "relative" }}>
-      <div className="cdd-input-row">
+    <div
+      className="cdd-wrap"
+      ref={wrapRef}
+      style={{ position: "relative", flex: 1 }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          position: "relative",
+        }}
+      >
         {typeStyle && (
           <span className="cdd-type-badge" style={typeStyle}>
             {customerType}
           </span>
         )}
+
+        {/* Ghost text layer — exactly below input */}
+        {open && ghost && (
+          <div
+            style={{
+              position: "absolute",
+              left: typeStyle ? 72 : 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              fontSize: 13,
+              fontFamily: "inherit",
+              letterSpacing: "normal",
+              display: "flex",
+            }}
+          >
+            <span style={{ visibility: "hidden" }}>{query}</span>
+            <span style={{ color: "#b0bec5" }}>{ghost}</span>
+          </div>
+        )}
+
         <input
           ref={inputRef}
           className="sl-cust-input cdd-input"
-          style={{ flex: 1, minWidth: 0, cursor: "text" }}
-          value={inputDisplayValue}
-          placeholder={
-            value ? displayName : "Customer ka naam likhein ya ↓ dabayein…"
-          }
+          style={{
+            flex: 1,
+            minWidth: 0,
+            cursor: "text",
+            background: "transparent",
+            position: "relative",
+            zIndex: 1,
+          }}
+          value={inputVal}
+          placeholder={value ? "" : "Naam likhein ya ↓ dabayein…"}
           onChange={(e) => {
             setQuery(e.target.value);
-            setHiIdx(0);
             if (!open) setOpen(true);
+            setHiIdx(0);
           }}
           onFocus={() => {
-            // Focus hote hi kholo — sab customers dikhao
             setOpen(true);
             setHiIdx(0);
           }}
           onKeyDown={handleKey}
           autoComplete="off"
+          spellCheck={false}
         />
         {value && (
           <button
@@ -748,18 +1142,18 @@ function CustomerDropdown({
               onClear();
               setQuery("");
               setOpen(false);
+              setGhost("");
             }}
-            title="Clear → Counter Sale"
+            title="Clear"
           >
             ✕
           </button>
         )}
       </div>
 
-      {/* Dropdown — upar ki taraf khulta hai */}
+      {/* ── Dropdown — khulta hai UPAR ki taraf ── */}
       {open && (
         <div
-          className="cdd-dropdown"
           ref={listRef}
           style={{
             position: "absolute",
@@ -767,74 +1161,78 @@ function CustomerDropdown({
             left: 0,
             right: 0,
             marginBottom: 2,
-            maxHeight: 280,
+            maxHeight: 300,
             overflowY: "auto",
             zIndex: 9999,
             background: "#fff",
-            border: "1px solid #b0b8c8",
-            borderRadius: 3,
-            boxShadow: "0 -4px 16px rgba(0,0,0,0.18)",
+            border: "1px solid #b0bcd8",
+            borderRadius: 4,
+            boxShadow: "0 -6px 20px rgba(0,0,0,0.14)",
           }}
         >
-          {/* Koi results nahi aur koi query bhi nahi */}
           {realCustomers.length === 0 && (
             <div
-              className="cdd-empty"
-              style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}
+              style={{ padding: "10px 12px", color: "#9ca3af", fontSize: 12 }}
             >
-              Koi customer registered nahi — pehle customer add karein
+              Koi customer registered nahi
             </div>
           )}
 
-          {/* Filter ke baad koi nahi mila */}
-          {realCustomers.length > 0 && filtered.length === 0 && !showAddNew && (
-            <div
-              className="cdd-empty"
-              style={{ padding: "8px 12px", color: "#888", fontSize: 12 }}
-            >
-              &ldquo;{query}&rdquo; — koi match nahi mila
-            </div>
-          )}
-
-          {/* Customer list */}
           {filtered.map((c, i) => {
             const tc = c.customerType || c.type || "";
             const ts = TYPE_COLORS[tc];
+            const q = query.trim();
+            const nameNode = q
+              ? (() => {
+                  const idx =
+                    c.name?.toLowerCase().indexOf(q.toLowerCase()) ?? -1;
+                  if (idx === -1) return c.name;
+                  return (
+                    <>
+                      {c.name.slice(0, idx)}
+                      <mark style={{ background: "#fef08a", padding: 0 }}>
+                        {c.name.slice(idx, idx + q.length)}
+                      </mark>
+                      {c.name.slice(idx + q.length)}
+                    </>
+                  );
+                })()
+              : c.name;
+
             return (
               <div
                 key={c._id}
-                className={`cdd-item${i === hiIdx ? " hi" : ""}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "5px 10px",
-                  cursor: "pointer",
-                  background: i === hiIdx ? "#dbeafe" : undefined,
-                  borderBottom: "1px solid #f0f0f0",
-                }}
                 onMouseEnter={() => setHiIdx(i)}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  selectCustomer(c);
+                  pick(c);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "6px 12px",
+                  cursor: "pointer",
+                  background:
+                    i === hiIdx ? "#dbeafe" : i % 2 === 0 ? "#fff" : "#f9fafb",
+                  borderBottom: "1px solid #f0f0f0",
                 }}
               >
                 <span
-                  className="cdd-item-code"
-                  style={{ fontSize: 11, color: "#888", minWidth: 36 }}
+                  style={{
+                    fontSize: 11,
+                    color: "#9ca3af",
+                    minWidth: 36,
+                    fontFamily: "monospace",
+                  }}
                 >
                   {c.code || "—"}
                 </span>
-                <span
-                  className="cdd-item-name"
-                  style={{ flex: 1, fontWeight: 500, fontSize: 13 }}
-                >
-                  {/* ── FIX: matched text bold/highlighted ── */}
-                  {query.trim() ? highlightMatch(c.name, query) : c.name}
+                <span style={{ flex: 1, fontWeight: 500, fontSize: 13 }}>
+                  {nameNode}
                 </span>
                 {tc && ts && (
                   <span
-                    className="cdd-item-type"
                     style={{
                       background: ts.bg,
                       color: ts.color,
@@ -848,12 +1246,11 @@ function CustomerDropdown({
                   </span>
                 )}
                 <span
-                  className="cdd-item-bal"
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
-                    color: (c.currentBalance || 0) > 0 ? "#dc2626" : "#16a34a",
-                    minWidth: 55,
+                    color: (c.currentBalance || 0) > 0 ? "#dc2626" : "#9ca3af",
+                    minWidth: 58,
                     textAlign: "right",
                   }}
                 >
@@ -863,55 +1260,58 @@ function CustomerDropdown({
             );
           })}
 
-          {/* Add new customer option */}
           {showAddNew && (
             <div
-              className={`cdd-item cdd-add-new${hiIdx === filtered.length ? " hi" : ""}`}
+              onMouseEnter={() => setHiIdx(filtered.length)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onAddNew?.(query);
+                setOpen(false);
+                setQuery("");
+                setGhost("");
+              }}
               style={{
-                padding: "6px 10px",
+                padding: "7px 12px",
                 cursor: "pointer",
                 background: hiIdx === filtered.length ? "#dbeafe" : "#f0fdf4",
                 borderTop: "1px solid #bbf7d0",
                 fontSize: 13,
                 color: "#15803d",
               }}
-              onMouseEnter={() => setHiIdx(filtered.length)}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onAddNew && onAddNew(query);
-                setOpen(false);
-                setQuery("");
-              }}
             >
-              ➕ <strong>&ldquo;{query}&rdquo;</strong> — naya customer add
-              karein
+              ➕ <strong>"{query}"</strong> — naya customer add karein
             </div>
           )}
+
+          {filtered.length === 0 && query.trim() && !showAddNew && (
+            <div
+              style={{ padding: "7px 12px", color: "#9ca3af", fontSize: 12 }}
+            >
+              "{query}" — koi match nahi mila
+            </div>
+          )}
+
+          <div
+            style={{
+              padding: "3px 12px",
+              fontSize: 11,
+              color: "#9ca3af",
+              borderTop: "1px solid #f0f0f0",
+              background: "#fafafa",
+            }}
+          >
+            Tab / → = suggestion accept &nbsp;|&nbsp; ↑↓ = navigate
+            &nbsp;|&nbsp; Enter = select &nbsp;|&nbsp; Esc = band karo
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Helper: matched text highlight karo ── */
-function highlightMatch(text, query) {
-  if (!text || !query) return text;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return text;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark style={{ background: "#fef08a", color: "#000", padding: 0 }}>
-        {text.slice(idx, idx + query.length)}
-      </mark>
-      {text.slice(idx + query.length)}
-    </>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════
    MAIN PAGE
-───────────────────────────────────────────────────────────── */
+═══════════════════════════════════════════════════════════ */
 export default function SalePage() {
   const [time, setTime] = useState(timeNow());
   const [allProducts, setAllProducts] = useState([]);
@@ -924,21 +1324,19 @@ export default function SalePage() {
   const [invoiceDate, setInvoiceDate] = useState(isoDate());
   const [invoiceNo, setInvoiceNo] = useState("INV-00001");
 
-  /* customer */
   const [customerId, setCustomerId] = useState("");
   const [buyerName, setBuyerName] = useState("COUNTER SALE");
   const [buyerCode, setBuyerCode] = useState("");
   const [customerType, setCustomerType] = useState("");
   const [prevBalance, setPrevBalance] = useState(0);
 
-  /* financials */
   const [extraDiscount, setExtraDiscount] = useState(0);
   const [received, setReceived] = useState(0);
   const [paymentMode, setPaymentMode] = useState("Cash");
   const [saleSource, setSaleSource] = useState("cash");
 
-  /* misc */
-  const [holdBills, setHoldBills] = useState([]);
+  // Hold bills — localStorage se load karo
+  const [holdBills, setHoldBills] = useState(() => loadHolds());
   const [editId, setEditId] = useState(null);
   const [selItemIdx, setSelItemIdx] = useState(null);
   const [msg, setMsg] = useState({ text: "", type: "" });
@@ -946,8 +1344,8 @@ export default function SalePage() {
   const [printType, setPrintType] = useState("A5");
   const [sendSms, setSendSms] = useState(false);
   const [packingOptions, setPackingOptions] = useState([]);
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [savedSale, setSavedSale] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   const searchRef = useRef(null);
   const pcsRef = useRef(null);
@@ -965,16 +1363,19 @@ export default function SalePage() {
     fetchData();
   }, []);
 
-  /* ── totals ── */
+  // Hold bills change hone par localStorage update karo
+  useEffect(() => {
+    saveHolds(holdBills);
+  }, [holdBills]);
+
   const subTotal = items.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
   const billAmount = subTotal - (parseFloat(extraDiscount) || 0);
   const balance =
     billAmount + (parseFloat(prevBalance) || 0) - (parseFloat(received) || 0);
 
   useEffect(() => {
-    if (paymentMode !== "Credit") {
+    if (paymentMode !== "Credit")
       setReceived(billAmount + (parseFloat(prevBalance) || 0));
-    }
   }, [billAmount, prevBalance, paymentMode]);
 
   const handlePaymentMode = (mode) => {
@@ -1002,11 +1403,10 @@ export default function SalePage() {
 
   const refreshInvoiceNo = async () => {
     try {
-      const res = await api.get(EP.SALES.NEXT_INVOICE);
-      if (res.data.success) setInvoiceNo(res.data.data.invoiceNo);
+      const r = await api.get(EP.SALES.NEXT_INVOICE);
+      if (r.data.success) setInvoiceNo(r.data.data.invoiceNo);
     } catch {}
   };
-
   const showMsg = (text, type = "success") => {
     setMsg({ text, type });
     setTimeout(() => setMsg({ text: "", type: "" }), 3500);
@@ -1027,7 +1427,6 @@ export default function SalePage() {
     else setReceived(billAmount + (c.currentBalance || 0));
     setTimeout(() => searchRef.current?.focus(), 30);
   };
-
   const handleCustomerClear = () => {
     setCustomerId("");
     setBuyerName("COUNTER SALE");
@@ -1038,15 +1437,11 @@ export default function SalePage() {
     setSaleSource("cash");
     setReceived(billAmount);
   };
-
   const handleAddNewCustomer = (name) => {
     setBuyerName(name || "COUNTER SALE");
     setCustomerId("");
     setCustomerType("");
-    showMsg(
-      `"${name}" set as buyer name. Register from Customers page to track balance.`,
-      "success",
-    );
+    showMsg(`"${name}" set as buyer name.`, "success");
     setTimeout(() => searchRef.current?.focus(), 30);
   };
 
@@ -1055,8 +1450,7 @@ export default function SalePage() {
       showMsg("Product ID missing", "error");
       return;
     }
-    const opts = product.packingInfo?.map((pk) => pk.measurement) || [];
-    setPackingOptions(opts);
+    setPackingOptions(product.packingInfo?.map((pk) => pk.measurement) || []);
     setCurRow({
       productId: product._id,
       code: product.code || "",
@@ -1096,15 +1490,13 @@ export default function SalePage() {
       return;
     }
     if (selItemIdx !== null) {
-      setItems((prev) => {
-        const u = [...prev];
+      setItems((p) => {
+        const u = [...p];
         u[selItemIdx] = { ...curRow };
         return u;
       });
       setSelItemIdx(null);
-    } else {
-      setItems((p) => [...p, { ...curRow }]);
-    }
+    } else setItems((p) => [...p, { ...curRow }]);
     resetCurRow();
   };
 
@@ -1115,7 +1507,6 @@ export default function SalePage() {
     setSelItemIdx(null);
     setTimeout(() => searchRef.current?.focus(), 30);
   };
-
   const loadRowForEdit = (idx) => {
     setSelItemIdx(idx);
     const r = items[idx];
@@ -1123,13 +1514,11 @@ export default function SalePage() {
     setSearchText(r.name);
     setTimeout(() => pcsRef.current?.focus(), 30);
   };
-
   const removeRow = () => {
     if (selItemIdx === null) return;
     setItems((p) => p.filter((_, i) => i !== selItemIdx));
     resetCurRow();
   };
-
   const totalQty = items.reduce((s, r) => s + (parseFloat(r.pcs) || 0), 0);
 
   const holdBill = () => {
@@ -1198,73 +1587,90 @@ export default function SalePage() {
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
-  const saveSale = async () => {
+  const openSaleConfirm = () => {
     if (!items.length) {
       alert("Add at least one item");
       return;
     }
+    const payload = {
+      invoiceNo,
+      invoiceDate,
+      customerId: customerId || undefined,
+      customerName: buyerName || "COUNTER SALE",
+      customerPhone: buyerCode,
+      items: items.map((r) => ({
+        productId: r.productId || undefined,
+        code: r.code,
+        name: r.name,
+        description: r.name,
+        uom: r.uom,
+        measurement: r.uom,
+        rack: r.rack,
+        pcs: parseFloat(r.pcs) || 1,
+        qty: parseFloat(r.pcs) || 1,
+        rate: parseFloat(r.rate) || 0,
+        disc: 0,
+        amount: parseFloat(r.amount) || 0,
+      })),
+      subTotal,
+      extraDisc: parseFloat(extraDiscount) || 0,
+      discAmount: 0,
+      netTotal: billAmount,
+      prevBalance: parseFloat(prevBalance) || 0,
+      paidAmount: parseFloat(received) || 0,
+      balance,
+      paymentMode,
+      saleSource,
+      sendSms,
+      printType,
+      remarks: "",
+      saleType: "sale",
+    };
+    setPendingPayload(payload);
+    setShowSaveModal(true);
+  };
+
+  // Actual API call — modal ke confirm pe chalega
+  const confirmSave = async (overrides) => {
+    if (!pendingPayload) return;
     setLoading(true);
     try {
-      const payload = {
-        invoiceDate,
-        customerId: customerId || undefined,
-        customerName: buyerName || "COUNTER SALE",
-        customerPhone: buyerCode,
-        items: items.map((r) => ({
-          productId: r.productId || undefined,
-          code: r.code,
-          description: r.name,
-          measurement: r.uom,
-          rack: r.rack,
-          qty: parseFloat(r.pcs) || 1,
-          rate: parseFloat(r.rate) || 0,
-          disc: 0,
-          amount: parseFloat(r.amount) || 0,
-        })),
-        subTotal,
-        extraDisc: parseFloat(extraDiscount) || 0,
-        discAmount: 0,
-        netTotal: billAmount,
-        prevBalance: parseFloat(prevBalance) || 0,
-        paidAmount: parseFloat(received) || 0,
-        balance,
-        paymentMode,
-        saleSource,
-        sendSms,
-        printType,
-        remarks: "",
-        saleType: "sale",
+      const finalPayload = {
+        ...pendingPayload,
+        extraDisc: overrides.extraDisc,
+        netTotal: overrides.netTotal,
+        paidAmount: overrides.paidAmount,
+        balance: overrides.balance,
+        printType: overrides.printType,
       };
       const { data } = editId
-        ? await api.put(EP.SALES.UPDATE(editId), payload)
-        : await api.post(EP.SALES.CREATE, payload);
+        ? await api.put(EP.SALES.UPDATE(editId), finalPayload)
+        : await api.post(EP.SALES.CREATE, finalPayload);
 
       if (data.success) {
         showMsg(editId ? "Sale updated!" : `Saved: ${data.data.invoiceNo}`);
-        setSavedSale({
+        const saleObj = {
           invoiceNo: data.data.invoiceNo,
-          invoiceDate,
-          customerName: buyerName || "COUNTER SALE",
-          saleSource,
-          paymentMode,
-          items: items.map((r) => ({
-            name: r.name,
-            uom: r.uom,
-            pcs: parseFloat(r.pcs) || 1,
-            rate: parseFloat(r.rate) || 0,
-            amount: parseFloat(r.amount) || 0,
-          })),
-          subTotal,
-          extraDisc: parseFloat(extraDiscount) || 0,
-          netTotal: billAmount,
-          prevBalance: parseFloat(prevBalance) || 0,
-          paidAmount: parseFloat(received) || 0,
-          balance,
-        });
-        setShowInvoice(true);
+          invoiceDate: finalPayload.invoiceDate,
+          customerName: finalPayload.customerName,
+          saleSource: finalPayload.saleSource,
+          paymentMode: finalPayload.paymentMode,
+          items: pendingPayload.items,
+          subTotal: finalPayload.subTotal,
+          extraDisc: overrides.extraDisc,
+          netTotal: overrides.netTotal,
+          prevBalance: finalPayload.prevBalance,
+          paidAmount: overrides.paidAmount,
+          balance: overrides.balance,
+        };
+        if (overrides.withPrint) doPrint(saleObj, overrides.printType);
+        setShowSaveModal(false);
+        setPendingPayload(null);
         fullReset();
         await refreshInvoiceNo();
-      } else showMsg(data.message, "error");
+      } else {
+        showMsg(data.message, "error");
+      }
     } catch (e) {
       showMsg(e.response?.data?.message || "Save failed", "error");
     }
@@ -1285,12 +1691,17 @@ export default function SalePage() {
         e.preventDefault();
         saveRef.current?.click();
       }
-      if (e.key === "Escape" && !showProductModal && !showHoldPreview)
+      if (
+        e.key === "Escape" &&
+        !showProductModal &&
+        !showHoldPreview &&
+        !showSaveModal
+      )
         resetCurRow();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [items, showProductModal, showHoldPreview, billAmount]);
+  }, [items, showProductModal, showHoldPreview, showSaveModal, billAmount]);
 
   const EMPTY_ROWS = Math.max(0, 8 - items.length);
 
@@ -1313,13 +1724,14 @@ export default function SalePage() {
           onClose={() => setShowHoldPreview(null)}
         />
       )}
-      {showInvoice && savedSale && (
-        <InvoiceModal
-          sale={savedSale}
+      {showSaveModal && pendingPayload && (
+        <SaveConfirmModal
+          salePayload={pendingPayload}
           printType={printType}
+          onConfirm={confirmSave}
           onClose={() => {
-            setShowInvoice(false);
-            setSavedSale(null);
+            setShowSaveModal(false);
+            setPendingPayload(null);
           }}
         />
       )}
@@ -1338,19 +1750,7 @@ export default function SalePage() {
           Sale Invoice — Asim Electric &amp; Electronic Store
         </span>
         <div className="xp-tb-actions">
-          {editId && (
-            <div className="sl-edit-badge">
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168z" />
-              </svg>{" "}
-              Editing Sale
-            </div>
-          )}
+          {editId && <div className="sl-edit-badge">✏ Editing Sale</div>}
           <div className="xp-tb-divider" />
           <div className="sl-shortcut-hints">
             <span>F2 Product</span>
@@ -1375,7 +1775,7 @@ export default function SalePage() {
 
       <div className="sl-body">
         <div className="sl-left">
-          {/* Row 1: Invoice info */}
+          {/* Invoice info */}
           <div className="sl-top-bar">
             <div className="sl-sale-title-box">Sale</div>
             <div className="sl-inv-field-grp">
@@ -1401,7 +1801,7 @@ export default function SalePage() {
             </div>
           </div>
 
-          {/* Row 2: Entry strip */}
+          {/* Entry strip */}
           <div className="sl-entry-strip">
             <div className="sl-entry-cell sl-entry-product">
               <label>
@@ -1526,7 +1926,7 @@ export default function SalePage() {
             </div>
           </div>
 
-          {/* Table header bar */}
+          {/* Table header */}
           <div className="sl-table-header-bar">
             <span className="sl-table-lbl">
               {curRow.name ? (
@@ -1676,7 +2076,7 @@ export default function SalePage() {
             </div>
           </div>
 
-          {/* CUSTOMER BAR */}
+          {/* Customer bar */}
           <div className="sl-customer-bar">
             <div className="sl-cust-cell">
               <label>Code</label>
@@ -1737,7 +2137,7 @@ export default function SalePage() {
           </div>
         </div>
 
-        {/* RIGHT: Hold Bills */}
+        {/* Hold Bills */}
         <div className="sl-right">
           <div className="sl-hold-panel">
             <div className="sl-hold-title">
@@ -1850,7 +2250,7 @@ export default function SalePage() {
         </div>
       </div>
 
-      {/* COMMANDS BAR */}
+      {/* Commands bar */}
       <div className="sl-cmd-bar">
         <button
           className="xp-btn xp-btn-sm"
@@ -1862,7 +2262,7 @@ export default function SalePage() {
         <button
           ref={saveRef}
           className="xp-btn xp-btn-primary xp-btn-lg"
-          onClick={saveSale}
+          onClick={openSaleConfirm}
           disabled={loading}
         >
           {loading ? "Saving…" : "Save  F10"}
@@ -1874,8 +2274,7 @@ export default function SalePage() {
           className="xp-btn xp-btn-danger xp-btn-sm"
           disabled={!editId}
           onClick={async () => {
-            if (!editId) return;
-            if (!window.confirm("Delete this sale?")) return;
+            if (!editId || !window.confirm("Delete this sale?")) return;
             try {
               await api.delete(EP.SALES.DELETE(editId));
               showMsg("Sale deleted");
