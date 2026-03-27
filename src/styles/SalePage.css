@@ -769,3 +769,204 @@ table.sl-hold-table tbody td.muted {
   color: var(--xp-amber);
   font-weight: 700;
 }
+
+/* ══════════════════════════════════════════════════════════
+   SAVE CONFIRM MODAL — XP Theme
+   ══════════════════════════════════════════════════════════ */
+
+.scm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.scm-window {
+  background: var(--xp-silver-1);
+  border-top: 2px solid #3a7bd5;
+  border-left: 2px solid #3a7bd5;
+  border-right: 2px solid #0a246a;
+  border-bottom: 2px solid #0a246a;
+  box-shadow: var(--xp-shadow-window);
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--xp-font);
+}
+
+/* ── Title bar ── */
+.scm-tb {
+  height: 28px;
+  background: var(--xp-tb-grad);
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 10px;
+  gap: 6px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--xp-blue-dark);
+  user-select: none;
+}
+.scm-tb-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Meta info strip ── */
+.scm-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  background: #e8f0fb;
+  border-bottom: 1px solid #c5d5ee;
+  padding: 5px 12px;
+  font-size: var(--xp-fs-xs);
+}
+.scm-meta b {
+  color: var(--xp-blue-dark);
+}
+
+/* ── 3 Big amount boxes ── */
+.scm-amounts {
+  display: flex;
+  gap: 0;
+  padding: 12px 12px 8px;
+}
+
+.scm-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid var(--xp-silver-5);
+  border-bottom: 1px solid var(--xp-silver-5);
+  background: linear-gradient(180deg, #dde8f8 0%, #c5d8f5 100%);
+  gap: 4px;
+}
+.scm-box:first-child {
+  border-radius: 3px 0 0 3px;
+}
+.scm-box:last-child {
+  border-radius: 0 3px 3px 0;
+  border-right: 1px solid var(--xp-silver-5);
+}
+.scm-box.scm-box-change {
+  background: linear-gradient(180deg, #d4edda 0%, #b8dfc4 100%);
+}
+.scm-box.scm-box-due {
+  background: linear-gradient(180deg, #fde8e8 0%, #f5c6c6 100%);
+}
+
+.scm-box-label {
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: var(--xp-blue-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.scm-box.scm-box-change .scm-box-label {
+  color: var(--xp-green);
+}
+.scm-box.scm-box-due .scm-box-label {
+  color: var(--xp-red);
+}
+
+.scm-box-val {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--xp-blue-dark);
+  font-family: var(--xp-mono);
+  line-height: 1;
+}
+.scm-box.scm-box-change .scm-box-val {
+  color: var(--xp-green);
+}
+.scm-box.scm-box-due .scm-box-val {
+  color: var(--xp-red);
+}
+
+/* Received box — editable input styled like big number */
+.scm-recv-input {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--xp-blue-dark);
+  font-family: var(--xp-mono);
+  line-height: 1;
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--xp-blue-mid);
+  outline: none;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+.scm-recv-input::-webkit-outer-spin-button,
+.scm-recv-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.scm-recv-input:focus {
+  border-bottom-color: var(--xp-blue-lt);
+}
+
+/* ── Print type selector ── */
+.scm-print-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 4px 12px 8px;
+  font-size: var(--xp-fs-xs);
+}
+.scm-print-row label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #333;
+}
+.scm-print-row label input {
+  cursor: pointer;
+  accent-color: var(--xp-blue-mid);
+}
+
+/* ── Separator ── */
+.scm-sep {
+  height: 1px;
+  background: var(--xp-silver-2);
+  box-shadow: 0 1px 0 #fff;
+  margin: 0 12px;
+}
+
+/* ── Action buttons row ── */
+.scm-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  justify-content: center;
+}
+
+/* ── Hint bar ── */
+.scm-hint {
+  background: var(--xp-silver-3);
+  border-top: 1px solid var(--xp-silver-2);
+  padding: 3px 12px;
+  font-size: 10.5px;
+  color: #666;
+  text-align: center;
+}

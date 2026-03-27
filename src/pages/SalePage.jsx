@@ -269,15 +269,20 @@ function SaveConfirmModal({
         e.preventDefault();
         onClose();
       }
+      if (e.key === "Enter" && document.activeElement === paidRef.current) {
+        e.preventDefault();
+        handleConfirm(true);
+      }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
+  }, [paidAmount, selPrintType]);
 
   const netTotal = salePayload.netTotal;
   const prevBalance = salePayload.prevBalance || 0;
   const paid = Number(paidAmount) || 0;
-  const change = paid - (netTotal + prevBalance);
+  const billTotal = netTotal + prevBalance;
+  const change = paid - billTotal;
 
   const handleConfirm = async (withPrint) => {
     if (saving) return;
@@ -286,7 +291,7 @@ function SaveConfirmModal({
       extraDisc: salePayload.extraDisc || 0,
       netTotal,
       paidAmount: paid,
-      balance: netTotal + prevBalance - paid,
+      balance: billTotal - paid,
       printType: selPrintType,
       withPrint,
     });
@@ -294,284 +299,130 @@ function SaveConfirmModal({
   };
 
   return (
-    <div className="xp-overlay">
-      <div
-        style={{
-          background: "#1a3a6b",
-          borderRadius: 8,
-          width: 540,
-          maxWidth: "96vw",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.45)",
-          overflow: "hidden",
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        {/* Title */}
-        <div
-          style={{
-            background: "#0f2548",
-            padding: "8px 14px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
-            Sale Confirm — {salePayload.customerName} &nbsp;|&nbsp;{" "}
-            {salePayload.invoiceNo}
-          </span>
-          <button
-            onClick={onClose}
-            style={{
-              background: "#c0392b",
-              border: "none",
-              color: "#fff",
-              borderRadius: 3,
-              width: 22,
-              height: 22,
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
+    <div className="scm-overlay">
+      <div className="scm-window">
+        {/* Titlebar */}
+        <div className="scm-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.85)"
           >
+            <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0" />
+          </svg>
+          <span className="scm-tb-title">
+            Sale Confirm — {salePayload.invoiceNo} &nbsp;|&nbsp;{" "}
+            {salePayload.customerName}
+          </span>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
             ✕
           </button>
         </div>
 
-        {/* 3 big boxes */}
-        <div style={{ display: "flex", gap: 0, padding: "18px 18px 10px" }}>
+        {/* Meta */}
+        <div className="scm-meta">
+          <span>
+            <b>Invoice:</b> {salePayload.invoiceNo}
+          </span>
+          <span>
+            <b>Date:</b> {salePayload.invoiceDate}
+          </span>
+          <span>
+            <b>Customer:</b> {salePayload.customerName}
+          </span>
+          <span>
+            <b>Payment:</b> {salePayload.paymentMode}
+          </span>
+          <span>
+            <b>Items:</b> {salePayload.items.length}
+          </span>
+        </div>
+
+        {/* 3 boxes */}
+        <div className="scm-amounts">
           {/* Bill Amount */}
-          <div
-            style={{
-              flex: 1,
-              background: "#1565c0",
-              borderRadius: "6px 0 0 6px",
-              padding: "14px 10px",
-              textAlign: "center",
-              border: "2px solid #1976d2",
-              borderRight: "none",
-            }}
-          >
-            <div
-              style={{
-                color: "#90caf9",
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 6,
-              }}
-            >
-              Bill Amount
-            </div>
-            <div
-              style={{
-                color: "#fff",
-                fontSize: 36,
-                fontWeight: 900,
-                lineHeight: 1,
-              }}
-            >
-              {Number(netTotal + prevBalance).toLocaleString("en-PK")}
+          <div className="scm-box">
+            <div className="scm-box-label">Bill Amount</div>
+            <div className="scm-box-val">
+              {Number(billTotal).toLocaleString("en-PK")}
             </div>
           </div>
 
           {/* Received — editable */}
-          <div
-            style={{
-              flex: 1,
-              background: "#1565c0",
-              padding: "14px 10px",
-              textAlign: "center",
-              border: "2px solid #1976d2",
-              borderRight: "none",
-            }}
-          >
-            <div
-              style={{
-                color: "#90caf9",
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 6,
-              }}
-            >
-              Received
-            </div>
+          <div className="scm-box" style={{ borderLeft: "none" }}>
+            <div className="scm-box-label">Received</div>
             <input
               ref={paidRef}
               type="number"
+              className="scm-recv-input"
               value={paidAmount}
               onChange={(e) => setPaidAmount(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleConfirm(true);
-              }}
               onFocus={(e) => e.target.select()}
-              style={{
-                width: "100%",
-                background: "transparent",
-                border: "none",
-                borderBottom: "2px solid #42a5f5",
-                color: "#fff",
-                fontSize: 36,
-                fontWeight: 900,
-                textAlign: "center",
-                outline: "none",
-                lineHeight: 1,
-                padding: 0,
-                MozAppearance: "textfield",
-              }}
             />
           </div>
 
-          {/* Change */}
+          {/* Change / Balance Due */}
           <div
-            style={{
-              flex: 1,
-              background: change >= 0 ? "#0d47a1" : "#7f1d1d",
-              borderRadius: "0 6px 6px 0",
-              padding: "14px 10px",
-              textAlign: "center",
-              border: `2px solid ${change >= 0 ? "#1976d2" : "#ef4444"}`,
-            }}
+            className={`scm-box ${change >= 0 ? "scm-box-change" : "scm-box-due"}`}
+            style={{ borderLeft: "none" }}
           >
-            <div
-              style={{
-                color: change >= 0 ? "#90caf9" : "#fca5a5",
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 6,
-              }}
-            >
+            <div className="scm-box-label">
               {change >= 0 ? "Change" : "Balance Due"}
             </div>
-            <div
-              style={{
-                color: change >= 0 ? "#4ade80" : "#f87171",
-                fontSize: 36,
-                fontWeight: 900,
-                lineHeight: 1,
-              }}
-            >
+            <div className="scm-box-val">
               {Math.abs(change).toLocaleString("en-PK")}
             </div>
           </div>
         </div>
 
-        {/* Print type row */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 20,
-            padding: "4px 18px 10px",
-          }}
-        >
+        {/* Print type */}
+        <div className="scm-print-row">
+          <span style={{ color: "#555", marginRight: 4 }}>Print:</span>
           {["Thermal", "A5", "A4"].map((pt) => (
-            <label
-              key={pt}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                color: "#93c5fd",
-                fontSize: 12.5,
-                cursor: "pointer",
-                fontWeight: selPrintType === pt ? 700 : 400,
-              }}
-            >
+            <label key={pt}>
               <input
                 type="radio"
                 name="scm-pt"
                 checked={selPrintType === pt}
                 onChange={() => setSelPrintType(pt)}
-                style={{ accentColor: "#3b82f6" }}
               />
               {pt}
             </label>
           ))}
         </div>
 
-        {/* 3 action buttons */}
-        <div style={{ display: "flex", gap: 0, padding: "0 18px 18px" }}>
+        <div className="scm-sep" />
+
+        {/* Buttons */}
+        <div className="scm-actions">
           <button
+            className="xp-btn xp-btn-primary"
+            style={{ minWidth: 140 }}
             onClick={() => handleConfirm(true)}
             disabled={saving}
-            style={{
-              flex: 1,
-              background: "linear-gradient(to bottom, #2563eb, #1d4ed8)",
-              border: "2px solid #3b82f6",
-              borderRight: "none",
-              borderRadius: "6px 0 0 6px",
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 700,
-              padding: "11px 8px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
           >
             🖨 Save and Print
           </button>
           <button
+            className="xp-btn xp-btn-success"
+            style={{ minWidth: 110 }}
             onClick={() => handleConfirm(false)}
             disabled={saving}
-            style={{
-              flex: 1,
-              background: "linear-gradient(to bottom, #0f766e, #0d6363)",
-              border: "2px solid #14b8a6",
-              borderRight: "none",
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 700,
-              padding: "11px 8px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
           >
             💾 Save only
           </button>
           <button
+            className="xp-btn"
+            style={{ minWidth: 130 }}
             onClick={onClose}
-            style={{
-              flex: 1,
-              background: "linear-gradient(to bottom, #374151, #1f2937)",
-              border: "2px solid #6b7280",
-              borderRadius: "0 6px 6px 0",
-              color: "#e5e7eb",
-              fontSize: 13,
-              fontWeight: 700,
-              padding: "11px 8px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
           >
             ↩ Return to Invoice
           </button>
         </div>
 
         {/* Hint */}
-        <div
-          style={{
-            textAlign: "center",
-            color: "#64748b",
-            fontSize: 10.5,
-            padding: "0 0 10px",
-            background: "#0f2548",
-          }}
-        >
+        <div className="scm-hint">
           ↵ Enter = Save &amp; Print &nbsp;|&nbsp; Esc = Return to Invoice
         </div>
       </div>
@@ -941,9 +792,12 @@ function CustomerDropdown({
   const listRef = useRef(null);
   const ghostRef = useRef(null);
 
-  const realCustomers = allCustomers.filter(
-    (c) => c.name?.toUpperCase().trim() !== "COUNTER SALE",
-  );
+  const ALLOWED_TYPES = ["credit", "cash", ""];
+  const realCustomers = allCustomers.filter((c) => {
+    if (c.name?.toUpperCase().trim() === "COUNTER SALE") return false;
+    const t = (c.customerType || c.type || "").toLowerCase();
+    return ALLOWED_TYPES.includes(t);
+  });
 
   const filtered = query.trim()
     ? realCustomers.filter((c) => {
