@@ -968,7 +968,7 @@ function CustomerDropdown({
             zIndex: 1,
           }}
           value={inputVal}
-          placeholder={value ? "" : "Naam likhein ya ↓ dabayein…"}
+          placeholder={value ? "" : "enter name"}
           onChange={(e) => {
             setQuery(e.target.value);
             if (!open) setOpen(true);
@@ -1028,7 +1028,7 @@ function CustomerDropdown({
             <div
               style={{ padding: "10px 12px", color: "#9ca3af", fontSize: 12 }}
             >
-              Koi customer registered nahi
+              No customers registered
             </div>
           )}
 
@@ -1133,7 +1133,7 @@ function CustomerDropdown({
                 color: "#15803d",
               }}
             >
-              ➕ <strong>"{query}"</strong> — naya customer add karein
+              ➕ <strong>"{query}"</strong> — Add as new customer
             </div>
           )}
 
@@ -1141,7 +1141,7 @@ function CustomerDropdown({
             <div
               style={{ padding: "7px 12px", color: "#9ca3af", fontSize: 12 }}
             >
-              "{query}" — koi match nahi mila
+              "{query}" — No match found
             </div>
           )}
 
@@ -1155,7 +1155,7 @@ function CustomerDropdown({
             }}
           >
             Tab / → = suggestion accept &nbsp;|&nbsp; ↑↓ = navigate
-            &nbsp;|&nbsp; Enter = select &nbsp;|&nbsp; Esc = band karo
+            &nbsp;|&nbsp; Enter = select &nbsp;|&nbsp; Esc = close
           </div>
         </div>
       )}
