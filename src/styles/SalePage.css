@@ -970,3 +970,146 @@ table.sl-hold-table tbody td.muted {
   color: #666;
   text-align: center;
 }
+
+/* ══════════════════════════════════════════════════════════
+   ADD THESE AT BOTTOM OF SalePage.css
+══════════════════════════════════════════════════════════ */
+
+/* ── Credit Warning — red pulse overlay ── */
+.sl-credit-mode {
+  outline: 4px solid var(--xp-red);
+  outline-offset: -4px;
+}
+.sl-credit-mode::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(192, 57, 43, 0.08);
+  pointer-events: none;
+  z-index: 500;
+  animation: sl-pulse 1.4s ease-in-out infinite;
+}
+@keyframes sl-pulse {
+  0%,
+  100% {
+    background: rgba(192, 57, 43, 0.06);
+  }
+  50% {
+    background: rgba(192, 57, 43, 0.16);
+  }
+}
+
+.sl-credit-warning-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--xp-red-bg);
+  border-top: 2px solid var(--xp-red);
+  border-bottom: 2px solid var(--xp-red);
+  padding: 6px 10px;
+  flex-shrink: 0;
+  animation: sl-pulse 1.4s ease-in-out infinite;
+}
+.sl-credit-warning-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.sl-credit-icon {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--xp-red);
+}
+.sl-credit-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--xp-red);
+  letter-spacing: 0.5px;
+}
+.sl-credit-sub {
+  font-size: 11px;
+  color: #7f1d1d;
+}
+.sl-credit-statement-input {
+  flex: 1;
+  height: 26px;
+  padding: 0 8px;
+  font-family: var(--xp-font);
+  font-size: 12px;
+  border: 2px solid var(--xp-red);
+  background: #fff;
+  color: #000;
+  outline: none;
+}
+.sl-credit-statement-input:focus {
+  border-color: #7f1d1d;
+  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.2);
+}
+.sl-credit-statement-input::placeholder {
+  color: #e57373;
+  font-style: italic;
+}
+
+/* ── Customer Card (right panel) ── */
+.sl-cust-card {
+  display: flex;
+  gap: 8px;
+  background: var(--xp-silver-1);
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid var(--xp-silver-5);
+  border-bottom: 2px solid var(--xp-silver-5);
+  padding: 6px 8px;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+.sl-cust-card-photo {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 1px solid var(--xp-silver-5);
+  overflow: hidden;
+  background: #e8e4d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sl-cust-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sl-cust-no-photo {
+  font-size: 26px;
+  opacity: 0.4;
+}
+.sl-cust-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sl-cust-card-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--xp-blue-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sl-cust-card-phone {
+  font-size: 11px;
+  font-family: var(--xp-mono);
+  color: #333;
+}
+.sl-cust-card-bal {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--xp-mono);
+}
+.sl-cust-card-limit {
+  font-size: 10px;
+  color: #666;
+}
