@@ -1,0 +1,188 @@
+/* styles/DamagePage.css */
+/* ─── Damage In / Out page-specific styles ─── */
+
+/* ── Titlebar color variants ── */
+.dmg-titlebar-in {
+  background: linear-gradient(
+    135deg,
+    var(--xp-blue-dark, #1a3a5c) 0%,
+    #1565c0 100%
+  );
+}
+.dmg-titlebar-out {
+  background: linear-gradient(135deg, #bf360c 0%, #e64a19 100%);
+}
+
+/* ── Header band (invoice #, date, time) ── */
+.dmg-header-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: var(--xp-toolbar, #f0f0f0);
+  border-bottom: 1px solid var(--xp-border, #ccc);
+}
+
+/* ── Damage label badge ── */
+.dmg-label-badge {
+  font-size: 22px;
+  font-weight: 700;
+  padding: 4px 18px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  color: #fff;
+  min-width: 140px;
+  text-align: center;
+}
+.dmg-in-badge {
+  background: linear-gradient(135deg, #e53935, #b71c1c);
+}
+.dmg-out-badge {
+  background: linear-gradient(135deg, #e65100, #bf360c);
+}
+
+/* ── Product select strip ── */
+.dmg-product-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--xp-toolbar, #f0f0f0);
+  border-bottom: 1px solid var(--xp-border, #ccc);
+}
+.dmg-product-input {
+  flex: 1;
+  min-width: 180px;
+  cursor: pointer;
+}
+
+/* ── Main layout: table + hold bills side by side ── */
+.dmg-main-layout {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--xp-border, #ccc);
+}
+.dmg-table-area {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--xp-border, #ccc);
+}
+.dmg-items-table th,
+.dmg-items-table td {
+  padding: 2px 5px;
+  font-size: var(--xp-fs-xs, 11px);
+}
+
+/* ── Hold bills side panel ── */
+.dmg-hold-panel {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--xp-surface, #fff);
+}
+.dmg-hold-title {
+  font-size: var(--xp-fs-xs, 11px);
+  font-weight: 600;
+  padding: 4px 8px;
+  background: var(--xp-toolbar, #f0f0f0);
+  border-bottom: 1px solid var(--xp-border, #ccc);
+  text-align: center;
+  color: var(--xp-blue-dark, #1a3a5c);
+}
+
+/* ── Footer totals row ── */
+.dmg-footer-totals {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 5px 10px;
+  background: var(--xp-toolbar, #f0f0f0);
+  border-bottom: 1px solid var(--xp-border, #ccc);
+  flex-wrap: wrap;
+}
+.dmg-total-grp {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.dmg-tot-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dmg-tot-item label {
+  font-size: var(--xp-fs-xs, 11px);
+  color: #444;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.dmg-tot-input {
+  width: 100px;
+  text-align: right;
+  font-family: var(--xp-mono, monospace);
+  font-size: var(--xp-fs-xs, 11px);
+  background: #fff;
+}
+
+/* ── Footer buyer row ── */
+.dmg-footer-buyer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 5px 10px;
+  background: var(--xp-toolbar, #f0f0f0);
+  border-bottom: 1px solid var(--xp-border, #ccc);
+  flex-wrap: wrap;
+}
+
+/* ── Action bar (bottom bar matching screenshot) ── */
+.dmg-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: #d04040; /* red bar like screenshot */
+  border-top: 2px solid #b71c1c;
+}
+.dmg-out-page .dmg-action-bar {
+  background: #bf5600; /* orange bar for Damage Out */
+  border-top-color: #8d3900;
+}
+.dmg-act-btn {
+  background: #fff !important;
+  color: #333 !important;
+  border-color: #bbb !important;
+}
+.dmg-act-btn:hover {
+  background: #f5f5f5 !important;
+}
+
+/* ── Orange accent button for Damage Out ── */
+.dmg-out-btn {
+  background: linear-gradient(135deg, #e65100, #ff6d00) !important;
+  color: #fff !important;
+  border-color: #e64a19 !important;
+}
+.dmg-out-btn:hover {
+  background: linear-gradient(135deg, #bf360c, #e65100) !important;
+}
+
+/* ── Active row highlight for Damage Out ── */
+.dmg-out-active {
+  background: #fff3e0 !important;
+}
+.dmg-out-active td {
+  background: #fff3e0 !important;
+}
+
+/* ── Page wrapper ── */
+.dmg-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.dmg-page .qt-body {
+  flex: 1;
+  overflow-y: auto;
+}

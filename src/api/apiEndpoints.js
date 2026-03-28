@@ -60,6 +60,17 @@ const EP = {
     CREATE: "/quotations",
     DELETE: (id) => `/quotations/${id}`,
   },
+  DAMAGE: {
+    GET_ALL: "/damage",
+    GET_IN: (search = "") =>
+      `/damage?type=in${search ? "&search=" + encodeURIComponent(search) : ""}`,
+    GET_OUT: (search = "") =>
+      `/damage?type=out${search ? "&search=" + encodeURIComponent(search) : ""}`,
+    NEXT_INVOICE: (type) => `/damage/next-invoice?type=${type}`,
+    GET_ONE: (id) => `/damage/${id}`,
+    CREATE: "/damage",
+    DELETE: (id) => `/damage/${id}`,
+  },
 };
 
 export default EP;

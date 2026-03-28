@@ -17,6 +17,8 @@ import ManualPurchasePage from "./pages/ManualPurchasePage.jsx";
 import RawSalePage from "./pages/RawSalePage.jsx";
 import RawPurchasePage from "./pages/RawPurchasePage.jsx";
 import PurchasePage from "./pages/PurchasePage.jsx";
+import DamageInPage from "./pages/DamageInPage.jsx";
+import DamageOutPage from "./pages/DamageOutPage.jsx";
 
 export default function App() {
   return (
@@ -37,6 +39,8 @@ export default function App() {
           <Route path="/purchase" element={<PurchasePage />} />
           <Route path="/credit-sale" element={<CreditSalePage />} />
           <Route path="/products" element={<ProductPage />} />
+          <Route path="/damage-in" element={<DamageInPage />} />
+          <Route path="/damage-out" element={<DamageOutPage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/sale-history" element={<SaleHistoryPage />} />
           <Route path="/sale-return" element={<SaleReturnPage />} />
