@@ -539,10 +539,7 @@ export default function QuotationPage() {
   const fetchQuotes = async (search = "") => {
     setLoadingQuotes(true);
     try {
-      const url = search
-        ? `/api/quotations?search=${encodeURIComponent(search)}`
-        : "/api/quotations";
-      const { data } = await api.get(url);
+      const { data } = await api.get(EP.QUOTATIONS.GET_ALL_SEARCH(search));
       if (data.success) setSavedQuotes(data.data || []);
     } catch {
       setSavedQuotes([]);
@@ -571,7 +568,7 @@ export default function QuotationPage() {
         extraDisc: Number(extraDisc),
         remarks,
       };
-      const { data } = await api.post("/api/quotations", payload);
+      const { data } = await api.post(EP.QUOTATIONS.CREATE, payload);
       if (data.success) {
         showMsg(`Saved: ${data.data.qtNo}`);
         fetchQuotes(qtSearch);
@@ -582,11 +579,12 @@ export default function QuotationPage() {
     setSaving(false);
   };
 
+  // 3. handleDeleteQuote — DELETE
   const handleDeleteQuote = async () => {
     if (!selQuoteId) return showMsg("Select a quotation first", "error");
     if (!confirm("Delete this quotation?")) return;
     try {
-      const { data } = await api.delete(`/api/quotations/${selQuoteId}`);
+      const { data } = await api.delete(EP.QUOTATIONS.DELETE(selQuoteId));
       if (data.success) {
         showMsg("Deleted");
         setSelQuoteId(null);

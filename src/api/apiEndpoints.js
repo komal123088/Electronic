@@ -19,12 +19,15 @@ const EP = {
     CREATE: "/sales",
     UPDATE: (id) => `/sales/${id}`,
     DELETE: (id) => `/sales/${id}`,
+    RETURN_CREATE: "/sales/return",
   },
+
   HOLD_BILLS: {
     GET_ALL: "/hold-bills",
     CREATE: "/hold-bills",
     DELETE: (id) => `/hold-bills/${id}`,
   },
+
   // ── Customers ─────────────────────────────────────────────────────────────
   CUSTOMERS: {
     GET_ALL: "/customers",
@@ -33,7 +36,6 @@ const EP = {
     UPDATE: (id) => `/customers/${id}`,
     DELETE: (id) => `/customers/${id}`,
     SALE_HISTORY: (id) => `/customers/${id}/sales`,
-    GET_ALL: "/customers",
     GET_CREDIT: (search = "") =>
       `/customers?type=credit${search ? "&search=" + encodeURIComponent(search) : ""}`,
     GET_WALKIN: (search = "") =>
@@ -41,12 +43,22 @@ const EP = {
     GET_WHOLESALE: (search = "") =>
       `/customers?type=wholesale${search ? "&search=" + encodeURIComponent(search) : ""}`,
   },
+
   PAYMENTS: {
     GET_ALL: "/payments",
     CREATE: "/payments",
     BY_CUSTOMER: (id) => `/payments/customer/${id}`,
     BY_SALE: (id) => `/payments/sale/${id}`,
     DELETE: (id) => `/payments/${id}`,
+  },
+
+  // ── Quotations ─────────────────────────────────────────────────────────────
+  QUOTATIONS: {
+    GET_ALL: "/quotations",
+    GET_ALL_SEARCH: (search = "") =>
+      `/quotations${search ? "?search=" + encodeURIComponent(search) : ""}`,
+    CREATE: "/quotations",
+    DELETE: (id) => `/quotations/${id}`,
   },
 };
 
