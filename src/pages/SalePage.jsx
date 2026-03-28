@@ -250,10 +250,6 @@ const doPrint = (sale, type) => {
 
 /* ══════════════════════════════════════════════════════════
    SAVE CONFIRM MODAL — XP Theme
-   • Received default = 0
-   • Change green / Balance Due red with minus sign
-   • Enter = Save & Print
-   • Esc = close (no save)
 ══════════════════════════════════════════════════════════ */
 function SaveConfirmModal({
   salePayload,
@@ -786,9 +782,6 @@ function HoldPreviewModal({ bill, onResume, onClose }) {
 
 /* ══════════════════════════════════════════════════════════
    CUSTOMER DROPDOWN
-   • Only credit and cash customers shown
-   • Ghost text suggestion
-   • Keyboard navigation
 ══════════════════════════════════════════════════════════ */
 function CustomerDropdown({
   allCustomers,
@@ -2065,8 +2058,8 @@ export default function SalePage() {
               return cust ? (
                 <div className="sl-cust-card">
                   <div className="sl-cust-card-photo">
-                    {cust.photo ? (
-                      <img src={cust.photo} alt={cust.name} />
+                    {cust.imageFront ? (
+                      <img src={cust.imageFront} alt={cust.name} />
                     ) : (
                       <div className="sl-cust-no-photo">👤</div>
                     )}

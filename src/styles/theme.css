@@ -17,7 +17,8 @@
   );
 
   /* Silver / chrome */
-  --xp-silver-1: #ece9d8;
+  /* --xp-silver-1: #ece9d8; */
+  --xp-silver-1: #ffffff;
   --xp-silver-2: #d4d0c8;
   --xp-silver-3: #f0ede4;
   --xp-silver-5: #aca899;
