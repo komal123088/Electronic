@@ -1,0 +1,108 @@
+/* CashPaymentVoucher.css */
+
+/* ── Header Form Panel ─────────────────────────────────────────────────────── */
+.cpv-header {
+  background: var(--xp-silver-3);
+  border-bottom: 2px solid var(--xp-silver-5);
+  padding: 6px 10px 0 10px;
+  flex-shrink: 0;
+}
+
+.cpv-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.cpv-header-label {
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: var(--xp-blue-dark);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.cpv-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cpv-field .xp-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+  font-size: var(--xp-fs-xs);
+}
+
+.cpv-field-grow {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* ── Commands bar ──────────────────────────────────────────────────────────── */
+.cpv-commands {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 5px 8px;
+  background: var(--xp-silver-2);
+  border: 1px solid var(--xp-silver-5);
+  margin-bottom: 0;
+}
+
+.cpv-commands-label {
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: var(--xp-blue-dark);
+  margin-right: 2px;
+}
+
+.cpv-sms-chk {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--xp-fs-xs);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── Search Results label ──────────────────────────────────────────────────── */
+.cpv-results-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--xp-silver-1);
+  border-bottom: 1px solid var(--xp-silver-2);
+  font-size: var(--xp-fs-xs);
+  flex-shrink: 0;
+}
+
+.cpv-results-bar .cpv-results-label {
+  font-weight: 700;
+  color: #000;
+}
+
+.cpv-total {
+  margin-left: auto;
+  font-family: var(--xp-mono);
+  font-weight: 700;
+  font-size: var(--xp-fs-sm);
+  color: var(--xp-green);
+}
+
+/* ── Selected row highlight ────────────────────────────────────────────────── */
+tr.cpv-row-selected td {
+  background: #b3d4f7 !important;
+  font-weight: 700;
+}
+
+/* ── Amount input right-align ──────────────────────────────────────────────── */
+.cpv-amt-input {
+  text-align: right;
+  font-family: var(--xp-mono);
+  font-weight: 700;
+}

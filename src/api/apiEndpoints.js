@@ -71,6 +71,16 @@ const EP = {
     CREATE: "/damage",
     DELETE: (id) => `/damage/${id}`,
   },
+  CPV: {
+    GET_ALL: "/cpv",
+    GET_ALL_SEARCH: (search = "") =>
+      `/cpv${search ? "?search=" + encodeURIComponent(search) : ""}`,
+    NEXT_NUMBER: "/cpv/next-number",
+    GET_ONE: (id) => `/cpv/${id}`,
+    CREATE: "/cpv",
+    UPDATE: (id) => `/cpv/${id}`,
+    DELETE: (id) => `/cpv/${id}`,
+  },
 };
 
 export default EP;

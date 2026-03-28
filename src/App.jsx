@@ -19,6 +19,7 @@ import RawPurchasePage from "./pages/RawPurchasePage.jsx";
 import PurchasePage from "./pages/PurchasePage.jsx";
 import DamageInPage from "./pages/DamageInPage.jsx";
 import DamageOutPage from "./pages/DamageOutPage.jsx";
+import CashPaymentVoucher from "./pages/cashPamentVoucherPage.jsx";
 
 export default function App() {
   return (
@@ -44,6 +45,10 @@ export default function App() {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/sale-history" element={<SaleHistoryPage />} />
           <Route path="/sale-return" element={<SaleReturnPage />} />
+          <Route
+            path="/cash-payment-voucher"
+            element={<CashPaymentVoucher />}
+          />
           <Route path="*" element={<ComingSoon />} />
         </Routes>
       </Layout>
