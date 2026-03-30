@@ -26,7 +26,6 @@
   grid-template-columns: 330px 1fr;
   gap: 8px;
   flex-shrink: 0;
-  position: relative;
 }
 .pp-left-col {
   display: flex;
@@ -36,12 +35,10 @@
   z-index: 10;
 }
 .pp-right-col {
-  position: relative;
-  z-index: 1;
-}
-.pp-right-col {
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── XP FIELDSET ──────────────────────────────── */
@@ -82,20 +79,6 @@
   text-align: right;
   white-space: nowrap;
 }
-.pp-frow-2 {
-  display: grid;
-  grid-template-columns: 86px 1fr 52px 74px;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 3px;
-}
-.pp-frow-2 label {
-  font-size: var(--xp-fs-xs);
-  font-weight: 700;
-  color: #444;
-  text-align: right;
-  white-space: nowrap;
-}
 .pp-id-row {
   display: grid;
   grid-template-columns: 86px 70px 70px 64px;
@@ -113,69 +96,34 @@
 
 /* ── COMBO INPUT ─────────────────────────────── */
 .pp-combo-wrap {
-  position: relative;
   display: flex;
-  align-items: center;
-  /* NO z-index here — let dropdown escape to page stacking context */
+  align-items: stretch;
+  position: relative;
+  width: 100%;
 }
-.pp-combo-wrap .xp-input {
-  flex: 1;
-  border-right: none;
+.pp-combo-input {
+  width: 100%;
+  padding-right: 22px !important;
+  box-sizing: border-box;
 }
 .pp-combo-btn {
-  height: 26px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
   width: 20px;
-  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+  color: #555;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  color: #444;
-  cursor: pointer;
-  background: linear-gradient(180deg, #f0ede4 0%, #d4d0c8 100%);
-  border-top: 1px solid var(--xp-silver-5);
-  border-left: none;
-  border-right: 1px solid var(--xp-silver-5);
-  border-bottom: 1px solid var(--xp-silver-5);
+  padding: 0;
 }
 .pp-combo-btn:hover {
-  background: #e0ddd4;
-}
-
-.pp-combo-drop {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  /* Page-level z-index — must be above packing section */
-  z-index: 9999;
-  background: #fff;
-  border-top: 1px solid var(--xp-silver-5);
-  border-left: 1px solid var(--xp-silver-5);
-  border-right: 1px solid #fff;
-  border-bottom: 1px solid #fff;
-  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.22);
-  max-height: 160px;
-  overflow-y: auto;
-  min-width: 120px;
-}
-.pp-drop-item {
-  padding: 3px 8px;
-  font-size: var(--xp-fs-sm);
-  cursor: pointer;
-  border-bottom: 1px solid #f0ede4;
-  white-space: nowrap;
-}
-.pp-drop-item:hover,
-.pp-drop-item.hi {
-  background: #316ac5;
-  color: #fff;
-}
-.pp-drop-empty {
-  padding: 4px 8px;
-  font-size: var(--xp-fs-xs);
-  color: #888;
-  font-style: italic;
+  color: #000;
 }
 
 /* ── COMMANDS ────────────────────────────────── */
@@ -185,33 +133,10 @@
   gap: 4px;
   padding-top: 5px;
 }
-.pp-cmd-hint {
-  grid-column: 1 / -1;
-  font-size: var(--xp-fs-xs);
-  color: #666;
-  padding: 3px 2px 0;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.pp-cmd-hint kbd {
-  background: var(--xp-silver-3);
-  border-top: 1px solid #fff;
-  border-left: 1px solid #fff;
-  border-right: 1px solid var(--xp-silver-5);
-  border-bottom: 1px solid var(--xp-silver-5);
-  padding: 0 5px;
-  font-family: var(--xp-mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--xp-blue-dark);
-}
 
 /* ══════════════════════════════════════════════
-   PACKING INFO — compact layout matching screenshot
+   PACKING INFO
    ══════════════════════════════════════════════ */
-
-/* Header row: ID | Measurement | Pur.Rate | Sale Rate | Packing */
 .pp-pk-hdr-row {
   display: grid;
   grid-template-columns: 32px 1fr 90px 90px 80px;
@@ -230,8 +155,6 @@
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
-
-/* Input row 1 */
 .pp-pk-input-row1 {
   display: grid;
   grid-template-columns: 32px 1fr 90px 90px 80px;
@@ -239,8 +162,6 @@
   align-items: center;
   margin-bottom: 3px;
 }
-
-/* Second header: Reorder Qty | Min Qty | Opening Qty  (right side) */
 .pp-pk-hdr-row2 {
   display: grid;
   grid-template-columns: 1fr 80px 80px 90px;
@@ -260,8 +181,6 @@
   white-space: nowrap;
   text-align: right;
 }
-
-/* Input row 2 */
 .pp-pk-input-row2 {
   display: grid;
   grid-template-columns: 1fr 80px 80px 90px;
@@ -269,22 +188,6 @@
   align-items: center;
   margin-bottom: 4px;
 }
-
-/* P.Disc row */
-.pp-pk-disc-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 0 4px;
-}
-.pp-pk-disc-row label {
-  font-size: var(--xp-fs-xs);
-  font-weight: 700;
-  color: #444;
-  white-space: nowrap;
-}
-
-/* Buttons row */
 .pp-pk-btns {
   display: flex;
   align-items: center;
@@ -305,11 +208,6 @@
   cursor: pointer;
   margin-left: 4px;
 }
-.pp-stock-check input[type="checkbox"] {
-  cursor: pointer;
-}
-
-/* ID badge */
 .pp-pk-id {
   width: 28px;
   height: 22px;
@@ -322,10 +220,7 @@
   font-weight: 700;
   border-radius: 2px;
   flex-shrink: 0;
-  position: relative;
 }
-
-/* Measurement combo — narrow like screenshot */
 .pp-meas-combo-wrap {
   position: relative;
   display: flex;
@@ -333,23 +228,7 @@
 }
 .pp-meas-combo-wrap .xp-input {
   flex: 1;
-  border-right: none;
-}
-.pp-meas-drop {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 9999;
-  background: #fff;
-  border-top: 1px solid var(--xp-silver-5);
-  border-left: 1px solid var(--xp-silver-5);
-  border-right: 1px solid #fff;
-  border-bottom: 1px solid #fff;
-  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.22);
-  max-height: 150px;
-  overflow-y: auto;
-  min-width: 100px;
+  padding-right: 22px !important;
 }
 
 /* ── PACKING TABLE ───────────────────────────── */
@@ -384,35 +263,21 @@ table.pp-pack-table thead th {
   border-bottom: 2px solid #7aabda;
   white-space: nowrap;
 }
-table.pp-pack-table thead th.r {
-  text-align: right;
-}
-table.pp-pack-table thead th:last-child {
-  border-right: none;
-}
+table.pp-pack-table thead th.r { text-align: right; }
+table.pp-pack-table thead th:last-child { border-right: none; }
 table.pp-pack-table tbody tr {
   border-bottom: 1px solid #e8e4dc;
   cursor: pointer;
+  background: #fff;
 }
-table.pp-pack-table tbody tr:nth-child(even) {
-  background: #f5eeef;
-}
-table.pp-pack-table tbody tr:hover {
-  background: #c3d9f5;
-}
-table.pp-pack-table tbody tr.pp-sel-pack {
-  background: #316ac5 !important;
-}
-table.pp-pack-table tbody tr.pp-sel-pack td {
-  color: #fff !important;
-}
+table.pp-pack-table tbody tr:hover { background: #c3d9f5; }
+table.pp-pack-table tbody tr.pp-sel-pack { background: #316ac5 !important; }
+table.pp-pack-table tbody tr.pp-sel-pack td { color: #fff !important; }
 table.pp-pack-table tbody td {
   padding: 4px 5px;
   vertical-align: middle;
 }
-table.pp-pack-table tbody td.r {
-  text-align: right;
-}
+table.pp-pack-table tbody td.r { text-align: right; }
 .pp-stock-dot {
   display: inline-block;
   width: 8px;
@@ -459,41 +324,25 @@ table.pp-list-table thead th {
   border-bottom: 2px solid #7aabda;
   white-space: nowrap;
 }
-table.pp-list-table thead th:last-child {
-  border-right: none;
-}
-table.pp-list-table thead th.r {
-  text-align: right;
-}
-/* Every row has a bottom border visible — like spreadsheet */
+table.pp-list-table thead th:last-child { border-right: none; }
+table.pp-list-table thead th.r { text-align: right; }
 table.pp-list-table tbody tr {
   border-bottom: 1px solid #d4d0c8;
   cursor: pointer;
   height: 22px;
+  background: #fff;
 }
-table.pp-list-table tbody tr:nth-child(even) {
-  background: #f5f3ee;
-}
-table.pp-list-table tbody tr:hover {
-  background: #c3d9f5;
-}
-table.pp-list-table tbody tr.pp-sel-row {
-  background: #316ac5 !important;
-}
-table.pp-list-table tbody tr.pp-sel-row td {
-  color: #fff !important;
-}
+table.pp-list-table tbody tr:hover { background: #c3d9f5; }
+table.pp-list-table tbody tr.pp-sel-row { background: #316ac5 !important; }
+table.pp-list-table tbody tr.pp-sel-row td { color: #fff !important; }
+table.pp-list-table tbody tr.pp-highlighted { background: #fff3cd !important; }
 table.pp-list-table tbody td {
   padding: 3px 6px;
   vertical-align: middle;
   border-right: 1px solid #e0ddd4;
 }
-table.pp-list-table tbody td:last-child {
-  border-right: none;
-}
-table.pp-list-table tbody td.r {
-  text-align: right;
-}
+table.pp-list-table tbody td:last-child { border-right: none; }
+table.pp-list-table tbody td.r { text-align: right; }
 
 /* ── MISC ────────────────────────────────────── */
 .pp-upload-check {
@@ -518,72 +367,16 @@ table.pp-list-table tbody td.r {
   font-weight: 700;
   border-radius: 2px;
 }
-.pp-update-stock-btn {
-  font-size: var(--xp-fs-xs);
-  color: #333;
-  padding: 3px 6px;
-  background: var(--xp-silver-3);
-  border-top: 1px solid #fff;
-  border-left: 1px solid #fff;
-  border-right: 1px solid var(--xp-silver-5);
-  border-bottom: 1px solid var(--xp-silver-5);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.pp-update-stock-btn:hover {
-  background: #dedad0;
-}
-
-@media (max-width: 900px) {
-  .pp-top {
-    grid-template-columns: 1fr;
-  }
-}
-.pp-highlighted {
-  background-color: #fff3cd !important;
-  font-weight: 600;
-}
-/* Combo wrap */
-.pp-combo-wrap {
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  width: 100%;
-}
-
-/* Input: right padding taake ▼ button text pe overlap na kare */
-.pp-combo-input {
-  width: 100%;
-  padding-right: 22px !important;
-  box-sizing: border-box;
-}
-
-/* ▼ Button: absolute right side pe */
-.pp-combo-btn {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  border: none;
-  background: transparent;
-  cursor: default;
-  font-size: 9px;
-  color: #555;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  pointer-events: none;
-}
-
 .pp-close-btn {
   background: #fff5f5 !important;
   border-color: #c0392b !important;
   color: #c0392b !important;
   font-weight: 700;
-  letter-spacing: 0.02em;
 }
 .pp-close-btn:hover {
   background: #fdecea !important;
+}
+
+@media (max-width: 900px) {
+  .pp-top { grid-template-columns: 1fr; }
 }
