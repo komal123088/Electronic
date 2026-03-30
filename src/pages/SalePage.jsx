@@ -66,7 +66,9 @@ const saveHolds = (bills) => {
 /* ══════════════════════════════════════════════════════════
    PRINT HTML BUILDER — Professional
 ══════════════════════════════════════════════════════════ */
-const buildPrintHtml = (sale, type) => {
+const buildPrintHtml = (sale, type, overrides = {}) => {
+  const customerName = overrides.customerName ?? sale.customerName;
+  const customerPhone = overrides.customerPhone ?? "";
   const rows = sale.items.map((it, i) => ({ ...it, sr: i + 1 }));
   const totalQty = rows.reduce((s, r) => s + (r.pcs || 0), 0);
 
@@ -110,7 +112,7 @@ const buildPrintHtml = (sale, type) => {
       <span class="badge">SALE RECEIPT</span>
       <hr class="dash">
       <div class="row" style="font-size:9.5px"><span>Invoice: <b>${sale.invoiceNo}</b></span><span>${sale.invoiceDate}</span></div>
-      <div style="font-size:10.5px;font-weight:bold">${sale.customerName}</div>
+      <div style="font-size:10.5px;font-weight:bold">${customerName}</div>
       <div style="font-size:9px;color:#666">Mode: ${sale.paymentMode} / ${sale.saleSource}</div>
       <hr class="solid">
       <table>
@@ -130,6 +132,14 @@ const buildPrintHtml = (sale, type) => {
 
   /* ── A4 / A5 ── */
   const a5 = type === "A5";
+  const LINES_PER_PAGE = a5 ? 22 : 28;
+
+  const pages = [];
+  for (let i = 0; i < rows.length; i += LINES_PER_PAGE) {
+    pages.push(rows.slice(i, i + LINES_PER_PAGE));
+  }
+  if (pages.length === 0) pages.push([]);
+
   const sz = a5
     ? {
         title: 17,
@@ -152,17 +162,84 @@ const buildPrintHtml = (sale, type) => {
         totB: 14,
       };
 
-  const itemRows = rows
-    .map(
-      (it, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#f7faff"}">
-      <td>${it.sr}</td>
-      <td><strong>${it.name}</strong></td>
-      <td>${it.uom || "—"}</td>
-      <td align="right">${it.pcs}</td>
-      <td align="right">${Number(it.rate).toLocaleString()}</td>
-      <td align="right"><strong>${Number(it.amount).toLocaleString()}</strong></td>
-    </tr>`,
+  const buildPageHtml = (pageRows, pageNum, totalPages, isLastPage) => {
+    const itemRows = pageRows
+      .map(
+        (it, i) =>
+          `<tr style="background:${i % 2 === 0 ? "#fff" : "#f7faff"}">
+        <td>${it.sr}</td>
+        <td><strong>${it.name}</strong></td>
+        <td>${it.uom || "—"}</td>
+        <td align="right">${it.pcs}</td>
+        <td align="right">${Number(it.rate).toLocaleString()}</td>
+        <td align="right"><strong>${Number(it.amount).toLocaleString()}</strong></td>
+      </tr>`,
+      )
+      .join("");
+
+    const totalsHtml = isLastPage
+      ? `
+      <div class="bwrap">
+        <div class="tbox">
+          <div class="tr"><span>Sub Total</span><span class="blue">${Number(sale.subTotal).toLocaleString()}</span></div>
+          ${sale.extraDisc > 0 ? `<div class="tr red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
+          <div class="tr b blue sep"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
+          ${sale.prevBalance > 0 ? `<div class="tr red"><span>(+) Prev. Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
+          <div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
+          <div class="tr b sep ${sale.balance > 0 ? "red" : "green"}"><span>Balance Due</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
+        </div>
+      </div>
+      <div class="foot">
+        <div class="ft">Total Items: ${rows.length} &nbsp;|&nbsp; Total Qty: ${totalQty}<br>Thank you for your business! — ${SHOP_INFO.name} — Computer Generated Invoice</div>
+        <div class="sig"><div class="sl"></div>Authorized Signature</div>
+      </div>`
+      : `<div style="text-align:right;font-size:8pt;color:#888;margin-top:6px">Page ${pageNum} of ${totalPages} — Continued...</div>`;
+
+    return `
+      <div class="page"${pageNum > 1 ? ' style="page-break-before:always"' : ""}>
+        <div class="hdr">
+          <div>
+            <div class="hn">${SHOP_INFO.name}</div>
+            <div class="hs">📍 ${SHOP_INFO.address}</div>
+            <div class="hs">📞 ${SHOP_INFO.phone}</div>
+          </div>
+          <div class="ir">
+            <div class="il">Sale Invoice</div>
+            <div class="ino"># ${sale.invoiceNo}</div>
+            <div class="idate">${sale.invoiceDate}</div>
+          </div>
+        </div>
+        ${
+          pageNum === 1
+            ? `<div class="info">
+              <div class="ii" style="flex:2"><span class="ilb">Customer</span><span class="iv">${customerName}</span></div>
+              ${customerPhone ? `<div class="ii" style="flex:1"><span class="ilb">Phone</span><span class="iv">${customerPhone}</span></div>` : ""}
+              <div class="ii" style="flex:1"><span class="ilb">Payment</span><span class="iv">${sale.paymentMode}</span></div>
+              <div class="ii" style="flex:1"><span class="ilb">Type</span><span class="iv">${sale.saleSource}</span></div>
+              <div class="ii" style="flex:1;text-align:right"><span class="ilb">Items / Qty</span><span class="iv">${rows.length} / ${totalQty}</span></div>
+            </div>`
+            : `<div style="font-size:8pt;color:#888;margin-bottom:6px;text-align:right">Page ${pageNum} of ${totalPages} &nbsp;|&nbsp; ${customerName}</div>`
+        }
+        <table>
+          <thead>
+            <tr>
+              <th width="24">#</th>
+              <th>Description</th>
+              <th width="46">UOM</th>
+              <th width="38" align="right">Qty</th>
+              <th width="68" align="right">Rate</th>
+              <th width="78" align="right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        ${totalsHtml}
+      </div>`;
+  };
+
+  const allPagesHtml = pages
+    .map((pageRows, idx) =>
+      buildPageHtml(pageRows, idx + 1, pages.length, idx === pages.length - 1),
     )
     .join("");
 
@@ -176,7 +253,7 @@ const buildPrintHtml = (sale, type) => {
     .il{font-size:${sz.inv}pt;font-weight:800;color:#dc2626;letter-spacing:1.5px;text-transform:uppercase}
     .ino{font-size:${sz.inv - 1}pt;font-weight:700;color:#111;margin-top:1px}
     .idate{font-size:${sz.sub}pt;color:#777}
-    .info{display:flex;gap:${a5 ? "6px" : "10px"};background:#f0f4fb;border:1px solid #c5d2ee;border-radius:4px;padding:${a5 ? "5px 10px" : "7px 14px"};margin-bottom:${a5 ? "8px" : "12px"};font-size:${sz.meta}pt}
+    .info{display:flex;gap:${a5 ? "6px" : "10px"};background:#f0f4fb;border:1px solid #c5d2ee;border-radius:4px;padding:${a5 ? "5px 10px" : "7px 14px"};margin-bottom:${a5 ? "8px" : "12px"};font-size:${sz.meta}pt;flex-wrap:wrap}
     .ii{display:flex;flex-direction:column;gap:1px}
     .ilb{font-size:${sz.meta - 1}pt;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
     .iv{font-weight:600;color:#111}
@@ -196,58 +273,158 @@ const buildPrintHtml = (sale, type) => {
     .ft{font-size:${sz.sub}pt;color:#888;line-height:1.7}
     .sig{text-align:center;font-size:${sz.sub}pt;color:#555}
     .sl{border-top:1px solid #999;width:${a5 ? "100px" : "130px"};margin:0 auto 2px}
-    @media print{@page{size:${a5 ? "A5" : "A4"};margin:${a5 ? "5mm" : "10mm"}}body{padding:0}}
-  </style></head><body>
-    <div class="hdr">
-      <div>
-        <div class="hn">${SHOP_INFO.name}</div>
-        <div class="hs">📍 ${SHOP_INFO.address}</div>
-        <div class="hs">📞 ${SHOP_INFO.phone}</div>
-      </div>
-      <div class="ir">
-        <div class="il">Sale Invoice</div>
-        <div class="ino"># ${sale.invoiceNo}</div>
-        <div class="idate">${sale.invoiceDate}</div>
-      </div>
-    </div>
-    <div class="info">
-      <div class="ii" style="flex:2"><span class="ilb">Customer</span><span class="iv">${sale.customerName}</span></div>
-      <div class="ii" style="flex:1"><span class="ilb">Payment</span><span class="iv">${sale.paymentMode}</span></div>
-      <div class="ii" style="flex:1"><span class="ilb">Type</span><span class="iv">${sale.saleSource}</span></div>
-      <div class="ii" style="flex:1;text-align:right"><span class="ilb">Items / Qty</span><span class="iv">${rows.length} / ${totalQty}</span></div>
-    </div>
-    <table>
-      <thead><tr><th width="24">#</th><th>Description</th><th width="46">UOM</th><th width="38" align="right">Qty</th><th width="68" align="right">Rate</th><th width="78" align="right">Amount</th></tr></thead>
-      <tbody>${itemRows}</tbody>
-    </table>
-    <div class="bwrap">
-      <div class="tbox">
-        <div class="tr"><span>Sub Total</span><span class="blue">${Number(sale.subTotal).toLocaleString()}</span></div>
-        ${sale.extraDisc > 0 ? `<div class="tr red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
-        <div class="tr b blue sep"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
-        ${sale.prevBalance > 0 ? `<div class="tr red"><span>(+) Prev. Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
-        <div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
-        <div class="tr b sep ${sale.balance > 0 ? "red" : "green"}"><span>Balance Due</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
-      </div>
-    </div>
-    <div class="foot">
-      <div class="ft">Thank you for your business!<br>${SHOP_INFO.name} — Computer Generated Invoice</div>
-      <div class="sig"><div class="sl"></div>Authorized Signature</div>
-    </div>
-  </body></html>`;
+    .page{margin-bottom:0}
+    @media print{
+      @page{size:${a5 ? "A5" : "A4"};margin:${a5 ? "5mm" : "10mm"}}
+      body{padding:0}
+      .page{page-break-inside:avoid}
+    }
+  </style></head><body>${allPagesHtml}</body></html>`;
 };
+function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
+  const [selPrintType, setSelPrintType] = useState(defaultPrintType || "A5");
+  const [custName, setCustName] = useState(sale.customerName || "");
+  const [custPhone, setCustPhone] = useState("");
 
-const doPrint = (sale, type) => {
+  useEffect(() => {
+    const h = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handlePrint();
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [custName, custPhone, selPrintType]);
+
+  const handlePrint = () => {
+    onPrint(selPrintType, { customerName: custName, customerPhone: custPhone });
+  };
+
+  return (
+    <div className="scm-overlay">
+      <div className="scm-window" style={{ maxWidth: 420 }}>
+        {/* Titlebar */}
+        <div className="scm-tb">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="rgba(255,255,255,0.85)"
+          >
+            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1m4-3h7a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h1.5v-1a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5zm-3 1v-.5H4v.5zM13 6H3v4h10z" />
+          </svg>
+          <span className="scm-tb-title">Print Options — {sale.invoiceNo}</span>
+          <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div
+          style={{
+            padding: "14px 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {/* Customer Name */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label className="xp-label">Customer Name (optional)</label>
+            <input
+              className="xp-input"
+              value={custName}
+              onChange={(e) => setCustName(e.target.value)}
+              placeholder="Leave blank for counter sale"
+              autoFocus
+            />
+          </div>
+
+          {/* Phone */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label className="xp-label">Phone Number (optional)</label>
+            <input
+              className="xp-input"
+              value={custPhone}
+              onChange={(e) => setCustPhone(e.target.value)}
+              placeholder="e.g. 0300-1234567"
+            />
+          </div>
+
+          {/* Print type */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label className="xp-label">Print Format</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["Thermal", "A5", "A4"].map((pt) => (
+                <label
+                  key={pt}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "6px 14px",
+                    border: `2px solid ${selPrintType === pt ? "var(--xp-blue-mid)" : "var(--xp-silver-2)"}`,
+                    borderRadius: 4,
+                    background:
+                      selPrintType === pt ? "#e8f0fb" : "var(--xp-silver-3)",
+                    cursor: "pointer",
+                    fontWeight: selPrintType === pt ? 700 : 400,
+                    color: selPrintType === pt ? "var(--xp-blue-dark)" : "#444",
+                    fontSize: 13,
+                    transition: "all 0.1s",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="po-pt"
+                    checked={selPrintType === pt}
+                    onChange={() => setSelPrintType(pt)}
+                    style={{ display: "none" }}
+                  />
+                  {pt === "Thermal" ? "🖨" : pt === "A5" ? "📄" : "📋"} {pt}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="scm-sep" />
+
+        <div className="scm-actions">
+          <button
+            className="xp-btn xp-btn-primary"
+            style={{ minWidth: 130 }}
+            onClick={handlePrint}
+          >
+            🖨 Print
+          </button>
+          <button
+            className="xp-btn"
+            style={{ minWidth: 110 }}
+            onClick={onClose}
+          >
+            ↩ Cancel
+          </button>
+        </div>
+        <div className="scm-hint">Enter = Print &nbsp;|&nbsp; Esc = Cancel</div>
+      </div>
+    </div>
+  );
+}
+const doPrint = (sale, type, overrides = {}) => {
   const w = window.open(
     "",
     "_blank",
     type === "Thermal" ? "width=420,height=640" : "width=900,height=700",
   );
-  w.document.write(buildPrintHtml(sale, type));
+  w.document.write(buildPrintHtml(sale, type, overrides));
   w.document.close();
   setTimeout(() => w.print(), 400);
 };
-
 /* ══════════════════════════════════════════════════════════
    SAVE CONFIRM MODAL — XP Theme
 ══════════════════════════════════════════════════════════ */
@@ -288,7 +465,7 @@ function SaveConfirmModal({
   const prevBalance = salePayload.prevBalance || 0;
   const paid = Number(paidAmount) || 0;
   const billTotal = netTotal + prevBalance;
-  const change = paid - billTotal; // positive = change back, negative = still due
+  const change = paid - billTotal;
 
   const handleConfirm = async (withPrint) => {
     if (saving) return;
@@ -1177,6 +1354,7 @@ export default function SalePage() {
   const [items, setItems] = useState([]);
   const [invoiceDate, setInvoiceDate] = useState(isoDate());
   const [invoiceNo, setInvoiceNo] = useState("INV-00001");
+  const amountRef = useRef(null);
 
   const [customerId, setCustomerId] = useState("");
   const [buyerName, setBuyerName] = useState("COUNTER SALE");
@@ -1197,13 +1375,17 @@ export default function SalePage() {
   const [printType, setPrintType] = useState("A5");
   const [sendSms, setSendSms] = useState(false);
   const [packingOptions, setPackingOptions] = useState([]);
+  const [packingOpen, setPackingOpen] = useState(false);
+  const [packingHiIdx, setPackingHiIdx] = useState(0);
+  const packingRef = useRef(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
 
   // Credit warning
   const [creditWarning, setCreditWarning] = useState(false);
   const [creditStatement, setCreditStatement] = useState("");
-
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [pendingPrintSale, setPendingPrintSale] = useState(null);
   const searchRef = useRef(null);
   const pcsRef = useRef(null);
   const rateRef = useRef(null);
@@ -1335,9 +1517,9 @@ export default function SalePage() {
       rate: product._rate || 0,
       amount: (product._pack || 1) * (product._rate || 0),
     });
-    setSearchText(product._name || product.description || "");
+    setSearchText(product.code || "");
     setShowProductModal(false);
-    setTimeout(() => pcsRef.current?.focus(), 30);
+    setTimeout(() => packingRef.current?.focus(), 30);
   };
 
   const updateCurRow = (field, val) => {
@@ -1551,7 +1733,10 @@ export default function SalePage() {
           paidAmount: overrides.paidAmount,
           balance: overrides.balance,
         };
-        if (overrides.withPrint) doPrint(saleObj, overrides.printType);
+        if (overrides.withPrint) {
+          setPendingPrintSale(saleObj);
+          setShowPrintModal(true);
+        }
         setShowSaveModal(false);
         setPendingPayload(null);
         fullReset();
@@ -1620,6 +1805,21 @@ export default function SalePage() {
           onClose={() => {
             setShowSaveModal(false);
             setPendingPayload(null);
+          }}
+        />
+      )}
+      {showPrintModal && pendingPrintSale && (
+        <PrintOptionsModal
+          sale={pendingPrintSale}
+          defaultPrintType={printType}
+          onPrint={(type, overrides) => {
+            doPrint(pendingPrintSale, type, overrides);
+            setShowPrintModal(false);
+            setPendingPrintSale(null);
+          }}
+          onClose={() => {
+            setShowPrintModal(false);
+            setPendingPrintSale(null);
           }}
         />
       )}
@@ -1700,48 +1900,140 @@ export default function SalePage() {
                 type="text"
                 className="sl-product-input"
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onClick={() => setShowProductModal(true)}
+                // onChange={(e) => setSearchText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === "ArrowDown") {
+                  if (e.key === "ArrowDown") {
                     e.preventDefault();
                     setShowProductModal(true);
                   }
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (!searchText.trim()) {
+                      setShowProductModal(true);
+                      return;
+                    }
+                    // Barcode/code se dhundo
+                    const q = searchText.trim().toLowerCase();
+                    const found = allProducts.find(
+                      (p) => p.code?.toLowerCase() === q,
+                    );
+                    if (found) {
+                      const pk = found.packingInfo?.[0];
+                      pickProduct({
+                        ...found,
+                        _pi: 0,
+                        _meas: pk?.measurement || "",
+                        _rate: pk?.saleRate || 0,
+                        _pack: pk?.packing || 1,
+                        _stock: pk?.openingQty || 0,
+                        _name: [
+                          found.category,
+                          found.description,
+                          found.company,
+                        ]
+                          .filter(Boolean)
+                          .join(" "),
+                      });
+                    } else {
+                      alert(`"${searchText}" — Product not found`);
+                      searchRef.current?.select();
+                    }
+                  }
                 }}
                 placeholder="Enter / F2 to search…"
-                readOnly={!!curRow.name}
+                onChange={(e) => {
+                  setSearchText(e.target.value);
+                  if (curRow.name) {
+                    setCurRow({ ...EMPTY_ROW });
+                    setPackingOptions([]);
+                  }
+                }}
                 autoFocus
               />
             </div>
-            <div className="sl-entry-cell">
+            <div className="sl-entry-cell" style={{ position: "relative" }}>
               <label>Packing</label>
-              {packingOptions.length > 0 ? (
-                <select
-                  className="sl-uom-select"
-                  value={curRow.uom}
-                  onChange={(e) =>
-                    setCurRow((p) => ({ ...p, uom: e.target.value }))
+              <input
+                ref={packingRef}
+                type="text"
+                className="xp-input xp-input-sm"
+                style={{ width: 65 }}
+                value={curRow.uom}
+                onChange={(e) =>
+                  setCurRow((p) => ({ ...p, uom: e.target.value }))
+                }
+                onFocus={() =>
+                  setPackingHiIdx(
+                    Math.max(0, packingOptions.indexOf(curRow.uom)),
+                  )
+                }
+                onBlur={() => setTimeout(() => setPackingOpen(false), 150)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    pcsRef.current?.focus();
+                    return;
                   }
+                  if (packingOptions.length === 0) return;
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    const idx = packingOptions.indexOf(curRow.uom);
+                    const next =
+                      packingOptions[(idx + 1) % packingOptions.length];
+                    setCurRow((p) => ({ ...p, uom: next }));
+                  }
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const idx = packingOptions.indexOf(curRow.uom);
+                    const prev =
+                      packingOptions[
+                        (idx - 1 + packingOptions.length) %
+                          packingOptions.length
+                      ];
+                    setCurRow((p) => ({ ...p, uom: prev }));
+                  }
+                }}
+                autoComplete="off"
+              />
+              {packingOpen && packingOptions.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 9999,
+                    background: "#fff",
+                    border: "1px solid #b0bcd8",
+                    borderRadius: 4,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    minWidth: 110,
+                  }}
                 >
-                  {packingOptions.map((o) => (
-                    <option key={o} value={o}>
+                  {packingOptions.map((o, i) => (
+                    <div
+                      key={o}
+                      onMouseDown={() => {
+                        setCurRow((p) => ({ ...p, uom: o }));
+                        setPackingOpen(false);
+                        pcsRef.current?.focus();
+                      }}
+                      style={{
+                        padding: "5px 10px",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        background:
+                          i === packingHiIdx
+                            ? "#dbeafe"
+                            : i % 2 === 0
+                              ? "#fff"
+                              : "#f9fafb",
+                        fontWeight: o === curRow.uom ? 700 : 400,
+                      }}
+                    >
                       {o}
-                    </option>
+                    </div>
                   ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  className="xp-input xp-input-sm"
-                  style={{ width: 65 }}
-                  value={curRow.uom}
-                  onChange={(e) =>
-                    setCurRow((p) => ({ ...p, uom: e.target.value }))
-                  }
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && pcsRef.current?.focus()
-                  }
-                />
+                </div>
               )}
             </div>
             <div className="sl-entry-cell">
@@ -1768,17 +2060,28 @@ export default function SalePage() {
                 value={curRow.rate}
                 min={0}
                 onChange={(e) => updateCurRow("rate", e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addRef.current?.click()}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && amountRef.current?.focus()
+                }
                 onFocus={(e) => e.target.select()}
               />
             </div>
             <div className="sl-entry-cell">
               <label>Amount</label>
               <input
+                ref={amountRef}
+                type="number"
                 className="sl-num-input"
                 style={{ width: 80 }}
-                value={Number(curRow.amount || 0).toLocaleString("en-PK")}
-                readOnly
+                value={curRow.amount || 0}
+                onChange={(e) =>
+                  setCurRow((p) => ({
+                    ...p,
+                    amount: parseFloat(e.target.value) || 0,
+                  }))
+                }
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => e.key === "Enter" && addRef.current?.click()}
               />
             </div>
             <div className="sl-entry-cell sl-entry-btns-cell">
