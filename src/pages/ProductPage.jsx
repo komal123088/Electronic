@@ -15,6 +15,7 @@ function ComboLikeInput({
   onNext,
   inputRef,
   onFocusField,
+  onOpenAll,
 }) {
   return (
     <div className="pp-frow">
@@ -34,7 +35,10 @@ function ComboLikeInput({
         <button
           className="pp-combo-btn"
           tabIndex={-1}
-          style={{ pointerEvents: "none" }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            onOpenAll && onOpenAll();
+          }}
         >
           ▼
         </button>
@@ -95,8 +99,6 @@ export default function ProductPage() {
   const [packForm, setPForm] = useState(EMPTY_PACK);
   const [selPack, setSelPack] = useState(null);
   const [editPack, setEditPack] = useState(null);
-  const [measOpen, setMeasOpen] = useState(false);
-  const [measHi, setMeasHi] = useState(0);
   const [products, setProds] = useState([]);
   const [selId, setSelId] = useState(null);
   const [editId, setEditId] = useState(null);
@@ -121,7 +123,7 @@ export default function ProductPage() {
   const rRem = useRef();
   const rSave = useRef();
   const listWrapRef = useRef();
-  const highlightedRowRef = useRef(null);
+
   // Packing Refs
   const rMeas = useRef();
   const rPurRate = useRef();
@@ -176,6 +178,10 @@ export default function ProductPage() {
         return p.orderName?.toLowerCase().includes(text.toLowerCase());
       if (field === "description")
         return p.description?.toLowerCase().includes(text.toLowerCase());
+      if (field === "measurement")
+        return p.packingInfo?.some((pk) =>
+          pk.measurement?.toLowerCase().includes(text.toLowerCase()),
+        );
       return true;
     });
   };
@@ -194,6 +200,10 @@ export default function ProductPage() {
         return p.orderName?.toLowerCase().includes(filterText.toLowerCase());
       if (activeField === "description")
         return p.description?.toLowerCase().includes(filterText.toLowerCase());
+      if (activeField === "measurement")
+        return p.packingInfo?.some((pk) =>
+          pk.measurement?.toLowerCase().includes(filterText.toLowerCase()),
+        );
       return true;
     });
   };
@@ -219,23 +229,7 @@ export default function ProductPage() {
   useEffect(() => {
     productsRef.current = products;
   }, [products]);
-  useEffect(() => {
-    if (
-      highlightedIndex >= 0 &&
-      highlightedRowRef.current &&
-      listWrapRef.current
-    ) {
-      const container = listWrapRef.current;
-      const row = highlightedRowRef.current;
-      const rowTop = row.offsetTop;
-      const rowBottom = rowTop + row.offsetHeight;
-      const containerTop = container.scrollTop;
-      const containerBottom = containerTop + container.clientHeight;
-      if (rowTop < containerTop) container.scrollTop = rowTop;
-      else if (rowBottom > containerBottom)
-        container.scrollTop = rowBottom - container.clientHeight;
-    }
-  }, [highlightedIndex]);
+
   const applyHighlight = (idx, filtered) => {
     setHighlightedIndex(idx);
     if (idx >= 0 && filtered[idx]) {
@@ -255,6 +249,8 @@ export default function ProductPage() {
   };
 
   const focusField = (field, currentVal) => {
+    // ▼ button ne openAllForField call ki thi — onFocus override na kare
+    if (skipFocusRef.current) return;
     setActiveField(field);
     activeFieldRef.current = field;
     setFilterText(currentVal);
@@ -264,6 +260,29 @@ export default function ProductPage() {
     showAllRef.current = showAll;
     setHighlightedIndex(-1);
     highlightedRef.current = -1;
+  };
+
+  // ▼ button click — hamesha sab products show karo
+  // skipNextFocus flag: jab button click ho tu onFocus ko override na karne do
+  const skipFocusRef = useRef(false);
+
+  const openAllForField = (field, ref) => {
+    setActiveField(field);
+    activeFieldRef.current = field;
+    setFilterText("");
+    filterTextRef.current = "";
+    setShowAllProducts(true);
+    showAllRef.current = true;
+    setHighlightedIndex(-1);
+    highlightedRef.current = -1;
+    skipFocusRef.current = true; // onFocus ko batao: skip karo
+    setTimeout(() => {
+      ref?.current?.focus();
+      // focus ke baad thodi der mein flag reset karo
+      setTimeout(() => {
+        skipFocusRef.current = false;
+      }, 50);
+    }, 0);
   };
 
   const handleFieldChange = (field, v) => {
@@ -282,12 +301,14 @@ export default function ProductPage() {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      listWrapRef.current?.focus();
       const next = hi < filtered.length - 1 ? hi + 1 : 0;
       applyHighlight(next, filtered);
       return;
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
+      listWrapRef.current?.focus();
       const prev = hi > 0 ? hi - 1 : filtered.length - 1;
       applyHighlight(prev, filtered);
       return;
@@ -366,43 +387,6 @@ export default function ProductPage() {
     if (e.key === "Enter") {
       e.preventDefault();
       document.getElementById("pk_meas")?.focus();
-    }
-  };
-
-  const measFiltered = DEFS.meas.filter(
-    (o) =>
-      !packForm.measurement ||
-      o.toLowerCase().includes(packForm.measurement.toLowerCase()),
-  );
-
-  const handleMeasKey = (e) => {
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        if (!measOpen) {
-          setMeasOpen(true);
-          setMeasHi(0);
-        } else setMeasHi((i) => Math.min(i + 1, measFiltered.length - 1));
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setMeasHi((i) => Math.max(i - 1, 0));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (measOpen && measFiltered[measHi])
-          setP("measurement", measFiltered[measHi]);
-        setMeasOpen(false);
-        rPurRate.current?.focus();
-        break;
-      case "Escape":
-        setMeasOpen(false);
-        break;
-      case "Tab":
-        setMeasOpen(false);
-        break;
-      default:
-        setMeasOpen(true);
     }
   };
 
@@ -544,24 +528,8 @@ export default function ProductPage() {
           )}
           <div className="xp-tb-divider" />
           <button className="xp-cap-btn">─</button>
-          <button
-            className="xp-cap-btn"
-            onClick={() => {
-              if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-              } else {
-                document.exitFullscreen();
-              }
-            }}
-          >
-            □
-          </button>
-          <button
-            className="xp-cap-btn xp-cap-close"
-            onClick={() => navigate("/")}
-          >
-            ✕
-          </button>
+          <button className="xp-cap-btn">□</button>
+          <button className="xp-cap-btn xp-cap-close">✕</button>
         </div>
       </div>
 
@@ -611,6 +579,7 @@ export default function ProductPage() {
                 onChange={(v) => handleFieldChange("company", v)}
                 onNext={makeFieldKeyDown("company", rCat)}
                 onFocusField={() => focusField("company", form.company)}
+                onOpenAll={() => openAllForField("company", rCompany)}
               />
 
               {/* ── CATEGORY ── */}
@@ -622,6 +591,7 @@ export default function ProductPage() {
                 onChange={(v) => handleFieldChange("category", v)}
                 onNext={makeFieldKeyDown("category", rWebCat)}
                 onFocusField={() => focusField("category", form.category)}
+                onOpenAll={() => openAllForField("category", rCat)}
               />
 
               {/* ── WEB CATEGORY + RACK # ── */}
@@ -657,7 +627,10 @@ export default function ProductPage() {
                     <button
                       className="pp-combo-btn"
                       tabIndex={-1}
-                      style={{ pointerEvents: "none" }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        openAllForField("webCategory", rWebCat);
+                      }}
                     >
                       ▼
                     </button>
@@ -709,7 +682,10 @@ export default function ProductPage() {
                   <button
                     className="pp-combo-btn"
                     tabIndex={-1}
-                    style={{ pointerEvents: "none" }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      openAllForField("description", rDesc);
+                    }}
                   >
                     ▼
                   </button>
@@ -745,6 +721,7 @@ export default function ProductPage() {
                 onChange={(v) => handleFieldChange("orderName", v)}
                 onNext={makeFieldKeyDown("orderName", rRem)}
                 onFocusField={() => focusField("orderName", form.orderName)}
+                onOpenAll={() => openAllForField("orderName", rOrder)}
               />
 
               <div className="pp-frow">
@@ -844,45 +821,27 @@ export default function ProductPage() {
                     value={packForm.measurement}
                     onChange={(e) => {
                       setP("measurement", e.target.value);
-                      setMeasOpen(true);
+                      handleFieldChange("measurement", e.target.value);
                     }}
-                    onKeyDown={handleMeasKey}
-                    onFocus={() => setMeasOpen(true)}
-                    onBlur={() => setTimeout(() => setMeasOpen(false), 150)}
+                    onKeyDown={makeFieldKeyDown("measurement", rPurRate)}
+                    onFocus={() =>
+                      focusField("measurement", packForm.measurement)
+                    }
                   />
                   <button
                     className="pp-combo-btn"
                     tabIndex={-1}
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      setMeasOpen((o) => !o);
-                      document.getElementById("pk_meas")?.focus();
+                      openAllForField("measurement", rMeas);
                     }}
                   >
                     ▼
                   </button>
-                  {measOpen && measFiltered.length > 0 && (
-                    <div className="pp-meas-drop">
-                      {measFiltered.map((o, i) => (
-                        <div
-                          key={o}
-                          className={`pp-drop-item${i === measHi ? " hi" : ""}`}
-                          onMouseDown={() => {
-                            setP("measurement", o);
-                            setMeasOpen(false);
-                            rPurRate.current?.focus();
-                          }}
-                          onMouseEnter={() => setMeasHi(i)}
-                        >
-                          {o}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <input
                   ref={rPurRate}
-                  type="number"
+                  type="text"
                   className="xp-input xp-input-sm"
                   style={{ textAlign: "right" }}
                   value={packForm.purchaseRate}
@@ -891,7 +850,7 @@ export default function ProductPage() {
                 />
                 <input
                   ref={rSaleRate}
-                  type="number"
+                  type="text"
                   className="xp-input xp-input-sm"
                   style={{ textAlign: "right" }}
                   value={packForm.saleRate}
@@ -900,7 +859,7 @@ export default function ProductPage() {
                 />
                 <input
                   ref={rPacking}
-                  type="number"
+                  type="text"
                   className="xp-input xp-input-sm"
                   style={{ textAlign: "right" }}
                   value={packForm.packing}
@@ -929,7 +888,7 @@ export default function ProductPage() {
                   </label>
                   <input
                     ref={rPDisc}
-                    type="number"
+                    type="text"
                     className="xp-input xp-input-sm"
                     style={{ width: 65, textAlign: "right" }}
                     value={packForm.pDisc}
@@ -939,7 +898,7 @@ export default function ProductPage() {
                 </div>
                 <input
                   ref={rReorder}
-                  type="number"
+                  type="text"
                   className="xp-input xp-input-sm"
                   style={{ textAlign: "right" }}
                   value={packForm.reorderQty}
@@ -948,7 +907,7 @@ export default function ProductPage() {
                 />
                 <input
                   ref={rMinQty}
-                  type="number"
+                  type="text"
                   className="xp-input xp-input-sm"
                   style={{ textAlign: "right" }}
                   value={packForm.minQty}
@@ -957,7 +916,7 @@ export default function ProductPage() {
                 />
                 <input
                   ref={rOpenQty}
-                  type="number"
+                  type="text"
                   className="xp-input xp-input-sm"
                   style={{ textAlign: "right" }}
                   value={packForm.openingQty}
@@ -1174,7 +1133,11 @@ export default function ProductPage() {
                             setSelId(p._id);
                             loadForEdit(p._id);
                           }}
-                          ref={isHighlighted ? highlightedRowRef : null}
+                          ref={
+                            isHighlighted
+                              ? (el) => el?.scrollIntoView({ block: "nearest" })
+                              : null
+                          }
                         >
                           <td
                             className="text-muted"

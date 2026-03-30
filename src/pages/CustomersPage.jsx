@@ -3,6 +3,7 @@ import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
 import "../styles/theme.css";
 import "../styles/CustomersPage.css";
+import { useNavigate } from "react-router-dom";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const fmt = (n) => Number(n || 0).toLocaleString("en-PK");
@@ -27,7 +28,6 @@ const EMPTY = {
   imageBack: "",
 };
 
-/* ── XP Fieldset ── */
 function XPFieldset({ legend, children }) {
   return (
     <fieldset className="cp-fieldset">
@@ -37,7 +37,6 @@ function XPFieldset({ legend, children }) {
   );
 }
 
-/* ── Form Row ── */
 function FRow({ label, children }) {
   return (
     <div className="cp-frow">
@@ -54,7 +53,6 @@ function onEnterNext(e, nextRef) {
   }
 }
 
-/* ── Image Upload ── */
 function ImageUpload({ label, value, onChange }) {
   const fileRef = useRef(null);
   const camRef = useRef(null);
@@ -118,22 +116,22 @@ function ImageUpload({ label, value, onChange }) {
         <button
           className="xp-btn xp-btn-sm"
           onClick={() => fileRef.current?.click()}
-          title="Choose from gallery"
+          title="Gallery"
         >
           <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
             <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1z" />
-          </svg>
+          </svg>{" "}
           Gallery
         </button>
         <button
           className="xp-btn xp-btn-sm"
           onClick={() => camRef.current?.click()}
-          title="Take photo"
+          title="Camera"
         >
           <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
             <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
             <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7" />
-          </svg>
+          </svg>{" "}
           Camera
         </button>
         <input
@@ -170,6 +168,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState({ text: "", type: "" });
+  const navigate = useNavigate();
 
   const refs = {
     code: useRef(null),
@@ -288,6 +287,7 @@ export default function CustomersPage() {
     setSelIdx(-1);
     setForm({ ...EMPTY });
     setActiveTab("Office");
+    setSearch("");
     setTimeout(() => refs.name.current?.focus(), 30);
   };
 
@@ -311,8 +311,8 @@ export default function CustomersPage() {
       if (data.success) {
         showMsg(selId ? "Record updated" : "Record saved");
         await fetchAll();
-        if (!selId) setForm((p) => ({ ...p, code: data.data.code }));
-        setSelId(data.data._id);
+        if (!selId) handleNew();
+        else setSelId(data.data._id);
       } else showMsg(data.message, "error");
     } catch (e) {
       showMsg(e.response?.data?.message || "Save failed", "error");
@@ -374,7 +374,7 @@ export default function CustomersPage() {
 
   return (
     <div className="cp-page">
-      {/* ── Titlebar ── */}
+      {/* Titlebar */}
       <div className="xp-titlebar">
         <svg
           width="15"
@@ -392,16 +392,28 @@ export default function CustomersPage() {
           <button className="xp-cap-btn" title="Minimize">
             ─
           </button>
-          <button className="xp-cap-btn" title="Maximize">
+          <button
+            className="xp-cap-btn"
+            title="Maximize"
+            onClick={() => {
+              if (!document.fullscreenElement)
+                document.documentElement.requestFullscreen();
+              else document.exitFullscreen();
+            }}
+          >
             □
           </button>
-          <button className="xp-cap-btn xp-cap-close" title="Close">
+          <button
+            className="xp-cap-btn xp-cap-close"
+            title="Close"
+            onClick={() => navigate("/")}
+          >
             ✕
           </button>
         </div>
       </div>
 
-      {/* ── Hint bar ── */}
+      {/* Hint bar */}
       <div className="cs-hint-bar">
         <span>
           <kbd>F2</kbd> New
@@ -429,7 +441,7 @@ export default function CustomersPage() {
         </span>
       </div>
 
-      {/* ── Alert ── */}
+      {/* Alert */}
       {msg.text && (
         <div
           className={`xp-alert ${msg.type === "success" ? "xp-alert-success" : "xp-alert-error"}`}
@@ -439,11 +451,10 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* ── Middle: Left form + Right list ── */}
+      {/* Middle */}
       <div className="cp-middle">
-        {/* ════ LEFT ════ */}
+        {/* LEFT */}
         <div className="cp-left">
-          {/* Account Levels */}
           <XPFieldset legend="Account Level">
             <div className="cp-frow" style={{ marginTop: 4 }}>
               <label>Account ID</label>
@@ -453,10 +464,20 @@ export default function CustomersPage() {
                   className="xp-input"
                   value={form.code}
                   onChange={(e) => set("code", e.target.value)}
-                  onKeyDown={(e) => onEnterNext(e, refs.name)}
-                  placeholder="Auto"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const found = customers.find(
+                        (c) =>
+                          c.code?.toLowerCase() === form.code.toLowerCase(),
+                      );
+                      if (found) loadCustomer(found);
+                      else refs.name.current?.focus();
+                    }
+                  }}
+                  placeholder="ID ya Enter dabayen"
                   tabIndex={1}
-                  style={{ width: 90 }}
+                  style={{ width: 110 }}
                 />
                 <button
                   className="xp-btn xp-btn-sm xp-btn-ico"
@@ -504,13 +525,12 @@ export default function CustomersPage() {
                     <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
                     <path d="M8 9c-5.333 0-8 2.667-8 4v1h16v-1c0-1.333-2.667-4-8-4" />
                   </svg>
-                  Credit Customer
+                  Credit
                 </span>
               </div>
             </div>
           </XPFieldset>
 
-          {/* Account Info */}
           <XPFieldset legend="Account Information">
             <div style={{ marginTop: 4 }}>
               <FRow label="Full Name *">
@@ -556,7 +576,6 @@ export default function CustomersPage() {
                 />
               </FRow>
 
-              {/* inner tabs */}
               <div className="cp-inner-tabs">
                 {["Office", "Picture", "Others"].map((t) => (
                   <button
@@ -645,7 +664,6 @@ export default function CustomersPage() {
                     </FRow>
                   </>
                 )}
-
                 {activeTab === "Picture" && (
                   <div className="cp-img-pair">
                     <ImageUpload
@@ -660,7 +678,6 @@ export default function CustomersPage() {
                     />
                   </div>
                 )}
-
                 {activeTab === "Others" && (
                   <div className="cp-frow full" style={{ marginTop: 4 }}>
                     <label style={{ textAlign: "left", marginBottom: 3 }}>
@@ -681,18 +698,10 @@ export default function CustomersPage() {
           </XPFieldset>
         </div>
 
-        {/* ════ RIGHT ════ */}
+        {/* RIGHT */}
         <div className="cp-right">
           <XPFieldset legend="Credit Customers List">
-            <div
-              style={{
-                paddingTop: 6,
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                gap: 6,
-              }}
-            >
+            <div className="cp-right-inner">
               <div className="cp-list-header">
                 <div className="xp-search-wrap" style={{ flex: 1 }}>
                   <svg
@@ -716,67 +725,49 @@ export default function CustomersPage() {
                     tabIndex={20}
                   />
                 </div>
-                <span className="cp-total-due">
-                  Total Due: PKR {fmt(totalDue)}
-                </span>
+                <span className="cp-total-due">Due: PKR {fmt(totalDue)}</span>
               </div>
 
               <div className="cp-list-table-wrap">
                 <table className="cp-list-table">
                   <thead>
                     <tr>
-                      <th style={{ width: 32 }}>#</th>
-                      <th>Code</th>
-                      <th>Name</th>
-                      <th>Phone</th>
-                      <th>Area</th>
-                      <th className="r">Balance</th>
+                      <th className="col-sr">#</th>
+                      <th className="col-code">Code</th>
+                      <th className="col-name">Name</th>
                     </tr>
                   </thead>
                   <tbody tabIndex={21} onKeyDown={listKeyDown}>
                     {loading && (
                       <tr>
-                        <td colSpan={6} className="xp-loading">
+                        <td colSpan={3} className="xp-loading">
                           Loading…
                         </td>
                       </tr>
                     )}
                     {!loading && filtered.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="xp-empty">
+                        <td colSpan={3} className="xp-empty">
                           No credit customers found
                         </td>
                       </tr>
                     )}
-                    {filtered.map((c, i) => (
-                      <tr
-                        key={c._id}
-                        className={selId === c._id ? "selected" : ""}
-                        onClick={() => loadCustomer(c, i)}
-                      >
-                        <td
-                          className="text-muted"
-                          style={{ fontSize: "var(--xp-fs-xs)" }}
+                    {!loading &&
+                      filtered.map((c, i) => (
+                        <tr
+                          key={c._id}
+                          className={selId === c._id ? "cp-row-selected" : ""}
+                          onClick={() => loadCustomer(c, i)}
                         >
-                          {i + 1}
-                        </td>
-                        <td>
-                          <span className="xp-code">{c.code || "—"}</span>
-                        </td>
-                        <td>
-                          <button className="xp-link-btn">{c.name}</button>
-                        </td>
-                        <td className="text-muted">{c.phone || "—"}</td>
-                        <td className="text-muted">{c.area || "—"}</td>
-                        <td className="r mono">
-                          <span
-                            className={`xp-amt${(c.currentBalance || 0) > 0 ? " danger" : " muted"}`}
-                          >
-                            {fmt(c.currentBalance || 0)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                          <td className="col-sr text-muted">{i + 1}</td>
+                          <td className="col-code">
+                            <span className="xp-code">{c.code || "—"}</span>
+                          </td>
+                          <td className="col-name">
+                            <button className="xp-link-btn">{c.name}</button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -799,9 +790,8 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* ── Bottom: Opening Balance + Commands ── */}
+      {/* Bottom */}
       <div className="cp-bottom">
-        {/* Opening Balance */}
         <XPFieldset legend="Opening Balance">
           <div
             style={{
@@ -848,23 +838,17 @@ export default function CustomersPage() {
           </div>
         </XPFieldset>
 
-        {/* Commands */}
         <XPFieldset legend="Commands">
           <div className="cp-cmd-grid" style={{ paddingTop: 6 }}>
+            {/* Row 1 */}
             <button
               className="xp-btn xp-btn-sm"
-              onClick={fetchAll}
+              onClick={() => {
+                fetchAll();
+                handleNew();
+              }}
               disabled={loading}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
-                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
-              </svg>
               Refresh
             </button>
             <button
@@ -874,14 +858,6 @@ export default function CustomersPage() {
               disabled={saving}
               tabIndex={15}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v7.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L7.5 9.293V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" />
-              </svg>
               {saving ? "Saving…" : "Save (F5)"}
             </button>
             <button
@@ -889,44 +865,19 @@ export default function CustomersPage() {
               onClick={handleNew}
               tabIndex={16}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
-              </svg>
               New (F2)
             </button>
+            {/* Row 2 */}
             <button
               className="xp-btn xp-btn-sm"
               onClick={() => alert("Print coming soon")}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
-                <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zm4 7h2v3H5v-3h4zm-4 2V9h4v1H5zm4-2H5V8h4v1zm-4 4v-1h4v1H5zm0 1v1h4v-1H5z" />
-              </svg>
               Print
             </button>
             <button
               className="xp-btn xp-btn-sm"
               onClick={() => refs.search.current?.focus()}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1z" />
-              </svg>
               Search
             </button>
             <button
@@ -935,33 +886,13 @@ export default function CustomersPage() {
               disabled={!selId}
               tabIndex={17}
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
-                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
-              </svg>
               Delete (Del)
-            </button>
-            <button className="xp-btn xp-btn-sm" onClick={handleNew}>
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
-              </svg>
-              Close
             </button>
           </div>
         </XPFieldset>
       </div>
 
-      {/* ── Status Bar ── */}
+      {/* Status Bar */}
       <div className="xp-statusbar">
         <div className="xp-status-pane">
           <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">

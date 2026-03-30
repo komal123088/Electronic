@@ -395,7 +395,7 @@ table.pp-pack-table tbody tr {
   cursor: pointer;
 }
 table.pp-pack-table tbody tr:nth-child(even) {
-  background: #f5f3ee;
+  background: #f5eeef;
 }
 table.pp-pack-table tbody tr:hover {
   background: #c3d9f5;
