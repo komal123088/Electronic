@@ -121,7 +121,7 @@ export default function ProductPage() {
   const rRem = useRef();
   const rSave = useRef();
   const listWrapRef = useRef();
-
+  const highlightedRowRef = useRef(null);
   // Packing Refs
   const rMeas = useRef();
   const rPurRate = useRef();
@@ -219,7 +219,23 @@ export default function ProductPage() {
   useEffect(() => {
     productsRef.current = products;
   }, [products]);
-
+  useEffect(() => {
+    if (
+      highlightedIndex >= 0 &&
+      highlightedRowRef.current &&
+      listWrapRef.current
+    ) {
+      const container = listWrapRef.current;
+      const row = highlightedRowRef.current;
+      const rowTop = row.offsetTop;
+      const rowBottom = rowTop + row.offsetHeight;
+      const containerTop = container.scrollTop;
+      const containerBottom = containerTop + container.clientHeight;
+      if (rowTop < containerTop) container.scrollTop = rowTop;
+      else if (rowBottom > containerBottom)
+        container.scrollTop = rowBottom - container.clientHeight;
+    }
+  }, [highlightedIndex]);
   const applyHighlight = (idx, filtered) => {
     setHighlightedIndex(idx);
     if (idx >= 0 && filtered[idx]) {
@@ -266,14 +282,12 @@ export default function ProductPage() {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      listWrapRef.current?.focus();
       const next = hi < filtered.length - 1 ? hi + 1 : 0;
       applyHighlight(next, filtered);
       return;
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      listWrapRef.current?.focus();
       const prev = hi > 0 ? hi - 1 : filtered.length - 1;
       applyHighlight(prev, filtered);
       return;
@@ -530,8 +544,24 @@ export default function ProductPage() {
           )}
           <div className="xp-tb-divider" />
           <button className="xp-cap-btn">─</button>
-          <button className="xp-cap-btn">□</button>
-          <button className="xp-cap-btn xp-cap-close">✕</button>
+          <button
+            className="xp-cap-btn"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+              } else {
+                document.exitFullscreen();
+              }
+            }}
+          >
+            □
+          </button>
+          <button
+            className="xp-cap-btn xp-cap-close"
+            onClick={() => navigate("/")}
+          >
+            ✕
+          </button>
         </div>
       </div>
 
@@ -1144,11 +1174,7 @@ export default function ProductPage() {
                             setSelId(p._id);
                             loadForEdit(p._id);
                           }}
-                          ref={
-                            isHighlighted
-                              ? (el) => el?.scrollIntoView({ block: "nearest" })
-                              : null
-                          }
+                          ref={isHighlighted ? highlightedRowRef : null}
                         >
                           <td
                             className="text-muted"
