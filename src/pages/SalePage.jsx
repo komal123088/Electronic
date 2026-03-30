@@ -1847,7 +1847,18 @@ export default function SalePage() {
           </div>
           <div className="xp-tb-divider" />
           <button className="xp-cap-btn">─</button>
-          <button className="xp-cap-btn">□</button>
+          <button
+            className="xp-cap-btn"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+              } else {
+                document.exitFullscreen();
+              }
+            }}
+          >
+            □
+          </button>
           <button className="xp-cap-btn xp-cap-close">✕</button>
         </div>
       </div>
