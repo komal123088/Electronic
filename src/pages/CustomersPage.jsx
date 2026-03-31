@@ -475,7 +475,7 @@ export default function CustomersPage() {
                       else refs.name.current?.focus();
                     }
                   }}
-                  placeholder="ID ya Enter dabayen"
+                  placeholder="Id or press enter"
                   tabIndex={1}
                   style={{ width: 110 }}
                 />

@@ -2352,6 +2352,27 @@ export default function SalePage() {
                 style={{ width: 55 }}
                 value={buyerCode}
                 onChange={(e) => setBuyerCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (!buyerCode.trim()) return;
+                    const found = allCustomers.find(
+                      (c) =>
+                        c.code?.toLowerCase() ===
+                        buyerCode.trim().toLowerCase(),
+                    );
+                    if (found) {
+                      handleCustomerSelect(found);
+                    } else {
+                      showMsg(
+                        `Code "${buyerCode}" — Customer not found`,
+                        "error",
+                      );
+                    }
+                  }
+                }}
+                placeholder="Code"
+                autoComplete="off"
               />
             </div>
             <div className="sl-cust-cell sl-cust-buyer">
