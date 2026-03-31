@@ -28,9 +28,18 @@ const EMPTY_ROW = {
 };
 
 const SHOP_INFO = {
-  name: "Asim Electric & Electronic Store",
-  address: "Main Bazar, Lahore",
-  phone: "0300-0000000",
+  name: "عاصم الیکٹرک اینڈ الیکٹرونکس سٹور",
+  nameEn: "Asim Electric & Electronic Store",
+  address: "مین بازار نہاری ٹاؤن نزد بجلی گھر سٹاپ گوجرانوالہ روڈ فیصل آباد",
+  phone1: "Faqir Hussain 0300 7262129",
+  phone2: "PTCL 041 8711575",
+  phone3: "Shop 0315 7262129",
+  urduBanner:
+    "یہاں پر چانک فراڈ کی وارپس، جانچ فلک، وارنگ سیلز اور ریکارڈ کے تمام اخیری ہول سیل ریٹ پر دستیاب ہے۔",
+  urduTerms:
+    "الیکٹرانک اور چانٹا کے سپیئر پارٹس کی واپسی یا تبدیلی ہر صورت ممکن نہیں ہوگی۔\nبلی ہوئی آئٹم، پکلاہوا اکا ول واپس قابل واپسی نہیں ہے۔\nبارک کے سامان کی واپس کی صورت میں (7) دن کے اند پہلی ہوگی۔\nکل پیلی کلائی کی تمام واپسی قابل قبول نہیں ہوگی۔",
+  devBy:
+    "Software developed by: AppHill / 03222292922 or visit website www.apphill.pk",
 };
 
 const TYPE_COLORS = {
@@ -78,55 +87,101 @@ const buildPrintHtml = (sale, type, overrides = {}) => {
       .map(
         (it) =>
           `<tr>
-        <td>${it.sr}</td>
-        <td style="max-width:92px;word-break:break-word">${it.name}${it.uom ? ` <span style="color:#777">(${it.uom})</span>` : ""}</td>
-        <td class="r">${it.pcs}</td>
-        <td class="r">${Number(it.rate).toLocaleString()}</td>
-        <td class="r"><b>${Number(it.amount).toLocaleString()}</b></td>
+        <td style="font-size:9px;vertical-align:top">${it.sr}</td>
+        <td style="font-size:9.5px;vertical-align:top;word-break:break-word;max-width:100px">${it.name}</td>
+        <td style="font-size:9px;vertical-align:top;text-align:right">${it.pcs} ${it.uom || ""}</td>
+        <td style="font-size:9px;vertical-align:top;text-align:right">${Number(it.rate).toLocaleString()}</td>
+        <td style="font-size:9px;vertical-align:top;text-align:right"><b>${Number(it.amount).toLocaleString()}</b></td>
       </tr>`,
       )
       .join("");
 
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      *{box-sizing:border-box}
-      body{font-family:'Courier New',Courier,monospace;font-size:10.5px;width:78mm;margin:0 auto;padding:3mm;color:#111}
-      .sn{text-align:center;font-size:15px;font-weight:bold;letter-spacing:.5px;margin-bottom:1px}
-      .ss{text-align:center;font-size:9px;color:#555;margin-bottom:1px}
-      .badge{display:block;text-align:center;font-size:9px;border:1px solid #333;padding:1px 0;margin:3px 0;letter-spacing:2px;font-weight:bold}
-      .dash{border:none;border-top:1px dashed #666;margin:3px 0}
-      .solid{border:none;border-top:2px solid #111;margin:3px 0}
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Courier New',Courier,monospace;font-size:10px;width:80mm;margin:0 auto;padding:2mm 3mm;color:#000}
+      .urdu{font-family:Arial,sans-serif;direction:rtl;text-align:center}
+      .shop-urdu{font-size:16px;font-weight:bold;text-align:center;margin-bottom:2px}
+      .shop-addr{font-size:9px;text-align:center;margin-bottom:1px}
+      .shop-phones{font-size:8.5px;text-align:center;font-weight:bold;margin-bottom:3px}
+      .banner{background:#555;color:#fff;font-size:8px;text-align:center;padding:2px 4px;margin:3px 0;font-family:Arial,sans-serif;direction:rtl;line-height:1.4}
+      .meta-row{display:flex;justify-content:space-between;font-size:9px;margin:2px 0}
+      .meta-bold{font-weight:bold;font-size:10px}
+      .divider-solid{border:none;border-top:2px solid #000;margin:3px 0}
+      .divider-dash{border:none;border-top:1px dashed #666;margin:3px 0}
       table{width:100%;border-collapse:collapse}
-      th{border-bottom:1px solid #555;padding:2px;font-size:9px;font-weight:bold;text-align:left}
-      td{padding:2px;font-size:9.5px;vertical-align:top}
-      .r{text-align:right}
-      .row{display:flex;justify-content:space-between;padding:1.5px 0;font-size:10.5px}
-      .row.b{font-weight:bold;font-size:12px}
-      .row.sep{border-top:1px dashed #555;margin-top:2px;padding-top:3px}
+      thead tr{border-bottom:1px solid #000}
+      th{font-size:8.5px;font-weight:bold;padding:2px 1px;text-align:left}
+      th.r{text-align:right}
+      td{padding:2px 1px;font-size:9px;vertical-align:top}
+      .sum-row{display:flex;justify-content:space-between;font-size:10px;padding:1.5px 0}
+      .sum-row.bold{font-weight:bold;font-size:11px}
+      .sum-row.sep{border-top:1px dashed #555;margin-top:2px;padding-top:2px}
       .red{color:#b00}.green{color:#060}
-      .foot{text-align:center;font-size:9px;color:#666;margin-top:5px;border-top:1px dashed #aaa;padding-top:4px}
-      @media print{@page{size:80mm auto;margin:2mm}body{width:76mm}}
+      .totals-box{margin-top:4px}
+      .terms{font-family:Arial,sans-serif;direction:rtl;font-size:8px;color:#333;border:1px dashed #999;padding:4px;margin-top:4px;line-height:1.6;text-align:right}
+      .devby{text-align:center;font-size:7.5px;color:#777;margin-top:4px;border-top:1px dashed #ccc;padding-top:3px}
+      @media print{@page{size:80mm auto;margin:1mm}body{width:78mm}}
     </style></head><body>
-      <div class="sn">${SHOP_INFO.name}</div>
-      <div class="ss">${SHOP_INFO.address}</div>
-      <div class="ss">Ph: ${SHOP_INFO.phone}</div>
-      <span class="badge">SALE RECEIPT</span>
-      <hr class="dash">
-      <div class="row" style="font-size:9.5px"><span>Invoice: <b>${sale.invoiceNo}</b></span><span>${sale.invoiceDate}</span></div>
-      <div style="font-size:10.5px;font-weight:bold">${customerName}</div>
-      <div style="font-size:9px;color:#666">Mode: ${sale.paymentMode} / ${sale.saleSource}</div>
-      <hr class="solid">
+
+      <!-- HEADER -->
+      <div class="shop-urdu urdu">${SHOP_INFO.name}</div>
+      <div class="shop-addr urdu">${SHOP_INFO.address}</div>
+      <div class="shop-phones">${SHOP_INFO.phone1}, ${SHOP_INFO.phone2}, ${SHOP_INFO.phone3}</div>
+      <div class="banner">${SHOP_INFO.urduBanner}</div>
+
+      <!-- META -->
+      <div class="meta-row">
+        <span><b>Sales Invoice</b></span>
+        <span>ADMIN</span>
+        <span>Shop Server</span>
+      </div>
+      <hr class="divider-dash">
+      <div class="meta-row">
+        <span class="meta-bold">${sale.invoiceNo}</span>
+        <span>${sale.invoiceDate}</span>
+      </div>
+      <div class="meta-row">
+        <span>Customer:</span>
+      </div>
+      <div style="font-size:10px;font-weight:bold;margin-bottom:1px">${customerName}</div>
+      ${customerPhone ? `<div style="font-size:9px;color:#555">${customerPhone}</div>` : ""}
+      <div class="meta-row"><span style="font-size:9px;color:#555">Items: ${rows.length}</span></div>
+      <hr class="divider-solid">
+
+      <!-- ITEMS TABLE -->
       <table>
-        <thead><tr><th>#</th><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amt</th></tr></thead>
+        <thead>
+          <tr>
+            <th style="width:20px">#</th>
+            <th>Product</th>
+            <th class="r">Qty.</th>
+            <th class="r">Rate</th>
+            <th class="r">Amount</th>
+          </tr>
+        </thead>
         <tbody>${itemRows}</tbody>
       </table>
-      <hr class="dash">
-      <div class="row"><span>Sub Total</span><span><b>${Number(sale.subTotal).toLocaleString()}</b></span></div>
-      ${sale.extraDisc > 0 ? `<div class="row red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
-      <div class="row b sep"><span>NET TOTAL</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
-      ${sale.prevBalance > 0 ? `<div class="row red"><span>(+) Prev. Bal.</span><span>${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
-      <div class="row green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
-      <div class="row b sep ${sale.balance > 0 ? "red" : "green"}"><span>BALANCE</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
-      <div class="foot">Items: ${rows.length} &nbsp;|&nbsp; Total Qty: ${totalQty}<br>Thank you for your business!<br>${SHOP_INFO.name}</div>
+      <hr class="divider-dash">
+
+      <!-- TOTALS -->
+      <div class="totals-box">
+        <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:2px">
+          <span>T.Qty: <b>${totalQty}</b></span>
+          <span>T.Items: <b>${rows.length}</b></span>
+        </div>
+        ${sale.extraDisc > 0 ? `<div class="sum-row red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
+        <div class="sum-row bold sep"><span>Sub Total:</span><span>${Number(sale.netTotal).toLocaleString()}</span></div>
+        ${sale.prevBalance > 0 ? `<div class="sum-row red"><span>(+) Prev. Bal.</span><span>${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
+        <div class="sum-row green"><span>Received:</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
+        <div class="sum-row bold sep ${sale.balance > 0 ? "red" : "green"}"><span>Balance:</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
+      </div>
+
+      <!-- TERMS -->
+      <div class="terms">${SHOP_INFO.urduTerms.replace(/\n/g, "<br>")}</div>
+
+      <!-- FOOTER -->
+      <div class="devby">${SHOP_INFO.devBy}</div>
+
     </body></html>`;
   }
 
@@ -142,24 +197,24 @@ const buildPrintHtml = (sale, type, overrides = {}) => {
 
   const sz = a5
     ? {
-        title: 17,
-        sub: 9,
-        inv: 13,
-        meta: 8.5,
-        th: 8.5,
-        td: 8.5,
-        tot: 9.5,
-        totB: 11.5,
+        title: 14,
+        sub: 8.5,
+        inv: 12,
+        meta: 8,
+        th: 8,
+        td: 8,
+        tot: 9,
+        totB: 10.5,
       }
     : {
-        title: 22,
-        sub: 10,
-        inv: 15,
-        meta: 10,
-        th: 10,
-        td: 10,
-        tot: 11,
-        totB: 14,
+        title: 17,
+        sub: 9.5,
+        inv: 14,
+        meta: 9,
+        th: 9,
+        td: 9,
+        tot: 10,
+        totB: 13,
       };
 
   const buildPageHtml = (pageRows, pageNum, totalPages, isLastPage) => {
@@ -167,73 +222,81 @@ const buildPrintHtml = (sale, type, overrides = {}) => {
       .map(
         (it, i) =>
           `<tr style="background:${i % 2 === 0 ? "#fff" : "#f7faff"}">
-        <td>${it.sr}</td>
-        <td><strong>${it.name}</strong></td>
+        <td style="text-align:center">${it.sr}</td>
+        <td>${it.name}</td>
         <td>${it.uom || "—"}</td>
-        <td align="right">${it.pcs}</td>
-        <td align="right">${Number(it.rate).toLocaleString()}</td>
-        <td align="right"><strong>${Number(it.amount).toLocaleString()}</strong></td>
+        <td style="text-align:right">${it.pcs}</td>
+        <td style="text-align:right">${Number(it.rate).toLocaleString()}</td>
+        <td style="text-align:right"><b>${Number(it.amount).toLocaleString()}</b></td>
       </tr>`,
       )
       .join("");
 
-    const totalsHtml = isLastPage
-      ? `
-      <div class="bwrap">
-        <div class="tbox">
-          <div class="tr"><span>Sub Total</span><span class="blue">${Number(sale.subTotal).toLocaleString()}</span></div>
-          ${sale.extraDisc > 0 ? `<div class="tr red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
-          <div class="tr b blue sep"><span>Net Total</span><span>PKR ${Number(sale.netTotal).toLocaleString()}</span></div>
-          ${sale.prevBalance > 0 ? `<div class="tr red"><span>(+) Prev. Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
-          <div class="tr green"><span>Received</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
-          <div class="tr b sep ${sale.balance > 0 ? "red" : "green"}"><span>Balance Due</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
+    const headerHtml = `
+      <div class="hdr">
+        <div class="hdr-center">
+          <div class="shop-urdu">${SHOP_INFO.name}</div>
+          <div class="shop-addr">${SHOP_INFO.address}</div>
+          <div class="shop-phones">${SHOP_INFO.phone1}, ${SHOP_INFO.phone2}, ${SHOP_INFO.phone3}</div>
         </div>
       </div>
-      <div class="foot">
-        <div class="ft">Total Items: ${rows.length} &nbsp;|&nbsp; Total Qty: ${totalQty}<br>Thank you for your business! — ${SHOP_INFO.name} — Computer Generated Invoice</div>
-        <div class="sig"><div class="sl"></div>Authorized Signature</div>
-      </div>`
-      : `<div style="text-align:right;font-size:8pt;color:#888;margin-top:6px">Page ${pageNum} of ${totalPages} — Continued...</div>`;
+      <div class="banner">${SHOP_INFO.urduBanner}</div>`;
+
+    const metaHtml =
+      pageNum === 1
+        ? `<div class="meta-strip">
+          <div class="meta-left">
+            <div class="meta-row"><span class="meta-lbl">Name:</span> <span class="meta-val">${customerName}</span></div>
+            ${customerPhone ? `<div class="meta-row"><span class="meta-val">${customerPhone}</span></div>` : ""}
+          </div>
+          <div class="meta-mid"><span class="meta-val">${rows.length}</span></div>
+          <div class="meta-right">
+            <div class="meta-row"><span class="meta-lbl">Invoice #:</span> <span class="meta-val">${sale.invoiceNo}</span></div>
+            <div class="meta-row"><span class="meta-lbl">Date &amp; Time:</span> <span class="meta-val">${sale.invoiceDate}</span></div>
+          </div>
+        </div>`
+        : `<div style="display:flex;justify-content:space-between;font-size:${sz.sub}pt;color:#555;margin-bottom:4px;padding:2px 0;border-bottom:1px solid #ddd">
+          <span>${customerName}</span>
+          <span>Page ${pageNum} of ${totalPages}</span>
+          <span>Invoice # ${sale.invoiceNo}</span>
+        </div>`;
+
+    const footerHtml = isLastPage
+      ? `<div class="footer-wrap">
+          <div class="footer-left">
+            <div class="footer-stat">Total No. of Items: <b>${rows.length}</b></div>
+            <div class="terms-box">${SHOP_INFO.urduTerms.replace(/\n/g, "<br>")}</div>
+            <div class="sig-line">Signature</div>
+          </div>
+          <div class="footer-right">
+            ${sale.extraDisc > 0 ? `<div class="sum-row red"><span>(−) Discount</span><span>${Number(sale.extraDisc).toLocaleString()}</span></div>` : ""}
+            <div class="sum-row bold"><span>Sub Total:</span><span>${Number(sale.netTotal).toLocaleString()}</span></div>
+            ${sale.prevBalance > 0 ? `<div class="sum-row red"><span>(+) Prev. Balance</span><span>PKR ${Number(sale.prevBalance).toLocaleString()}</span></div>` : ""}
+            <div class="sum-row green"><span>Received:</span><span>PKR ${Number(sale.paidAmount).toLocaleString()}</span></div>
+            <div class="sum-row bold ${sale.balance > 0 ? "red" : "green"} sep"><span>Balance Due:</span><span>PKR ${Number(sale.balance).toLocaleString()}</span></div>
+          </div>
+        </div>
+        <div class="devby">${SHOP_INFO.devBy}</div>`
+      : `<div style="text-align:right;font-size:${sz.sub}pt;color:#888;margin-top:4px">Page ${pageNum} of ${totalPages} — Continued...</div>`;
 
     return `
       <div class="page"${pageNum > 1 ? ' style="page-break-before:always"' : ""}>
-        <div class="hdr">
-          <div>
-            <div class="hn">${SHOP_INFO.name}</div>
-            <div class="hs">📍 ${SHOP_INFO.address}</div>
-            <div class="hs">📞 ${SHOP_INFO.phone}</div>
-          </div>
-          <div class="ir">
-            <div class="il">Sale Invoice</div>
-            <div class="ino"># ${sale.invoiceNo}</div>
-            <div class="idate">${sale.invoiceDate}</div>
-          </div>
-        </div>
-        ${
-          pageNum === 1
-            ? `<div class="info">
-              <div class="ii" style="flex:2"><span class="ilb">Customer</span><span class="iv">${customerName}</span></div>
-              ${customerPhone ? `<div class="ii" style="flex:1"><span class="ilb">Phone</span><span class="iv">${customerPhone}</span></div>` : ""}
-              <div class="ii" style="flex:1"><span class="ilb">Payment</span><span class="iv">${sale.paymentMode}</span></div>
-              <div class="ii" style="flex:1"><span class="ilb">Type</span><span class="iv">${sale.saleSource}</span></div>
-              <div class="ii" style="flex:1;text-align:right"><span class="ilb">Items / Qty</span><span class="iv">${rows.length} / ${totalQty}</span></div>
-            </div>`
-            : `<div style="font-size:8pt;color:#888;margin-bottom:6px;text-align:right">Page ${pageNum} of ${totalPages} &nbsp;|&nbsp; ${customerName}</div>`
-        }
+        ${headerHtml}
+        ${metaHtml}
         <table>
           <thead>
             <tr>
-              <th width="24">#</th>
-              <th>Description</th>
-              <th width="46">UOM</th>
-              <th width="38" align="right">Qty</th>
-              <th width="68" align="right">Rate</th>
-              <th width="78" align="right">Amount</th>
+              <th style="width:28px;text-align:center">Sr.#</th>
+              <th>Product</th>
+              <th style="width:50px">Unit</th>
+              <th style="width:42px;text-align:right">Qty</th>
+              <th style="width:70px;text-align:right">Rate</th>
+              <th style="width:80px;text-align:right">Amount</th>
             </tr>
           </thead>
           <tbody>${itemRows}</tbody>
         </table>
-        ${totalsHtml}
+        ${footerHtml}
       </div>`;
   };
 
@@ -245,42 +308,44 @@ const buildPrintHtml = (sale, type, overrides = {}) => {
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,Helvetica,sans-serif;font-size:${sz.td}pt;color:#1a1a2e;background:#fff;padding:${a5 ? "7mm" : "12mm"}}
-    .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1d3a8a;padding-bottom:${a5 ? "7px" : "11px"};margin-bottom:${a5 ? "8px" : "12px"}}
-    .hn{font-size:${sz.title}pt;font-weight:900;color:#1d3a8a;letter-spacing:-.5px;line-height:1.1}
-    .hs{font-size:${sz.sub}pt;color:#666;margin-top:2px}
-    .ir{text-align:right}
-    .il{font-size:${sz.inv}pt;font-weight:800;color:#dc2626;letter-spacing:1.5px;text-transform:uppercase}
-    .ino{font-size:${sz.inv - 1}pt;font-weight:700;color:#111;margin-top:1px}
-    .idate{font-size:${sz.sub}pt;color:#777}
-    .info{display:flex;gap:${a5 ? "6px" : "10px"};background:#f0f4fb;border:1px solid #c5d2ee;border-radius:4px;padding:${a5 ? "5px 10px" : "7px 14px"};margin-bottom:${a5 ? "8px" : "12px"};font-size:${sz.meta}pt;flex-wrap:wrap}
-    .ii{display:flex;flex-direction:column;gap:1px}
-    .ilb{font-size:${sz.meta - 1}pt;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
-    .iv{font-weight:600;color:#111}
-    table{width:100%;border-collapse:collapse;margin-bottom:${a5 ? "8px" : "14px"}}
-    thead tr{background:#1d3a8a;color:#fff}
-    th{padding:${a5 ? "4px 6px" : "6px 9px"};text-align:left;font-size:${sz.th}pt;font-weight:600;white-space:nowrap}
-    td{padding:${a5 ? "3px 6px" : "5px 9px"};font-size:${sz.td}pt;border-bottom:1px solid #e8edf5}
-    tbody tr:last-child td{border-bottom:2px solid #c5d2ee}
-    .bwrap{display:flex;justify-content:flex-end}
-    .tbox{width:${a5 ? "205px" : "265px"};border:1px solid #c5d2ee;border-radius:4px;overflow:hidden}
-    .tr{display:flex;justify-content:space-between;padding:${a5 ? "4px 10px" : "5px 14px"};font-size:${sz.tot}pt;border-bottom:1px solid #edf0f7}
-    .tr:last-child{border-bottom:none}
-    .tr.b{font-weight:700;font-size:${sz.totB}pt;background:#eef2fb}
-    .tr.sep{border-top:2px solid #1d3a8a}
-    .red{color:#dc2626}.green{color:#15803d}.blue{color:#1d4ed8}
-    .foot{margin-top:${a5 ? "12px" : "22px"};display:flex;justify-content:space-between;align-items:flex-end;border-top:1px dashed #bbb;padding-top:${a5 ? "8px" : "12px"}}
-    .ft{font-size:${sz.sub}pt;color:#888;line-height:1.7}
-    .sig{text-align:center;font-size:${sz.sub}pt;color:#555}
-    .sl{border-top:1px solid #999;width:${a5 ? "100px" : "130px"};margin:0 auto 2px}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:${sz.td}pt;color:#111;background:#fff;padding:${a5 ? "5mm" : "8mm"}}
+    .urdu{font-family:Arial,sans-serif;direction:rtl}
+    .hdr{text-align:center;border-bottom:2px solid #000;padding-bottom:${a5 ? "5px" : "8px"};margin-bottom:4px}
+    .shop-urdu{font-size:${a5 ? "18px" : "24px"};font-weight:900;font-family:Arial,sans-serif;direction:rtl;text-align:center}
+    .shop-addr{font-size:${sz.sub}pt;color:#444;text-align:center;font-family:Arial,sans-serif;direction:rtl;margin:2px 0}
+    .shop-phones{font-size:${sz.sub}pt;font-weight:bold;text-align:center;margin-bottom:2px}
+    .banner{background:#555;color:#fff;font-size:${a5 ? "7.5" : "8.5"}pt;text-align:center;padding:${a5 ? "2px 4px" : "3px 6px"};margin:${a5 ? "3px 0" : "4px 0"};font-family:Arial,sans-serif;direction:rtl;line-height:1.5}
+    .meta-strip{display:flex;justify-content:space-between;align-items:flex-start;border:1px solid #ccc;padding:${a5 ? "4px 8px" : "5px 10px"};margin:${a5 ? "4px 0" : "5px 0"};font-size:${sz.meta}pt}
+    .meta-left{flex:2}
+    .meta-mid{flex:0.5;text-align:center;font-size:${a5 ? "18px" : "22px"};font-weight:900;color:#555}
+    .meta-right{flex:2;text-align:right}
+    .meta-row{margin-bottom:1px}
+    .meta-lbl{color:#555}
+    .meta-val{font-weight:700}
+    table{width:100%;border-collapse:collapse;margin:${a5 ? "4px 0" : "5px 0"}}
+    thead tr{background:#333;color:#fff}
+    th{padding:${a5 ? "3px 5px" : "5px 7px"};font-size:${sz.th}pt;font-weight:600;text-align:left}
+    td{padding:${a5 ? "2px 5px" : "3px 7px"};font-size:${sz.td}pt;border-bottom:1px solid #e0e0e0}
+    tbody tr:last-child td{border-bottom:2px solid #999}
+    .footer-wrap{display:flex;justify-content:space-between;align-items:flex-start;margin-top:${a5 ? "6px" : "10px"};gap:10px}
+    .footer-left{flex:1.5}
+    .footer-right{flex:1;border:1px solid #ccc;padding:${a5 ? "4px 8px" : "5px 10px"}}
+    .footer-stat{font-size:${sz.meta}pt;font-weight:bold;margin-bottom:4px}
+    .terms-box{font-family:Arial,sans-serif;direction:rtl;font-size:${a5 ? "7" : "8"}pt;color:#444;border:1px dashed #aaa;padding:${a5 ? "3px 6px" : "5px 8px"};margin:${a5 ? "4px 0" : "5px 0"};line-height:1.7;text-align:right}
+    .sig-line{font-size:${sz.sub}pt;margin-top:${a5 ? "8px" : "14px"};border-top:1px solid #999;display:inline-block;padding-top:2px;min-width:120px}
+    .sum-row{display:flex;justify-content:space-between;font-size:${sz.tot}pt;padding:${a5 ? "3px 0" : "4px 0"};border-bottom:1px solid #eee}
+    .sum-row.bold{font-weight:700;font-size:${sz.totB}pt;background:#f5f5f5;padding:${a5 ? "3px 4px" : "4px 6px"}}
+    .sum-row.sep{border-top:2px solid #333;margin-top:2px}
+    .red{color:#c00}.green{color:#1a7a1a}
+    .devby{text-align:center;font-size:${a5 ? "7" : "8"}pt;color:#888;margin-top:${a5 ? "6px" : "10px"};border-top:1px solid #ddd;padding-top:${a5 ? "4px" : "6px"}}
     .page{margin-bottom:0}
     @media print{
-      @page{size:${a5 ? "A5" : "A4"};margin:${a5 ? "5mm" : "10mm"}}
+      @page{size:${a5 ? "A5" : "A4"};margin:${a5 ? "4mm" : "8mm"}}
       body{padding:0}
-      .page{page-break-inside:avoid}
     }
   </style></head><body>${allPagesHtml}</body></html>`;
 };
+
 function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
   const [selPrintType, setSelPrintType] = useState(defaultPrintType || "A5");
   const [custName, setCustName] = useState(sale.customerName || "");
@@ -1760,7 +1825,7 @@ export default function SalePage() {
         e.preventDefault();
         holdBill();
       }
-      if (e.key === "F10" || (e.ctrlKey && e.key === "s")) {
+      if (e.key === "*" || (e.ctrlKey && e.key === "s")) {
         e.preventDefault();
         saveRef.current?.click();
       }
@@ -1843,7 +1908,7 @@ export default function SalePage() {
           <div className="sl-shortcut-hints">
             <span>F2 Product</span>
             <span>F4 Hold</span>
-            <span>F10 Save</span>
+            <span>* Save</span>
           </div>
           <div className="xp-tb-divider" />
           <button className="xp-cap-btn">─</button>
@@ -2534,7 +2599,7 @@ export default function SalePage() {
           onClick={openSaleConfirm}
           disabled={loading}
         >
-          {loading ? "Saving…" : "Save  F10"}
+          {loading ? "Saving…" : "Save  *"}
         </button>
         <button className="xp-btn xp-btn-sm" onClick={() => {}}>
           Edit Record

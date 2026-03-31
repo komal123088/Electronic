@@ -133,7 +133,7 @@ export default function ProductPage() {
   const rReorder = useRef();
   const rMinQty = useRef();
   const rOpenQty = useRef();
-
+  const highlightedRowRef = useRef(null);
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -230,6 +230,23 @@ export default function ProductPage() {
     productsRef.current = products;
   }, [products]);
 
+  useEffect(() => {
+    if (
+      highlightedIndex >= 0 &&
+      highlightedRowRef.current &&
+      listWrapRef.current
+    ) {
+      const container = listWrapRef.current;
+      const row = highlightedRowRef.current;
+      const rowTop = row.offsetTop;
+      const rowBottom = rowTop + row.offsetHeight;
+      const containerTop = container.scrollTop;
+      const containerBottom = containerTop + container.clientHeight;
+      if (rowTop < containerTop) container.scrollTop = rowTop;
+      else if (rowBottom > containerBottom)
+        container.scrollTop = rowBottom - container.clientHeight;
+    }
+  }, [highlightedIndex]);
   const applyHighlight = (idx, filtered) => {
     setHighlightedIndex(idx);
     if (idx >= 0 && filtered[idx]) {
@@ -245,11 +262,15 @@ export default function ProductPage() {
         setForm((p) => ({ ...p, orderName: row.orderName || "" }));
       else if (field === "description")
         setForm((p) => ({ ...p, description: row.description || "" }));
+      else if (field === "measurement")
+        setPForm((p) => ({
+          ...p,
+          measurement: row.packingInfo?.[0]?.measurement || "",
+        }));
     }
   };
 
   const focusField = (field, currentVal) => {
-    // ▼ button ne openAllForField call ki thi — onFocus override na kare
     if (skipFocusRef.current) return;
     setActiveField(field);
     activeFieldRef.current = field;
@@ -301,14 +322,12 @@ export default function ProductPage() {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      listWrapRef.current?.focus();
       const next = hi < filtered.length - 1 ? hi + 1 : 0;
       applyHighlight(next, filtered);
       return;
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      listWrapRef.current?.focus();
       const prev = hi > 0 ? hi - 1 : filtered.length - 1;
       applyHighlight(prev, filtered);
       return;
@@ -321,7 +340,6 @@ export default function ProductPage() {
       nextRef?.current?.focus();
     }
   };
-
   const handleListKeyDown = (e) => {
     const filtered = getFilteredFromRefs();
     const hi = highlightedRef.current;
@@ -356,7 +374,7 @@ export default function ProductPage() {
     }
   };
 
-  // ── Row click — sirf active field fill hoga
+  // ── Row click
   const handleProductClick = (product) => {
     const field = activeFieldRef.current;
     if (field === "company") setF("company", product.company || "");
@@ -366,6 +384,12 @@ export default function ProductPage() {
     else if (field === "orderName") setF("orderName", product.orderName || "");
     else if (field === "description")
       setF("description", product.description || "");
+    // ✅ YEH ADD KARO
+    else if (field === "measurement")
+      setPForm((p) => ({
+        ...p,
+        measurement: product.packingInfo?.[0]?.measurement || "",
+      }));
 
     setSelId(product._id);
     setFilterText("");
@@ -1133,11 +1157,7 @@ export default function ProductPage() {
                             setSelId(p._id);
                             loadForEdit(p._id);
                           }}
-                          ref={
-                            isHighlighted
-                              ? (el) => el?.scrollIntoView({ block: "nearest" })
-                              : null
-                          }
+                          ref={isHighlighted ? highlightedRowRef : null}
                         >
                           <td
                             className="text-muted"
