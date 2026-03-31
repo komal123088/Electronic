@@ -289,9 +289,9 @@ table.sl-items-table tbody tr {
   cursor: pointer;
   height: 22px;
 }
-table.sl-items-table tbody tr:nth-child(even) {
-  background: #f5f3ee;
-}
+/* table.sl-items-table tbody tr:nth-child(even) {
+  background: hsl(0, 86%, 50%);
+} */
 table.sl-items-table tbody tr:hover {
   background: #c3d9f5;
 }
@@ -992,10 +992,10 @@ table.sl-hold-table tbody td.muted {
 @keyframes sl-pulse {
   0%,
   100% {
-    background: rgba(192, 57, 43, 0.06);
+    background: rgba(228, 66, 48, 0.158);
   }
   50% {
-    background: rgba(192, 57, 43, 0.16);
+    background: rgba(255, 56, 33, 0.63);
   }
 }
 

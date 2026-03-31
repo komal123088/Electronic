@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
-import "../styles/theme.css";
+import "../styles/globalTheme.css";
 import "../styles/ProductPage.css";
 
 /* ── ComboLikeInput with Icon ──────────────────── */
@@ -163,7 +163,7 @@ export default function ProductPage() {
   const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const setP = (k, v) => setPForm((p) => ({ ...p, [k]: v }));
 
-  // ── ref-based filter — stale closure se free, hamesha latest values
+  // ── ref-based filter
   const getFilteredFromRefs = () => {
     const field = activeFieldRef.current;
     const text = filterTextRef.current;
@@ -554,8 +554,25 @@ export default function ProductPage() {
           )}
           <div className="xp-tb-divider" />
           <button className="xp-cap-btn">─</button>
-          <button className="xp-cap-btn">□</button>
-          <button className="xp-cap-btn xp-cap-close">✕</button>
+          <button
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+              } else {
+                document.exitFullscreen();
+              }
+            }}
+            className="xp-cap-btn"
+          >
+            □
+          </button>
+          <button
+            title="Close"
+            onClick={() => navigate("/")}
+            className="xp-cap-btn xp-cap-close"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
