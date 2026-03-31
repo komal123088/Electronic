@@ -144,7 +144,10 @@ export default function ProductPage() {
       const { data } = await api.get(EP.PRODUCTS.GET_ALL);
       if (data.success) {
         setProds(data.data);
-        setNext(data.data.length + 1);
+        const ids = data.data
+          .map((p) => parseInt(p.productId))
+          .filter((n) => !isNaN(n));
+        setNext(ids.length > 0 ? Math.max(...ids) + 1 : 1);
       }
     } catch {
       showMsg("Failed to load", "error");
@@ -529,8 +532,7 @@ export default function ProductPage() {
   const sorted = [...filteredProducts].sort(
     (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   );
-  const nextId = String(nextNum).padStart(4, "0");
-
+  const nextId = String(nextNum);
   return (
     <div className="pp-page">
       {/* Titlebar */}
