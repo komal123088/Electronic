@@ -360,6 +360,7 @@ table.xp-table tbody tr:hover {
 table.xp-table tbody td {
   padding: 7px 10px;
   vertical-align: middle;
+  border: 1px solid gray;
 }
 table.xp-table tfoot tr {
   background: var(--xp-silver-3);
