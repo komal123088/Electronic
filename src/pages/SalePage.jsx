@@ -604,7 +604,7 @@ function SaveConfirmModal({
             <div className="scm-box-label">Received</div>
             <input
               ref={paidRef}
-              type="number"
+              type="text"
               className="scm-recv-input"
               value={paidAmount}
               onChange={(e) => setPaidAmount(e.target.value)}
@@ -1439,7 +1439,7 @@ export default function SalePage() {
   const [selItemIdx, setSelItemIdx] = useState(null);
   const [msg, setMsg] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(false);
-  const [printType, setPrintType] = useState("A5");
+  const [printType, setPrintType] = useState("Thermal");
   const [sendSms, setSendSms] = useState(false);
   const [packingOptions, setPackingOptions] = useState([]);
   const [packingOpen, setPackingOpen] = useState(false);
@@ -1639,7 +1639,15 @@ export default function SalePage() {
     const r = items[idx];
     setCurRow({ ...r });
     setSearchText(r.name);
-    setTimeout(() => pcsRef.current?.focus(), 30);
+
+    const product = allProducts.find((p) => p._id === r.productId);
+    if (product?.packingInfo?.length > 0) {
+      setPackingOptions(product.packingInfo.map((pk) => pk.measurement));
+    } else {
+      setPackingOptions([]);
+    }
+
+    setTimeout(() => packingRef.current?.focus(), 30);
   };
 
   const removeRow = () => {
@@ -2150,11 +2158,11 @@ export default function SalePage() {
                   onChange={(e) =>
                     setCurRow((p) => ({ ...p, uom: e.target.value }))
                   }
-                  onFocus={() =>
+                  onFocus={() => {
                     setPackingHiIdx(
                       Math.max(0, packingOptions.indexOf(curRow.uom)),
-                    )
-                  }
+                    );
+                  }}
                   onBlur={() => setTimeout(() => setPackingOpen(false), 150)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -2163,72 +2171,46 @@ export default function SalePage() {
                       return;
                     }
                     if (packingOptions.length === 0) return;
-                    if (e.key === "ArrowDown") {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                       e.preventDefault();
                       const idx = packingOptions.indexOf(curRow.uom);
                       const next =
-                        packingOptions[(idx + 1) % packingOptions.length];
-                      setCurRow((p) => ({ ...p, uom: next }));
-                    }
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      const idx = packingOptions.indexOf(curRow.uom);
-                      const prev =
-                        packingOptions[
-                          (idx - 1 + packingOptions.length) %
-                            packingOptions.length
-                        ];
-                      setCurRow((p) => ({ ...p, uom: prev }));
+                        e.key === "ArrowDown"
+                          ? (idx + 1) % packingOptions.length
+                          : (idx - 1 + packingOptions.length) %
+                            packingOptions.length;
+                      const newUom = packingOptions[next];
+
+                      // Product ki packingInfo se rate aur pcs update karo
+                      const product = allProducts.find(
+                        (p) => p._id === curRow.productId,
+                      );
+                      if (product?.packingInfo) {
+                        const pk = product.packingInfo.find(
+                          (pk) => pk.measurement === newUom,
+                        );
+                        if (pk) {
+                          setCurRow((p) => ({
+                            ...p,
+                            uom: newUom,
+                            rate: pk.saleRate || 0,
+                            pcs: pk.packing || 1,
+                            amount: (pk.packing || 1) * (pk.saleRate || 0),
+                          }));
+                          return;
+                        }
+                      }
+                      setCurRow((p) => ({ ...p, uom: newUom }));
                     }
                   }}
                   autoComplete="off"
                 />
-                {packingOpen && packingOptions.length > 0 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      zIndex: 9999,
-                      background: "#fff",
-                      border: "1px solid #b0bcd8",
-                      borderRadius: 4,
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                      minWidth: 110,
-                    }}
-                  >
-                    {packingOptions.map((o, i) => (
-                      <div
-                        key={o}
-                        onMouseDown={() => {
-                          setCurRow((p) => ({ ...p, uom: o }));
-                          setPackingOpen(false);
-                          pcsRef.current?.focus();
-                        }}
-                        style={{
-                          padding: "5px 10px",
-                          cursor: "pointer",
-                          fontSize: 12,
-                          background:
-                            i === packingHiIdx
-                              ? "#dbeafe"
-                              : i % 2 === 0
-                                ? "#fff"
-                                : "#f9fafb",
-                          fontWeight: o === curRow.uom ? 700 : 400,
-                        }}
-                      >
-                        {o}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
               <div className="sl-entry-cell">
                 <label>Pcs</label>
                 <input
                   ref={pcsRef}
-                  type="number"
+                  type="text"
                   className="sl-num-input"
                   style={{ width: 60 }}
                   value={curRow.pcs}
@@ -2244,12 +2226,36 @@ export default function SalePage() {
                 <label>Rate</label>
                 <input
                   ref={rateRef}
-                  type="number"
+                  type="text"
                   className="sl-num-input"
                   style={{ width: 75 }}
                   value={curRow.rate}
                   min={0}
                   onChange={(e) => updateCurRow("rate", e.target.value)}
+                  onBlur={(e) => {
+                    const product = allProducts.find(
+                      (p) => p._id === curRow.productId,
+                    );
+                    if (product?.packingInfo) {
+                      const pk = product.packingInfo.find(
+                        (p) => p.measurement === curRow.uom,
+                      );
+                      if (pk) {
+                        const purchaseRate =
+                          pk.purchaseRate || pk.costRate || 0;
+                        if (
+                          purchaseRate > 0 &&
+                          parseFloat(e.target.value) < purchaseRate
+                        ) {
+                          showMsg(
+                            `Rate cannot be less than purchase rate (${purchaseRate})`,
+                            "error",
+                          );
+                          updateCurRow("rate", purchaseRate);
+                        }
+                      }
+                    }
+                  }}
                   onKeyDown={(e) =>
                     e.key === "Enter" && amountRef.current?.focus()
                   }
@@ -2260,7 +2266,7 @@ export default function SalePage() {
                 <label>Amount</label>
                 <input
                   ref={amountRef}
-                  type="number"
+                  type="text"
                   className="sl-num-input"
                   style={{ width: 80 }}
                   value={curRow.amount || 0}
@@ -2427,7 +2433,7 @@ export default function SalePage() {
                 <label>Extra Discount</label>
                 <input
                   ref={discRef}
-                  type="number"
+                  type="text"
                   className="sl-sum-input"
                   value={extraDiscount}
                   min={0}
@@ -2442,7 +2448,7 @@ export default function SalePage() {
                 <label>Received</label>
                 <input
                   ref={receivedRef}
-                  type="number"
+                  type="text"
                   className="sl-sum-input"
                   style={{ color: "var(--xp-green)", fontWeight: 700 }}
                   value={received}
@@ -2511,7 +2517,7 @@ export default function SalePage() {
               <div className="sl-cust-cell">
                 <label>Prev Balance</label>
                 <input
-                  type="number"
+                  type="text"
                   className="sl-cust-input"
                   style={{ width: 85 }}
                   value={prevBalance}
