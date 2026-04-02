@@ -354,52 +354,29 @@ function PrintOptionsModal({
   defaultPrintType,
   onPrint,
   onClose,
+  hideCustomerFields,
 }) {
   const [selPrintType, setSelPrintType] = useState(
     defaultPrintType || "Thermal",
   );
-  const [custPhone, setCustPhone] = useState(
-    sale.customerName !== "COUNTER SALE" ? sale.customerPhone || "" : "",
-  );
-  const [custName, setCustName] = useState(
-    sale.customerName !== "COUNTER SALE" ? sale.customerName : "",
-  );
+  const [custPhone, setCustPhone] = useState("");
+  const [custName, setCustName] = useState("");
+  const [saving, setSaving] = useState(false);
   const phoneRef = useRef(null);
   const nameRef = useRef(null);
+
+  // Sirf cash/walkin/counter customers
+  const cashCustomers = allCustomers.filter((c) => {
+    const t = (c.customerType || c.type || "").toLowerCase();
+    return (
+      ["cash", "walkin", "wholesale", ""].includes(t) &&
+      c.name?.toUpperCase().trim() !== "COUNTER SALE"
+    );
+  });
 
   useEffect(() => {
     setTimeout(() => phoneRef.current?.focus(), 80);
   }, []);
-
-  const handlePhoneChange = (val) => {
-    setCustPhone(val);
-    console.log("Phone typed:", val);
-    console.log("All customers:", allCustomers);
-    console.log("All customers length:", allCustomers?.length);
-
-    if (val.trim().length >= 7) {
-      const found = allCustomers?.find((c) => {
-        console.log(
-          "Checking:",
-          c.name,
-          "| phone:",
-          c.phone,
-          "| cell:",
-          c.cell,
-        );
-        return (
-          c.phone?.replace(/\D/g, "").includes(val.replace(/\D/g, "")) ||
-          c.cell?.replace(/\D/g, "").includes(val.replace(/\D/g, "")) ||
-          c.otherPhone?.replace(/\D/g, "").includes(val.replace(/\D/g, ""))
-        );
-      });
-      console.log("Found:", found);
-      if (found) setCustName(found.name);
-      else setCustName("");
-    } else {
-      setCustName("");
-    }
-  };
 
   useEffect(() => {
     const h = (e) => {
@@ -407,13 +384,72 @@ function PrintOptionsModal({
         e.preventDefault();
         onClose();
       }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handlePrint();
+      }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, []);
+  }, [custPhone, custName, selPrintType, saving]);
 
-  const handlePrint = () => {
-    onPrint(selPrintType, { customerName: custName, customerPhone: custPhone });
+  const handlePhoneChange = (val) => {
+    setCustPhone(val);
+    if (val.trim().length >= 7) {
+      const clean = val.replace(/\D/g, "");
+      const found = cashCustomers.find(
+        (c) =>
+          c.phone?.replace(/\D/g, "").includes(clean) ||
+          c.cell?.replace(/\D/g, "").includes(clean) ||
+          c.otherPhone?.replace(/\D/g, "").includes(clean),
+      );
+      if (found) setCustName(found.name);
+      else setCustName("");
+    } else {
+      setCustName("");
+    }
+  };
+
+  const handlePrint = async () => {
+    if (saving) return;
+    setSaving(true);
+
+    let finalName = custName.trim() || "COUNTER SALE";
+    let finalPhone = custPhone.trim();
+
+    // Phone hai to customer save/find karo
+    if (finalPhone) {
+      const clean = finalPhone.replace(/\D/g, "");
+      const existing = cashCustomers.find(
+        (c) =>
+          c.phone?.replace(/\D/g, "").includes(clean) ||
+          c.cell?.replace(/\D/g, "").includes(clean),
+      );
+
+      if (!existing && finalName !== "COUNTER SALE") {
+        // Naya customer save karo
+        try {
+          const { data } = await api.post(EP.CUSTOMERS.CREATE, {
+            name: finalName,
+            type: "walkin",
+            phone: finalPhone,
+          });
+          if (data.success) {
+            finalName = data.data.name;
+          }
+        } catch {
+          // Save fail ho to bhi print chala jaye
+        }
+      } else if (existing) {
+        finalName = existing.name;
+      }
+    }
+
+    setSaving(false);
+    onPrint(selPrintType, {
+      customerName: finalName,
+      customerPhone: finalPhone,
+    });
   };
 
   return (
@@ -442,42 +478,72 @@ function PrintOptionsModal({
             gap: 12,
           }}
         >
-          {/* Phone Number — first focus */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label className="xp-label">Phone Number (optional)</label>
-            <input
-              ref={phoneRef}
-              className="xp-input"
-              value={custPhone}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  nameRef.current?.focus();
-                }
-              }}
-              placeholder="e.g. 0300-1234567"
-              autoComplete="off"
-            />
-          </div>
+          {/* Phone Number */}
+          {!hideCustomerFields && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <label className="xp-label">Phone Number (optional)</label>
+              <input
+                ref={phoneRef}
+                className="xp-input"
+                value={custPhone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    nameRef.current?.focus();
+                  }
+                }}
+                placeholder="e.g. 0300-1234567"
+                autoComplete="off"
+              />
+            </div>
+          )}
 
           {/* Customer Name */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label className="xp-label">Customer Name (optional)</label>
-            <input
-              ref={nameRef}
-              className="xp-input"
-              value={custName}
-              onChange={(e) => setCustName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handlePrint();
-                }
-              }}
-              placeholder=""
-            />
-          </div>
+          {!hideCustomerFields && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <label className="xp-label">
+                Customer Name (optional)
+                {custName && custPhone && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 11,
+                      color: "#15803d",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ✓ Already saved
+                  </span>
+                )}
+                {custPhone.trim().length >= 7 && !custName && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 11,
+                      color: "#b45309",
+                      fontWeight: 600,
+                    }}
+                  >
+                    New — will be saved
+                  </span>
+                )}
+              </label>
+              <input
+                ref={nameRef}
+                className="xp-input"
+                value={custName}
+                onChange={(e) => setCustName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handlePrint();
+                  }
+                }}
+                placeholder="Customer ka naam…"
+              />
+            </div>
+          )}
 
           {/* Print type */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -522,8 +588,9 @@ function PrintOptionsModal({
             className="xp-btn xp-btn-primary"
             style={{ minWidth: 130 }}
             onClick={handlePrint}
+            disabled={saving}
           >
-            🖨 Print
+            {saving ? "Saving…" : "🖨 Print"}
           </button>
           <button
             className="xp-btn"
@@ -930,6 +997,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
                     <th className="r">Rate</th>
                     <th className="r">Stock</th>
                     <th className="r">Pack</th>
+                    <th>Rack#</th>
                   </tr>
                 </thead>
                 <tbody ref={tbodyRef} tabIndex={0} onKeyDown={tk}>
@@ -962,6 +1030,7 @@ function SearchModal({ allProducts, onSelect, onClose }) {
                       </td>
                       <td className="r">{r._stock}</td>
                       <td className="r">{r._pack}</td>
+                      <td className="text-muted">{r.rackNo || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1092,77 +1161,34 @@ function CustomerDropdown({
   customerType,
   onSelect,
   onClear,
-  onAddNew,
   allowedTypes,
 }) {
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [hiIdx, setHiIdx] = useState(0);
   const [ghost, setGhost] = useState("");
-  const wrapRef = useRef(null);
   const inputRef = useRef(null);
-  const listRef = useRef(null);
 
-  const ALLOWED_TYPES = allowedTypes || [
-    "credit",
-    "cash",
-    "walkin",
-    "wholesale",
-    "",
-  ];
-  const realCustomers = allCustomers.filter((c) => {
-    if (c.name?.toUpperCase().trim() === "COUNTER SALE") return false;
+  const creditCustomers = allCustomers.filter((c) => {
     const t = (c.customerType || c.type || "").toLowerCase();
-    return ALLOWED_TYPES.includes(t);
+    const allowed = allowedTypes || ["credit"];
+    return (
+      allowed.includes(t) && c.name?.toUpperCase().trim() !== "COUNTER SALE"
+    );
   });
 
-  const filtered = query.trim()
-    ? realCustomers.filter((c) => {
-        const q = query.toLowerCase();
-        return (
-          c.name?.toLowerCase().includes(q) ||
-          c.code?.toLowerCase().includes(q) ||
-          c.phone?.toLowerCase().includes(q)
-        );
-      })
-    : realCustomers;
-
-  const showAddNew =
-    query.trim().length > 0 &&
-    !filtered.some((c) => c.name?.toLowerCase() === query.trim().toLowerCase());
-
+  // Ghost suggestion — name se
   useEffect(() => {
     if (!query.trim()) {
       setGhost("");
       return;
     }
-    const match = realCustomers.find((c) =>
+    const match = creditCustomers.find((c) =>
       c.name?.toLowerCase().startsWith(query.toLowerCase()),
     );
     setGhost(match ? match.name.slice(query.length) : "");
   }, [query, allCustomers]);
 
-  useEffect(() => {
-    const h = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  useEffect(() => {
-    if (!listRef.current || !open || hiIdx < 0) return;
-    listRef.current.children[hiIdx]?.scrollIntoView({ block: "nearest" });
-  }, [hiIdx, open]);
-
-  useEffect(() => {
-    setHiIdx(0);
-  }, [query]);
-
   const pick = (c) => {
     onSelect(c);
-    setOpen(false);
     setQuery("");
     setGhost("");
   };
@@ -1171,48 +1197,25 @@ function CustomerDropdown({
     if (ghost && (e.key === "Tab" || e.key === "ArrowRight")) {
       e.preventDefault();
       const full = query + ghost;
-      const match = realCustomers.find(
+      const match = creditCustomers.find(
         (c) => c.name?.toLowerCase() === full.toLowerCase(),
       );
       if (match) pick(match);
-      else {
-        setQuery(full);
-        setGhost("");
-      }
-      return;
-    }
-    if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
-      e.preventDefault();
-      setOpen(true);
-      return;
-    }
-    if (e.key === "Escape") {
-      setOpen(false);
-      setQuery("");
-      setGhost("");
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHiIdx((i) => Math.min(i + 1, filtered.length + (showAddNew ? 0 : -1)));
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHiIdx((i) => Math.max(i - 1, 0));
       return;
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      if (showAddNew && hiIdx === filtered.length) {
-        onAddNew?.(query);
-        setOpen(false);
-        setQuery("");
-        setGhost("");
-        return;
-      }
-      if (filtered[hiIdx]) pick(filtered[hiIdx]);
+      const q = query.trim().toLowerCase();
+      if (!q) return;
+      const match =
+        creditCustomers.find((c) => c.name?.toLowerCase() === q) ||
+        creditCustomers.find((c) => c.name?.toLowerCase().startsWith(q));
+      if (match) pick(match);
       return;
+    }
+    if (e.key === "Escape") {
+      setQuery("");
+      setGhost("");
     }
   };
 
@@ -1225,14 +1228,8 @@ function CustomerDropdown({
         }
       : null;
 
-  const inputVal = open ? query : value ? displayName : "";
-
   return (
-    <div
-      className="cdd-wrap"
-      ref={wrapRef}
-      style={{ position: "relative", flex: 1 }}
-    >
+    <div style={{ position: "relative", flex: 1 }}>
       <div
         style={{
           display: "flex",
@@ -1247,7 +1244,8 @@ function CustomerDropdown({
           </span>
         )}
 
-        {open && ghost && (
+        {/* Ghost text */}
+        {ghost && (
           <div
             style={{
               position: "absolute",
@@ -1259,10 +1257,11 @@ function CustomerDropdown({
               fontSize: 13,
               fontFamily: "inherit",
               display: "flex",
+              zIndex: 0,
             }}
           >
             <span style={{ visibility: "hidden" }}>{query}</span>
-            <span style={{ color: "#b0bec5" }}>{ghost}</span>
+            <span style={{ color: "blue" }}>{ghost}</span>
           </div>
         )}
 
@@ -1277,21 +1276,17 @@ function CustomerDropdown({
             position: "relative",
             zIndex: 1,
           }}
-          value={inputVal}
-          placeholder={value ? "" : "Type name or press ↓ to browse…"}
+          value={value ? query || displayName : query}
+          placeholder="Naam type karo…"
           onChange={(e) => {
             setQuery(e.target.value);
-            if (!open) setOpen(true);
-            setHiIdx(0);
-          }}
-          onFocus={() => {
-            setOpen(true);
-            setHiIdx(0);
+            if (value && e.target.value !== displayName) onClear();
           }}
           onKeyDown={handleKey}
           autoComplete="off"
           spellCheck={false}
         />
+
         {value && (
           <button
             className="xp-btn xp-btn-sm xp-btn-danger"
@@ -1305,7 +1300,6 @@ function CustomerDropdown({
               e.preventDefault();
               onClear();
               setQuery("");
-              setOpen(false);
               setGhost("");
             }}
             title="Clear"
@@ -1314,164 +1308,9 @@ function CustomerDropdown({
           </button>
         )}
       </div>
-
-      {open && (
-        <div
-          ref={listRef}
-          style={{
-            position: "absolute",
-            bottom: "100%",
-            left: 0,
-            right: 0,
-            marginBottom: 2,
-            maxHeight: 300,
-            overflowY: "auto",
-            zIndex: 9999,
-            background: "#fff",
-            border: "1px solid #b0bcd8",
-            borderRadius: 4,
-            boxShadow: "0 -6px 20px rgba(0,0,0,0.14)",
-          }}
-        >
-          {realCustomers.length === 0 && (
-            <div
-              style={{ padding: "10px 12px", color: "#9ca3af", fontSize: 12 }}
-            >
-              No customers registered
-            </div>
-          )}
-
-          {filtered.map((c, i) => {
-            const tc = c.customerType || c.type || "";
-            const ts = TYPE_COLORS[tc];
-            const q = query.trim();
-            const nameNode = q
-              ? (() => {
-                  const idx =
-                    c.name?.toLowerCase().indexOf(q.toLowerCase()) ?? -1;
-                  if (idx === -1) return c.name;
-                  return (
-                    <>
-                      {c.name.slice(0, idx)}
-                      <mark style={{ background: "#fef08a", padding: 0 }}>
-                        {c.name.slice(idx, idx + q.length)}
-                      </mark>
-                      {c.name.slice(idx + q.length)}
-                    </>
-                  );
-                })()
-              : c.name;
-
-            return (
-              <div
-                key={c._id}
-                onMouseEnter={() => setHiIdx(i)}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  pick(c);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "6px 12px",
-                  cursor: "pointer",
-                  background:
-                    i === hiIdx ? "#dbeafe" : i % 2 === 0 ? "#fff" : "#f9fafb",
-                  borderBottom: "1px solid #f0f0f0",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: "#9ca3af",
-                    minWidth: 36,
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {c.code || "—"}
-                </span>
-                <span style={{ flex: 1, fontWeight: 500, fontSize: 13 }}>
-                  {nameNode}
-                </span>
-                {tc && ts && (
-                  <span
-                    style={{
-                      background: ts.bg,
-                      color: ts.color,
-                      border: `1px solid ${ts.border}`,
-                      fontSize: 10,
-                      padding: "1px 5px",
-                      borderRadius: 3,
-                    }}
-                  >
-                    {tc}
-                  </span>
-                )}
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: (c.currentBalance || 0) > 0 ? "#dc2626" : "#9ca3af",
-                    minWidth: 58,
-                    textAlign: "right",
-                  }}
-                >
-                  {Number(c.currentBalance || 0).toLocaleString("en-PK")}
-                </span>
-              </div>
-            );
-          })}
-
-          {showAddNew && (
-            <div
-              onMouseEnter={() => setHiIdx(filtered.length)}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onAddNew?.(query);
-                setOpen(false);
-                setQuery("");
-                setGhost("");
-              }}
-              style={{
-                padding: "7px 12px",
-                cursor: "pointer",
-                background: hiIdx === filtered.length ? "#dbeafe" : "#f0fdf4",
-                borderTop: "1px solid #bbf7d0",
-                fontSize: 13,
-                color: "#15803d",
-              }}
-            >
-              ➕ <strong>"{query}"</strong> — Add as new customer
-            </div>
-          )}
-
-          {filtered.length === 0 && query.trim() && !showAddNew && (
-            <div
-              style={{ padding: "7px 12px", color: "#9ca3af", fontSize: 12 }}
-            >
-              "{query}" — No match found
-            </div>
-          )}
-
-          <div
-            style={{
-              padding: "3px 12px",
-              fontSize: 11,
-              color: "#9ca3af",
-              borderTop: "1px solid #f0f0f0",
-              background: "#fafafa",
-            }}
-          >
-            Tab / → = accept suggestion &nbsp;|&nbsp; ↑↓ = navigate
-            &nbsp;|&nbsp; Enter = select &nbsp;|&nbsp; Esc = close
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
 /* ══════════════════════════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════════════════════════ */
@@ -1490,7 +1329,7 @@ export default function SalePage() {
 
   const [customerId, setCustomerId] = useState("");
   const [buyerName, setBuyerName] = useState("COUNTER SALE");
-  const [buyerCode, setBuyerCode] = useState("");
+  const [codeSearch, setCodeSearch] = useState("");
   const [customerType, setCustomerType] = useState("");
   const [prevBalance, setPrevBalance] = useState(0);
 
@@ -1588,9 +1427,9 @@ export default function SalePage() {
     const type = c.customerType || c.type || "";
     setCustomerId(c._id);
     setBuyerName(c.name);
-    setBuyerCode(c.phone || c.cell || "");
     setCustomerType(type);
     setPrevBalance(c.currentBalance || 0);
+    setCodeSearch("");
     const pm = typeToPayment(type);
     const ss = typeToSource(type);
     setPaymentMode(pm);
@@ -1598,26 +1437,27 @@ export default function SalePage() {
     if (pm === "Credit") setReceived(0);
     else setReceived(billAmount + (c.currentBalance || 0));
 
-    // Credit limit check
-
     const limit = c.creditLimit || 0;
     const custBal = c.currentBalance || 0;
     if (type === "credit" && limit > 0 && custBal >= limit) {
       setCreditWarning(true);
-      setTimeout(() => statementRef.current?.focus(), 120);
     } else {
       setCreditWarning(false);
     }
     setCreditStatement("");
     setShowCustomerPanel(true);
 
-    setTimeout(() => searchRef.current?.focus(), 30);
+    // Credit customer — note pe focus
+    if (type === "credit") {
+      setTimeout(() => statementRef.current?.focus(), 80);
+    } else {
+      setTimeout(() => searchRef.current?.focus(), 30);
+    }
   };
-
   const handleCustomerClear = () => {
     setCustomerId("");
     setBuyerName("COUNTER SALE");
-    setBuyerCode("");
+    // setBuyerCode("");
     setCustomerType("");
     setPrevBalance(0);
     setPaymentMode("Cash");
@@ -1752,7 +1592,7 @@ export default function SalePage() {
         items: [...items],
         customerId,
         buyerName,
-        buyerCode,
+
         customerType,
         prevBalance,
         extraDiscount,
@@ -1770,7 +1610,6 @@ export default function SalePage() {
     setItems(bill.items);
     setCustomerId(bill.customerId || "");
     setBuyerName(bill.buyerName || "COUNTER SALE");
-    setBuyerCode(bill.buyerCode || "");
     setCustomerType(bill.customerType || "");
     setPrevBalance(bill.prevBalance || 0);
     setExtraDiscount(bill.extraDiscount || 0);
@@ -1794,7 +1633,7 @@ export default function SalePage() {
     setPackingOptions([]);
     setCustomerId("");
     setBuyerName("COUNTER SALE");
-    setBuyerCode("");
+    setCodeSearch("");
     setCustomerType("");
     setPrevBalance(0);
     setExtraDiscount(0);
@@ -1826,7 +1665,7 @@ export default function SalePage() {
     } else {
       setCustomerId("");
       setBuyerName(sale.customerName || "COUNTER SALE");
-      setBuyerCode("");
+      // setBuyerCode("");
       setCustomerType("");
       setPrevBalance(sale.prevBalance || 0);
       setPaymentMode(sale.paymentMode || "Cash");
@@ -1871,65 +1710,79 @@ export default function SalePage() {
       showMsg("Navigation failed", "error");
     }
   };
+
+  const buildPayload = () => ({
+    invoiceNo,
+    invoiceDate,
+    customerId: customerId || undefined,
+    customerName: buyerName || "COUNTER SALE",
+    customerPhone: "",
+    items: items.map((r) => ({
+      productId: r.productId || undefined,
+      code: r.code,
+      name: r.name,
+      description: r.name,
+      uom: r.uom,
+      measurement: r.uom,
+      rack: r.rack,
+      pcs: parseFloat(r.pcs) || 1,
+      qty: parseFloat(r.pcs) || 1,
+      rate: parseFloat(r.rate) || 0,
+      disc: 0,
+      amount: parseFloat(r.amount) || 0,
+    })),
+    subTotal,
+    extraDisc: parseFloat(extraDiscount) || 0,
+    discAmount: 0,
+    netTotal: billAmount,
+    prevBalance: parseFloat(prevBalance) || 0,
+    paidAmount: parseFloat(received) || 0,
+    balance,
+    paymentMode,
+    saleSource,
+    sendSms,
+    printType,
+    remarks: creditStatement || "",
+    saleType: "sale",
+  });
   /* ── Open confirm modal   */
   const openSaleConfirm = () => {
     if (!items.length) {
       alert("Add at least one item");
       return;
     }
-    if (creditWarning && !creditStatement.trim()) {
-      statementRef.current?.focus();
-      showMsg(
-        "Credit limit exceeded — enter authorization statement to proceed",
-        "error",
-      );
+
+    if (customerId && customerType === "credit") {
+      if (!creditStatement.trim()) {
+        statementRef.current?.focus();
+        showMsg("Note likhna zaroori hai credit sale ke liye", "error");
+        return;
+      }
+      const payload = buildPayload();
+      // setPendingPayload wait nahi karta — seedha payload pass karo
+      setPendingPayload(payload);
+      confirmSaveWithPayload(payload, {
+        extraDisc: payload.extraDisc,
+        netTotal: payload.netTotal,
+        paidAmount: 0,
+        balance: payload.netTotal + (parseFloat(prevBalance) || 0),
+        printType,
+        withPrint: true,
+      });
       return;
     }
-    const payload = {
-      invoiceNo,
-      invoiceDate,
-      customerId: customerId || undefined,
-      customerName: buyerName || "COUNTER SALE",
-      customerPhone: buyerCode,
-      items: items.map((r) => ({
-        productId: r.productId || undefined,
-        code: r.code,
-        name: r.name,
-        description: r.name,
-        uom: r.uom,
-        measurement: r.uom,
-        rack: r.rack,
-        pcs: parseFloat(r.pcs) || 1,
-        qty: parseFloat(r.pcs) || 1,
-        rate: parseFloat(r.rate) || 0,
-        disc: 0,
-        amount: parseFloat(r.amount) || 0,
-      })),
-      subTotal,
-      extraDisc: parseFloat(extraDiscount) || 0,
-      discAmount: 0,
-      netTotal: billAmount,
-      prevBalance: parseFloat(prevBalance) || 0,
-      paidAmount: parseFloat(received) || 0,
-      balance,
-      paymentMode,
-      saleSource,
-      sendSms,
-      printType,
-      remarks: creditStatement || "",
-      saleType: "sale",
-    };
+
+    const payload = buildPayload();
     setPendingPayload(payload);
     setShowSaveModal(true);
   };
-
   /* ── Actual API save — called from modal ── */
-  const confirmSave = async (overrides) => {
-    if (!pendingPayload) return;
+  const confirmSaveWithPayload = async (payload, overrides) => {
+    if (!payload) return;
     setLoading(true);
     try {
       const finalPayload = {
-        ...pendingPayload,
+        ...payload,
         extraDisc: overrides.extraDisc,
         netTotal: overrides.netTotal,
         paidAmount: overrides.paidAmount,
@@ -1948,7 +1801,7 @@ export default function SalePage() {
           customerName: finalPayload.customerName,
           saleSource: finalPayload.saleSource,
           paymentMode: finalPayload.paymentMode,
-          items: pendingPayload.items,
+          items: payload.items,
           subTotal: finalPayload.subTotal,
           extraDisc: overrides.extraDisc,
           netTotal: overrides.netTotal,
@@ -1973,8 +1826,19 @@ export default function SalePage() {
     setLoading(false);
   };
 
+  const confirmSave = async (overrides) => {
+    confirmSaveWithPayload(pendingPayload, overrides);
+  };
   useEffect(() => {
     const handler = (e) => {
+      if (
+        showProductModal ||
+        showHoldPreview ||
+        showSaveModal ||
+        showPrintModal
+      )
+        return;
+
       if (e.key === "F2") {
         e.preventDefault();
         setShowProductModal(true);
@@ -1987,17 +1851,18 @@ export default function SalePage() {
         e.preventDefault();
         saveRef.current?.click();
       }
-      if (
-        e.key === "Escape" &&
-        !showProductModal &&
-        !showHoldPreview &&
-        !showSaveModal
-      )
-        resetCurRow();
+      if (e.key === "Escape") resetCurRow();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [items, showProductModal, showHoldPreview, showSaveModal, billAmount]);
+  }, [
+    items,
+    showProductModal,
+    showHoldPreview,
+    showSaveModal,
+    showPrintModal,
+    billAmount,
+  ]);
 
   const EMPTY_ROWS = Math.max(0, 8 - items.length);
 
@@ -2037,6 +1902,7 @@ export default function SalePage() {
             sale={pendingPrintSale}
             allCustomers={allCustomers}
             defaultPrintType={printType}
+            hideCustomerFields={pendingPrintSale.paymentMode === "Credit"}
             onPrint={(type, overrides) => {
               doPrint(pendingPrintSale, type, overrides);
               setShowPrintModal(false);
@@ -2555,36 +2421,42 @@ export default function SalePage() {
 
             {/* Customer bar */}
             <div className="sl-customer-bar">
+              {/* Code search field */}
               <div className="sl-cust-cell">
                 <label>Code</label>
                 <input
                   className="sl-cust-input"
-                  style={{ width: 55 }}
-                  value={buyerCode}
-                  onChange={(e) => setBuyerCode(e.target.value)}
+                  style={{ width: 65 }}
+                  value={codeSearch}
+                  onChange={(e) => setCodeSearch(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      if (!buyerCode.trim()) return;
-                      // Sirf walkin/cash type customers mein search karo
+                      const q = codeSearch.trim();
+                      if (!q) return;
                       const found = allCustomers.find(
                         (c) =>
-                          (c.phone?.includes(buyerCode.trim()) ||
-                            c.cell?.includes(buyerCode.trim())) &&
-                          (c.type === "walkin" || c.type === "cash" || !c.type),
+                          String(c.code).toLowerCase() === q.toLowerCase() &&
+                          (c.customerType || c.type || "").toLowerCase() ===
+                            "credit",
                       );
                       if (found) {
                         handleCustomerSelect(found);
+                        setCodeSearch("");
                       } else {
-                        setBuyerName("");
-                        showMsg("New walkin customer — enter name", "success");
+                        showMsg(
+                          `Code "${q}" — credit customer nahi mila`,
+                          "error",
+                        );
                       }
                     }
                   }}
-                  placeholder="Phone"
+                  placeholder="Code…"
                   autoComplete="off"
                 />
               </div>
+
+              {/* Buyer name dropdown */}
               <div className="sl-cust-cell sl-cust-buyer">
                 <label>Buyer Name</label>
                 <CustomerDropdown
@@ -2594,10 +2466,10 @@ export default function SalePage() {
                   customerType={customerType}
                   onSelect={handleCustomerSelect}
                   onClear={handleCustomerClear}
-                  onAddNew={handleAddNewCustomer}
                   allowedTypes={["credit"]}
                 />
               </div>
+
               <div className="sl-cust-cell">
                 <label>Prev Balance</label>
                 <input
@@ -2609,6 +2481,7 @@ export default function SalePage() {
                   onFocus={(e) => e.target.select()}
                 />
               </div>
+
               <div className="sl-cust-cell">
                 <label>Net Recv.</label>
                 <input
@@ -2622,6 +2495,7 @@ export default function SalePage() {
                   readOnly
                 />
               </div>
+
               <div className="sl-pay-btns">
                 {["Cash", "Credit", "Bank", "Cheque"].map((m) => (
                   <button
@@ -2712,52 +2586,6 @@ export default function SalePage() {
 
           {/* Right panel */}
           <div className="sl-right">
-            {/* Customer Card */}
-            {customerId &&
-              (() => {
-                const cust = allCustomers.find((c) => c._id === customerId);
-                return cust ? (
-                  <div className="sl-cust-card">
-                    <div className="sl-cust-card-photo">
-                      {cust.imageFront ? (
-                        <img src={cust.imageFront} alt={cust.name} />
-                      ) : (
-                        <div className="sl-cust-no-photo">👤</div>
-                      )}
-                    </div>
-                    <div className="sl-cust-card-info">
-                      <div className="sl-cust-card-name">{cust.name}</div>
-                      {cust.phone && (
-                        <div className="sl-cust-card-phone">
-                          📞 {cust.phone}
-                        </div>
-                      )}
-                      {cust.phone2 && (
-                        <div className="sl-cust-card-phone">
-                          📞 {cust.phone2}
-                        </div>
-                      )}
-                      <div
-                        className="sl-cust-card-bal"
-                        style={{
-                          color:
-                            (cust.currentBalance || 0) > 0
-                              ? "var(--xp-red)"
-                              : "var(--xp-green)",
-                        }}
-                      >
-                        Balance: {fmt(cust.currentBalance || 0)}
-                      </div>
-                      {cust.creditLimit > 0 && (
-                        <div className="sl-cust-card-limit">
-                          Limit: {fmt(cust.creditLimit)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
             {/* Hold Bills */}
             <div className="sl-hold-panel">
               <div className="sl-hold-title">
@@ -2863,10 +2691,52 @@ export default function SalePage() {
                   Hold Bill (F4)
                 </button>
               </div>
-              <div className="sl-hold-hint">
-                Click = preview · Dbl-click = resume · ✕ = delete
-              </div>
             </div>
+            {/* Customer Photo — Hold Bills ke neeche */}
+            {customerId &&
+              (() => {
+                const cust = allCustomers.find((c) => c._id === customerId);
+                return cust ? (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 100,
+                      marginTop: 6,
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      border: "2px solid var(--xp-silver-4)",
+                      flexShrink: 0,
+                      order: 2,
+                    }}
+                  >
+                    {cust.imageFront ? (
+                      <img
+                        src={cust.imageFront}
+                        alt={cust.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          background: "var(--xp-silver-3)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 48,
+                        }}
+                      >
+                        👤
+                      </div>
+                    )}
+                  </div>
+                ) : null;
+              })()}
           </div>
         </div>
 
