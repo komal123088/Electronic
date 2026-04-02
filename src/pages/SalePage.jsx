@@ -348,10 +348,58 @@ const buildPrintHtml = (sale, type, overrides = {}) => {
   </style></head><body>${allPagesHtml}</body></html>`;
 };
 
-function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
-  const [selPrintType, setSelPrintType] = useState(defaultPrintType || "A5");
-  const [custName, setCustName] = useState(sale.customerName || "");
-  const [custPhone, setCustPhone] = useState("");
+function PrintOptionsModal({
+  sale,
+  allCustomers,
+  defaultPrintType,
+  onPrint,
+  onClose,
+}) {
+  const [selPrintType, setSelPrintType] = useState(
+    defaultPrintType || "Thermal",
+  );
+  const [custPhone, setCustPhone] = useState(
+    sale.customerName !== "COUNTER SALE" ? sale.customerPhone || "" : "",
+  );
+  const [custName, setCustName] = useState(
+    sale.customerName !== "COUNTER SALE" ? sale.customerName : "",
+  );
+  const phoneRef = useRef(null);
+  const nameRef = useRef(null);
+
+  useEffect(() => {
+    setTimeout(() => phoneRef.current?.focus(), 80);
+  }, []);
+
+  const handlePhoneChange = (val) => {
+    setCustPhone(val);
+    console.log("Phone typed:", val);
+    console.log("All customers:", allCustomers);
+    console.log("All customers length:", allCustomers?.length);
+
+    if (val.trim().length >= 7) {
+      const found = allCustomers?.find((c) => {
+        console.log(
+          "Checking:",
+          c.name,
+          "| phone:",
+          c.phone,
+          "| cell:",
+          c.cell,
+        );
+        return (
+          c.phone?.replace(/\D/g, "").includes(val.replace(/\D/g, "")) ||
+          c.cell?.replace(/\D/g, "").includes(val.replace(/\D/g, "")) ||
+          c.otherPhone?.replace(/\D/g, "").includes(val.replace(/\D/g, ""))
+        );
+      });
+      console.log("Found:", found);
+      if (found) setCustName(found.name);
+      else setCustName("");
+    } else {
+      setCustName("");
+    }
+  };
 
   useEffect(() => {
     const h = (e) => {
@@ -359,14 +407,10 @@ function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
         e.preventDefault();
         onClose();
       }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handlePrint();
-      }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [custName, custPhone, selPrintType]);
+  }, []);
 
   const handlePrint = () => {
     onPrint(selPrintType, { customerName: custName, customerPhone: custPhone });
@@ -375,7 +419,6 @@ function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
   return (
     <div className="scm-overlay">
       <div className="scm-window" style={{ maxWidth: 420 }}>
-        {/* Titlebar */}
         <div className="scm-tb">
           <svg
             width="13"
@@ -383,7 +426,7 @@ function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
             viewBox="0 0 16 16"
             fill="rgba(255,255,255,0.85)"
           >
-            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1m4-3h7a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h1.5v-1a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5zm-3 1v-.5H4v.5zM13 6H3v4h10z" />
+            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1m4-3h7a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
           </svg>
           <span className="scm-tb-title">Print Options — {sale.invoiceNo}</span>
           <button className="xp-cap-btn xp-cap-close" onClick={onClose}>
@@ -399,26 +442,40 @@ function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
             gap: 12,
           }}
         >
+          {/* Phone Number — first focus */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label className="xp-label">Phone Number (optional)</label>
+            <input
+              ref={phoneRef}
+              className="xp-input"
+              value={custPhone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  nameRef.current?.focus();
+                }
+              }}
+              placeholder="e.g. 0300-1234567"
+              autoComplete="off"
+            />
+          </div>
+
           {/* Customer Name */}
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <label className="xp-label">Customer Name (optional)</label>
             <input
+              ref={nameRef}
               className="xp-input"
               value={custName}
               onChange={(e) => setCustName(e.target.value)}
-              placeholder="Leave blank for counter sale"
-              autoFocus
-            />
-          </div>
-
-          {/* Phone */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label className="xp-label">Phone Number (optional)</label>
-            <input
-              className="xp-input"
-              value={custPhone}
-              onChange={(e) => setCustPhone(e.target.value)}
-              placeholder="e.g. 0300-1234567"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handlePrint();
+                }
+              }}
+              placeholder=""
             />
           </div>
 
@@ -442,7 +499,6 @@ function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
                     fontWeight: selPrintType === pt ? 700 : 400,
                     color: selPrintType === pt ? "var(--xp-blue-dark)" : "#444",
                     fontSize: 13,
-                    transition: "all 0.1s",
                   }}
                 >
                   <input
@@ -477,7 +533,9 @@ function PrintOptionsModal({ sale, defaultPrintType, onPrint, onClose }) {
             ↩ Cancel
           </button>
         </div>
-        <div className="scm-hint">Enter = Print &nbsp;|&nbsp; Esc = Cancel</div>
+        <div className="scm-hint">
+          Enter (name field) = Print &nbsp;|&nbsp; Esc = Cancel
+        </div>
       </div>
     </div>
   );
@@ -1035,6 +1093,7 @@ function CustomerDropdown({
   onSelect,
   onClear,
   onAddNew,
+  allowedTypes,
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -1044,7 +1103,13 @@ function CustomerDropdown({
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const ALLOWED_TYPES = ["credit", "cash", ""];
+  const ALLOWED_TYPES = allowedTypes || [
+    "credit",
+    "cash",
+    "walkin",
+    "wholesale",
+    "",
+  ];
   const realCustomers = allCustomers.filter((c) => {
     if (c.name?.toUpperCase().trim() === "COUNTER SALE") return false;
     const t = (c.customerType || c.type || "").toLowerCase();
@@ -1523,7 +1588,7 @@ export default function SalePage() {
     const type = c.customerType || c.type || "";
     setCustomerId(c._id);
     setBuyerName(c.name);
-    setBuyerCode(c.code || "");
+    setBuyerCode(c.phone || c.cell || "");
     setCustomerType(type);
     setPrevBalance(c.currentBalance || 0);
     const pm = typeToPayment(type);
@@ -1563,14 +1628,32 @@ export default function SalePage() {
     setShowCustomerPanel(false);
   };
 
-  const handleAddNewCustomer = (name) => {
-    setBuyerName(name || "COUNTER SALE");
-    setCustomerId("");
-    setCustomerType("");
-    showMsg(`"${name}" set as buyer name`, "success");
+  const handleAddNewCustomer = async (name) => {
+    try {
+      const { data } = await api.post(EP.CUSTOMERS.CREATE, {
+        name: name.trim(),
+        type: "credit",
+        phone: "",
+      });
+      if (data.success) {
+        await fetchData();
+        const newCust = data.data;
+        handleCustomerSelect({
+          _id: newCust._id,
+          name: newCust.name,
+          phone: newCust.phone || "",
+          customerType: "credit",
+          type: "credit",
+          currentBalance: 0,
+          creditLimit: newCust.creditLimit || 0,
+        });
+        showMsg(`"${name}" saved as new customer`, "success");
+      }
+    } catch {
+      showMsg("Customer save failed", "error");
+    }
     setTimeout(() => searchRef.current?.focus(), 30);
   };
-
   const pickProduct = (product) => {
     if (!product._id) {
       showMsg("Product ID missing", "error");
@@ -1952,6 +2035,7 @@ export default function SalePage() {
         {showPrintModal && pendingPrintSale && (
           <PrintOptionsModal
             sale={pendingPrintSale}
+            allCustomers={allCustomers}
             defaultPrintType={printType}
             onPrint={(type, overrides) => {
               doPrint(pendingPrintSale, type, overrides);
@@ -1964,7 +2048,6 @@ export default function SalePage() {
             }}
           />
         )}
-
         {/* TITLEBAR */}
         <div className="xp-titlebar">
           <svg
@@ -2483,22 +2566,22 @@ export default function SalePage() {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       if (!buyerCode.trim()) return;
+                      // Sirf walkin/cash type customers mein search karo
                       const found = allCustomers.find(
                         (c) =>
-                          c.code?.toLowerCase() ===
-                          buyerCode.trim().toLowerCase(),
+                          (c.phone?.includes(buyerCode.trim()) ||
+                            c.cell?.includes(buyerCode.trim())) &&
+                          (c.type === "walkin" || c.type === "cash" || !c.type),
                       );
                       if (found) {
                         handleCustomerSelect(found);
                       } else {
-                        showMsg(
-                          `Code "${buyerCode}" — Customer not found`,
-                          "error",
-                        );
+                        setBuyerName("");
+                        showMsg("New walkin customer — enter name", "success");
                       }
                     }
                   }}
-                  placeholder="Code"
+                  placeholder="Phone"
                   autoComplete="off"
                 />
               </div>
@@ -2512,6 +2595,7 @@ export default function SalePage() {
                   onSelect={handleCustomerSelect}
                   onClear={handleCustomerClear}
                   onAddNew={handleAddNewCustomer}
+                  allowedTypes={["credit"]}
                 />
               </div>
               <div className="sl-cust-cell">

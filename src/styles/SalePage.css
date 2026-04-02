@@ -308,6 +308,7 @@ table.sl-items-table tbody tr.sl-empty-row td {
 table.sl-items-table tbody td {
   padding: 2px 6px;
   vertical-align: middle;
+  border: 1px solid black;
 }
 table.sl-items-table tbody td.r {
   text-align: right;
