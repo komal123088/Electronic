@@ -21,7 +21,14 @@ const EP = {
     DELETE: (id) => `/sales/${id}`,
     RETURN_CREATE: "/sales/return",
   },
-
+  PURCHASES: {
+    GET_ALL: "/purchases",
+    GET_ONE: (id) => `/purchases/${id}`,
+    NEXT_INVOICE: "/purchases/next-invoice",
+    CREATE: "/purchases",
+    UPDATE: (id) => `/purchases/${id}`,
+    DELETE: (id) => `/purchases/${id}`,
+  },
   HOLD_BILLS: {
     GET_ALL: "/hold-bills",
     CREATE: "/hold-bills",

@@ -976,27 +976,19 @@ table.sl-hold-table tbody td.muted {
    ADD THESE AT BOTTOM OF SalePage.css
 ══════════════════════════════════════════════════════════ */
 
-/* ── Credit Warning — red pulse overlay ── */
+/* ── Credit Warning ── */
 .sl-credit-mode {
   outline: 4px solid var(--xp-red);
   outline-offset: -4px;
 }
-.sl-credit-mode::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: rgba(192, 57, 43, 0.08);
-  pointer-events: none;
-  z-index: 500;
-  animation: sl-pulse 1.4s ease-in-out infinite;
-}
+
 @keyframes sl-pulse {
   0%,
   100% {
-    background: rgba(255, 56, 33, 0.63);
+    background: rgba(192, 57, 43, 0.85);
   }
   50% {
-    background: rgba(255, 56, 33, 0.63);
+    background: rgba(192, 57, 43, 0.85);
   }
 }
 
@@ -1113,4 +1105,19 @@ table.sl-hold-table tbody td.muted {
 .sl-cust-card-limit {
   font-size: 10px;
   color: #666;
+}
+
+.sl-credit-mode .sl-top-bar,
+.sl-credit-mode .sl-entry-strip,
+/* .sl-credit-mode .sl-table-header-bar, */
+/* .sl-credit-mode .sl-items-wrap, */
+.sl-credit-mode .sl-summary-bar,
+.sl-credit-mode .sl-customer-bar,
+.sl-credit-mode .sl-cmd-bar {
+  background: rgb(255, 34, 9) !important;
+}
+
+.sl-credit-mode {
+  outline: 4px solid var(--xp-red);
+  outline-offset: -4px;
 }
