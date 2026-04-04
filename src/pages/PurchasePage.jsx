@@ -360,6 +360,7 @@ function PrintOptionsModal({
   onPrint,
   onClose,
   hideCustomerFields,
+  newCustomerType,
 }) {
   const [selPrintType, setSelPrintType] = useState(
     defaultPrintType || "Thermal",
@@ -370,15 +371,9 @@ function PrintOptionsModal({
   const phoneRef = useRef(null);
   const nameRef = useRef(null);
 
-  // Sirf cash/walkin/counter customers
-  const cashCustomers = allCustomers.filter((c) => {
-    const t = (c.customerType || c.type || "").toLowerCase();
-    return (
-      ["cash", "walkin", "wholesale", ""].includes(t) &&
-      c.name?.toUpperCase().trim() !== "COUNTER SALE"
-    );
-  });
-
+  const cashCustomers = allCustomers.filter(
+    (c) => c.name?.toUpperCase().trim() !== "COUNTER SALE",
+  );
   useEffect(() => {
     setTimeout(() => phoneRef.current?.focus(), 80);
   }, []);
@@ -391,13 +386,16 @@ function PrintOptionsModal({
       }
       if (e.key === "Enter") {
         e.preventDefault();
+        if (document.activeElement === phoneRef.current) {
+          nameRef.current?.focus();
+          return;
+        }
         handlePrint();
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [custPhone, custName, selPrintType, saving]);
-
   const handlePhoneChange = (val) => {
     setCustPhone(val);
     if (val.trim().length >= 7) {
@@ -432,19 +430,16 @@ function PrintOptionsModal({
       );
 
       if (!existing && finalName !== "COUNTER SALE") {
-        // Naya customer save karo
         try {
           const { data } = await api.post(EP.CUSTOMERS.CREATE, {
             name: finalName,
-            type: "walkin",
+            type: newCustomerType || "walkin",
             phone: finalPhone,
           });
           if (data.success) {
             finalName = data.data.name;
           }
-        } catch {
-          // Save fail ho to bhi print chala jaye
-        }
+        } catch {}
       } else if (existing) {
         finalName = existing.name;
       }
@@ -495,6 +490,7 @@ function PrintOptionsModal({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
+                    e.stopPropagation();
                     nameRef.current?.focus();
                   }
                 }}
@@ -1166,6 +1162,7 @@ function CustomerDropdown({
   customerType,
   onSelect,
   onClear,
+  onAddNew,
   allowedTypes,
 }) {
   const [query, setQuery] = useState("");
@@ -1212,10 +1209,18 @@ function CustomerDropdown({
       e.preventDefault();
       const q = query.trim().toLowerCase();
       if (!q) return;
+      // Pehle exact match dhundo
       const match =
         creditCustomers.find((c) => c.name?.toLowerCase() === q) ||
         creditCustomers.find((c) => c.name?.toLowerCase().startsWith(q));
-      if (match) pick(match);
+      if (match) {
+        pick(match);
+      } else if (onAddNew) {
+        // Koi match nahi — naya add karo
+        onAddNew(query.trim());
+        setQuery("");
+        setGhost("");
+      }
       return;
     }
     if (e.key === "Escape") {
@@ -1405,7 +1410,7 @@ export default function PurchasePage() {
       const [pRes, cRes, invRes] = await Promise.all([
         api.get(EP.PRODUCTS.GET_ALL),
         api.get(EP.CUSTOMERS.GET_ALL),
-        api.get(EP.SALES.NEXT_INVOICE),
+        api.get(EP.PURCHASES.NEXT_INVOICE),
       ]);
       if (pRes.data.success) setAllProducts(pRes.data.data);
       if (cRes.data.success) {
@@ -1426,7 +1431,7 @@ export default function PurchasePage() {
 
   const refreshInvoiceNo = async () => {
     try {
-      const r = await api.get(EP.SALES.NEXT_INVOICE);
+      const r = await api.get(EP.PURCHASES.NEXT_INVOICE);
       const num = r.data.data.invoiceNo.replace("INV-", "PUR-");
       setInvoiceNo(num);
     } catch {}
@@ -1441,6 +1446,7 @@ export default function PurchasePage() {
     const type = c.customerType || c.type || "";
     setCustomerId(c._id);
     setBuyerName(c.name);
+    setCodeSearch(c.code || "");
     setCustomerType(type);
     setPrevBalance(c.currentBalance || 0);
     setCodeSearch("");
@@ -1471,6 +1477,7 @@ export default function PurchasePage() {
   const handleCustomerClear = () => {
     setCustomerId("");
     setBuyerName("COUNTER SALE");
+    setCodeSearch("");
     // setBuyerCode("");
     setCustomerType("");
     setPrevBalance(0);
@@ -1709,7 +1716,7 @@ export default function PurchasePage() {
 
   const navInvoice = async (dir) => {
     try {
-      const { data } = await api.get(EP.SALES.GET_ALL);
+      const { data } = await api.get(EP.PURCHASES.GET_ALL);
       if (!data.success || !data.data?.length) return;
       const allSales = data.data;
       const curIdx = allSales.findIndex((s) =>
@@ -1751,13 +1758,13 @@ export default function PurchasePage() {
     prevBalance: parseFloat(prevBalance) || 0,
     paidAmount: parseFloat(received) || 0,
     balance,
-    paymentMode,
+    paymentMode: customerId ? "Credit" : "Cash",
     saleSource: "purchase",
     sendSms,
     printType,
     remarks: creditStatement || "",
     saleType: "purchase",
-    invoicePrefix: "PUR",
+    // invoicePrefix: "PUR",
   });
   /* ── Open confirm modal   */
   const openSaleConfirm = () => {
@@ -1772,26 +1779,23 @@ export default function PurchasePage() {
     ) {
       if (!creditStatement.trim()) {
         statementRef.current?.focus();
-        showMsg("Note likhna zaroori hai credit sale ke liye", "error");
+        showMsg("Note likhna zaroori hai", "error");
         return;
       }
-      const payload = buildPayload();
-      // setPendingPayload wait nahi karta — seedha payload pass karo
-      setPendingPayload(payload);
-      confirmSaveWithPayload(payload, {
-        extraDisc: payload.extraDisc,
-        netTotal: payload.netTotal,
-        paidAmount: 0,
-        balance: payload.netTotal + (parseFloat(prevBalance) || 0),
-        printType,
-        withPrint: true,
-      });
-      return;
     }
 
     const payload = buildPayload();
     setPendingPayload(payload);
-    setShowSaveModal(true);
+    confirmSaveWithPayload(payload, {
+      extraDisc: payload.extraDisc,
+      netTotal: payload.netTotal,
+      paidAmount: customerId ? 0 : payload.netTotal,
+      balance: customerId
+        ? payload.netTotal + (parseFloat(prevBalance) || 0)
+        : 0,
+      printType,
+      withPrint: true,
+    });
   };
   /* ── Actual API save — called from modal ── */
   const confirmSaveWithPayload = async (payload, overrides) => {
@@ -1807,8 +1811,8 @@ export default function PurchasePage() {
         printType: overrides.printType,
       };
       const { data } = editId
-        ? await api.put(EP.SALES.UPDATE(editId), finalPayload)
-        : await api.post(EP.SALES.CREATE, finalPayload);
+        ? await api.put(EP.PURCHASES.UPDATE(editId), finalPayload)
+        : await api.post(EP.PURCHASES.CREATE, finalPayload);
 
       if (data.success) {
         showMsg(editId ? "Sale updated!" : `Saved: ${data.data.invoiceNo}`);
@@ -1920,6 +1924,7 @@ export default function PurchasePage() {
             allCustomers={allCustomers}
             defaultPrintType={printType}
             hideCustomerFields={pendingPrintSale.paymentMode === "Credit"}
+            newCustomerType="supplier"
             onPrint={(type, overrides) => {
               doPrint(pendingPrintSale, type, overrides);
               setShowPrintModal(false);
@@ -1983,7 +1988,12 @@ export default function PurchasePage() {
           <div className="sl-left">
             {/* Invoice info */}
             <div className="sl-top-bar">
-              <div className="sl-sale-title-box">Purchase</div>
+              <div
+                className="sl-sale-title-box"
+                style={{ background: "green", border: "1px solid green" }}
+              >
+                Purchase
+              </div>
               <div className="sl-inv-field-grp">
                 <label>Invoice #</label>
                 <input
@@ -1997,7 +2007,7 @@ export default function PurchasePage() {
                       if (!val) return;
                       try {
                         const { data } = await api.get(
-                          EP.SALES.GET_ALL + `?invoiceNo=${val}`,
+                          EP.PURCHASES.GET_ALL + `?invoiceNo=${val}`,
                         );
                         const sales = data.data;
                         if (!sales || sales.length === 0) {
@@ -2442,9 +2452,13 @@ export default function PurchasePage() {
               <div className="sl-cust-cell">
                 <label>Code</label>
                 <input
-                  className="sl-cust-input"
                   style={{ width: 65 }}
-                  value={codeSearch}
+                  value={
+                    customerId
+                      ? allCustomers.find((c) => c._id === customerId)?.code ||
+                        codeSearch
+                      : codeSearch
+                  }
                   onChange={(e) => setCodeSearch(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -2483,6 +2497,7 @@ export default function PurchasePage() {
                   customerType={customerType}
                   onSelect={handleCustomerSelect}
                   onClear={handleCustomerClear}
+                  onAddNew={handleAddNewCustomer}
                   allowedTypes={["supplier"]}
                 />
               </div>
@@ -2513,7 +2528,7 @@ export default function PurchasePage() {
                 />
               </div>
 
-              <div className="sl-pay-btns">
+              {/* <div className="sl-pay-btns">
                 {["Cash", "Credit", "Bank", "Cheque"].map((m) => (
                   <button
                     key={m}
@@ -2523,7 +2538,7 @@ export default function PurchasePage() {
                     {m}
                   </button>
                 ))}
-              </div>
+              </div> */}
             </div>
 
             {/* Credit Warning Bar */}
@@ -2783,7 +2798,7 @@ export default function PurchasePage() {
             onClick={async () => {
               if (!editId || !window.confirm("Delete this sale?")) return;
               try {
-                await api.delete(EP.SALES.DELETE(editId));
+                await api.delete(EP.PURCHASES.DELETE(editId));
                 showMsg("Sale deleted");
                 fullReset();
                 refreshInvoiceNo();

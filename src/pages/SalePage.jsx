@@ -490,6 +490,7 @@ function PrintOptionsModal({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
+                    e.stopPropagation();
                     nameRef.current?.focus();
                   }
                 }}

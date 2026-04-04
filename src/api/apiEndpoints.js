@@ -29,6 +29,22 @@ const EP = {
     UPDATE: (id) => `/purchases/${id}`,
     DELETE: (id) => `/purchases/${id}`,
   },
+  RAW_PURCHASES: {
+    NEXT_INVOICE: "/raw-purchases/next-invoice",
+    CREATE: "/raw-purchases",
+    GET_ALL: "/raw-purchases",
+    GET_ONE: (id) => `/raw-purchases/${id}`,
+    UPDATE: (id) => `/raw-purchases/${id}`,
+    DELETE: (id) => `/raw-purchases/${id}`,
+  },
+  RAW_SALES: {
+    NEXT_INVOICE: "/raw-sales/next-invoice",
+    CREATE: "/raw-sales",
+    GET_ALL: "/raw-sales",
+    GET_ONE: (id) => `/raw-sales/${id}`,
+    UPDATE: (id) => `/raw-sales/${id}`,
+    DELETE: (id) => `/raw-sales/${id}`,
+  },
   HOLD_BILLS: {
     GET_ALL: "/hold-bills",
     CREATE: "/hold-bills",
