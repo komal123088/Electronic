@@ -1497,21 +1497,22 @@ export default function RawPurchasePage() {
         phone: "",
       });
       if (data.success) {
-        await fetchData();
         const newCust = data.data;
+        // fetchData ki jagah directly state update karo
+        setAllCustomers((prev) => [...prev, newCust]);
         handleCustomerSelect({
           _id: newCust._id,
           name: newCust.name,
           phone: newCust.phone || "",
-          customerType: "supplier",
-          type: "supplier",
+          customerType: "raw-purchase",
+          type: "raw-purchase",
           currentBalance: 0,
           creditLimit: newCust.creditLimit || 0,
         });
         showMsg(`"${name}" saved as new supplier`, "success");
       }
     } catch {
-      showMsg("supplier save failed", "error");
+      showMsg("Customer save failed", "error");
     }
     setTimeout(() => searchRef.current?.focus(), 30);
   };
