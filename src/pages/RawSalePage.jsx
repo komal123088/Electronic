@@ -1990,7 +1990,7 @@ export default function RawSalePage() {
             <div className="sl-top-bar">
               <div
                 className="sl-sale-title-box"
-                style={{ background: "green", border: "1px solid green" }}
+                style={{ background: "blue", border: "1px solid bluess" }}
               >
                 Raw Sale
               </div>
