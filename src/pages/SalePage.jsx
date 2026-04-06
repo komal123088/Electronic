@@ -1,4 +1,7 @@
 // pages/SalePage.jsx
+
+import { useNavigate } from "react-router-dom"
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../api/api.js";
 import EP from "../api/apiEndpoints.js";
@@ -1155,6 +1158,9 @@ function HoldPreviewModal({ bill, onResume, onClose }) {
 /* ══════════════════════════════════════════════════════════
    CUSTOMER DROPDOWN
 ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   CUSTOMER DROPDOWN - Parent Div Background on Focus
+══════════════════════════════════════════════════════════ */
 function CustomerDropdown({
   allCustomers,
   value,
@@ -1165,9 +1171,17 @@ function CustomerDropdown({
   allowedTypes,
 }) {
   const [query, setQuery] = useState("");
+  const [originalQuery, setOriginalQuery] = useState(""); // Store original typed words
   const [ghost, setGhost] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef(null);
+  const parentRef = useRef(null);
 
+  // Get credit customers only
   const creditCustomers = allCustomers.filter((c) => {
     const t = (c.customerType || c.type || "").toLowerCase();
     const allowed = allowedTypes || ["credit"];
@@ -1176,58 +1190,173 @@ function CustomerDropdown({
     );
   });
 
-  // Ghost suggestion — name se
-  useEffect(() => {
-    if (!query.trim()) {
-      setGhost("");
-      return;
-    }
-    const match = creditCustomers.find((c) =>
-      c.name?.toLowerCase().startsWith(query.toLowerCase()),
+  // Get suggestions based on original query (the words user typed)
+  const getSuggestions = (searchTerm) => {
+    if (!searchTerm.trim()) return [];
+    const searchLower = searchTerm.toLowerCase();
+    return creditCustomers.filter(c => 
+      c.name?.toLowerCase().startsWith(searchLower)
     );
-    setGhost(match ? match.name.slice(query.length) : "");
-  }, [query, allCustomers]);
-
-  const pick = (c) => {
-    onSelect(c);
-    setQuery("");
-    setGhost("");
   };
 
-  const handleKey = (e) => {
-    if (ghost && (e.key === "Tab" || e.key === "ArrowRight")) {
-      e.preventDefault();
-      const full = query + ghost;
-      const match = creditCustomers.find(
-        (c) => c.name?.toLowerCase() === full.toLowerCase(),
-      );
-      if (match) pick(match);
+  // Update suggestions when original query changes
+  useEffect(() => {
+    if (!originalQuery.trim()) {
+      setSuggestions([]);
+      setGhost("");
+      setShowDropdown(false);
       return;
     }
+
+    const matches = getSuggestions(originalQuery);
+    setSuggestions(matches);
+    setShowDropdown(matches.length > 0);
+    
+    // Set ghost suggestion only when not navigating
+    if (!isNavigating && matches.length > 0 && matches[0].name) {
+      const remaining = matches[0].name.slice(originalQuery.length);
+      setGhost(remaining);
+    } else {
+      setGhost("");
+    }
+  }, [originalQuery, creditCustomers, isNavigating]);
+
+  const selectCustomer = (customer) => {
+    onSelect(customer);
+    setQuery("");
+    setOriginalQuery("");
+    setGhost("");
+    setSuggestions([]);
+    setSelectedSuggestionIndex(-1);
+    setShowDropdown(false);
+    setIsNavigating(false);
+  };
+
+  const handleKeyDown = (e) => {
+    // Complete ghost suggestion with Right Arrow or Tab
+    if (ghost && (e.key === "ArrowRight" || e.key === "Tab") && !isNavigating) {
+      e.preventDefault();
+      const fullName = originalQuery + ghost;
+      setQuery(fullName);
+      setOriginalQuery(fullName);
+      setGhost("");
+      setIsNavigating(false);
+      
+      // Auto-select the matched customer
+      const matchedCustomer = suggestions[0];
+      if (matchedCustomer) {
+        selectCustomer(matchedCustomer);
+      }
+      return;
+    }
+    
+    // Arrow Down - show next customer starting with original words
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      
+      if (suggestions.length === 0) return;
+      
+      setIsNavigating(true);
+      setShowDropdown(true);
+      
+      // Calculate next index
+      let newIndex;
+      if (selectedSuggestionIndex === -1) {
+        newIndex = 0;
+      } else {
+        newIndex = selectedSuggestionIndex + 1;
+        if (newIndex >= suggestions.length) {
+          newIndex = 0; // Wrap to first
+        }
+      }
+      
+      setSelectedSuggestionIndex(newIndex);
+      
+      // Update query with selected customer name but KEEP originalQuery same
+      const selectedCustomer = suggestions[newIndex];
+      if (selectedCustomer) {
+        setQuery(selectedCustomer.name);
+        // DON'T change originalQuery - keep user's typed words
+        setGhost("");
+      }
+      return;
+    }
+    
+    // Arrow Up - show previous customer starting with original words
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      
+      if (suggestions.length === 0) return;
+      
+      setIsNavigating(true);
+      setShowDropdown(true);
+      
+      // Calculate previous index
+      let newIndex;
+      if (selectedSuggestionIndex === -1) {
+        newIndex = suggestions.length - 1; // Go to last
+      } else {
+        newIndex = selectedSuggestionIndex - 1;
+        if (newIndex < 0) {
+          newIndex = suggestions.length - 1; // Wrap to last
+        }
+      }
+      
+      setSelectedSuggestionIndex(newIndex);
+      
+      // Update query with selected customer name but KEEP originalQuery same
+      const selectedCustomer = suggestions[newIndex];
+      if (selectedCustomer) {
+        setQuery(selectedCustomer.name);
+        setGhost("");
+      }
+      return;
+    }
+    
+    // Enter - select current customer
     if (e.key === "Enter") {
       e.preventDefault();
-      const q = query.trim().toLowerCase();
-      if (!q) return;
-      const match =
-        creditCustomers.find((c) => c.name?.toLowerCase() === q) ||
-        creditCustomers.find((c) => c.name?.toLowerCase().startsWith(q));
-      if (match) pick(match);
+      
+      if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
+        selectCustomer(suggestions[selectedSuggestionIndex]);
+      } else if (suggestions.length > 0 && suggestions[0]) {
+        selectCustomer(suggestions[0]);
+      }
       return;
     }
+    
+    // Escape - clear everything
     if (e.key === "Escape") {
+      e.preventDefault();
       setQuery("");
+      setOriginalQuery("");
       setGhost("");
+      setSuggestions([]);
+      setSelectedSuggestionIndex(-1);
+      setShowDropdown(false);
+      setIsNavigating(false);
+      if (value) onClear();
+      inputRef.current?.blur();
     }
   };
 
-  const typeStyle =
-    customerType && TYPE_COLORS[customerType]
-      ? {
-          background: TYPE_COLORS[customerType].bg,
-          color: TYPE_COLORS[customerType].color,
-          border: `1px solid ${TYPE_COLORS[customerType].border}`,
-        }
-      : null;
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setQuery(newValue);
+    setOriginalQuery(newValue); // Store what user typed
+    if (value && newValue !== displayName) onClear();
+    setSelectedSuggestionIndex(-1);
+    setShowDropdown(true);
+    setIsNavigating(false);
+  };
+
+  const typeStyle = customerType && TYPE_COLORS[customerType]
+    ? {
+        background: TYPE_COLORS[customerType].bg,
+        color: TYPE_COLORS[customerType].color,
+        border: `1px solid ${TYPE_COLORS[customerType].border}`,
+      }
+    : null;
 
   return (
     <div style={{ position: "relative", flex: 1 }}>
@@ -1245,48 +1374,67 @@ function CustomerDropdown({
           </span>
         )}
 
-        {/* Ghost text */}
-        {ghost && (
-          <div
-            style={{
-              position: "absolute",
-              left: typeStyle ? 72 : 8,
-              top: "50%",
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
-              whiteSpace: "nowrap",
-              fontSize: 13,
-              fontFamily: "inherit",
-              display: "flex",
-              zIndex: 0,
-            }}
-          >
-            <span style={{ visibility: "hidden" }}>{query}</span>
-            <span style={{ color: "blue" }}>{ghost}</span>
-          </div>
-        )}
-
-        <input
-          ref={inputRef}
-          className="sl-cust-input cdd-input"
-          style={{
+        {/* Parent div with background color change on focus */}
+        <div 
+          ref={parentRef}
+          style={{ 
+            position: "relative", 
             flex: 1,
-            minWidth: 0,
-            cursor: "text",
-            background: "transparent",
-            position: "relative",
-            zIndex: 1,
+            background: isFocused ? "#fffbe6" : "transparent",
+            borderRadius: "4px",
+            transition: "background 0.15s ease",
           }}
-          value={value ? query || displayName : query}
-          placeholder="Naam type karo…"
-          onChange={(e) => {
-            setQuery(e.target.value);
-            if (value && e.target.value !== displayName) onClear();
-          }}
-          onKeyDown={handleKey}
-          autoComplete="off"
-          spellCheck={false}
-        />
+        >
+          {/* Ghost text overlay - only show when not navigating */}
+          {ghost && !isNavigating && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                fontSize: "13px",
+                fontFamily: "inherit",
+                display: "flex",
+                zIndex: 2,
+                color: "#a0aec0",
+                opacity: 1,
+                backgroundColor: "transparent",
+                paddingLeft: "4px",
+              }}
+            >
+              <span style={{ visibility: "hidden", opacity: 1 }}>{originalQuery}</span>
+              <span style={{ opacity: 1, color: "#a0aec0" }}>{ghost}</span>
+            </div>
+          )}
+          
+          <input
+            ref={inputRef}
+            className="sl-cust-input cdd-input"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              cursor: "text",
+              background: "transparent",
+              position: "relative",
+              zIndex: 1,
+              width: "100%",
+              border: "none",
+              outline: "none",
+              padding: "4px",
+            }}
+            value={value ? query || displayName : query}
+            placeholder="Counter Sale"
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
 
         {value && (
           <button
@@ -1301,7 +1449,13 @@ function CustomerDropdown({
               e.preventDefault();
               onClear();
               setQuery("");
+              setOriginalQuery("");
               setGhost("");
+              setSuggestions([]);
+              setSelectedSuggestionIndex(-1);
+              setShowDropdown(false);
+              setIsNavigating(false);
+              inputRef.current?.focus();
             }}
             title="Clear"
           >
@@ -1309,6 +1463,77 @@ function CustomerDropdown({
           </button>
         )}
       </div>
+
+      {/* Suggestions dropdown */}
+      {showDropdown && suggestions.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            backgroundColor: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: 4,
+            maxHeight: 200,
+            overflowY: "auto",
+            zIndex: 1000,
+            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+            marginTop: 2,
+          }}
+        >
+          {suggestions.map((customer, idx) => (
+            <div
+              key={customer._id}
+              onClick={() => selectCustomer(customer)}
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                backgroundColor: idx === selectedSuggestionIndex ? "#e5f0ff" : "white",
+                borderBottom: "1px solid #f3f4f6",
+                fontSize: 13,
+              }}
+              onMouseEnter={() => {
+                setSelectedSuggestionIndex(idx);
+                setIsNavigating(true);
+                setQuery(customer.name);
+                setGhost("");
+              }}
+            >
+              <div style={{ fontWeight: 500, marginBottom: 2 }}>
+                {customer.name}
+              </div>
+              {customer.phone && (
+                <div style={{ fontSize: 10, color: "#6b7280" }}>
+                  📞 {customer.phone}
+                </div>
+              )}
+              {customer.currentBalance > 0 && (
+                <div style={{ fontSize: 10, color: "#ef4444", marginTop: 2 }}>
+                  Balance: PKR {customer.currentBalance.toLocaleString("en-PK")}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Help text */}
+      {originalQuery && suggestions.length === 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            fontSize: 10,
+            color: "#9ca3af",
+            marginTop: 2,
+            padding: "4px 8px",
+          }}
+        >
+          No customer found matching "{originalQuery}"
+        </div>
+      )}
     </div>
   );
 }
@@ -1316,6 +1541,7 @@ function CustomerDropdown({
    MAIN PAGE
 ══════════════════════════════════════════════════════════ */
 export default function SalePage() {
+  const navigate = useNavigate();
   const [time, setTime] = useState(timeNow());
   const [allProducts, setAllProducts] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
@@ -2102,7 +2328,7 @@ export default function SalePage() {
                 <input
                   ref={packingRef}
                   type="text"
-                  className="xp-input xp-input-sm"
+                  className="xp-input sl-num-input"
                   style={{ width: 65 }}
                   value={curRow.uom}
                   onChange={(e) =>
