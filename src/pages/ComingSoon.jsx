@@ -8,7 +8,7 @@ export default function ComingSoon({ pageName }) {
         fontFamily: "Tahoma,sans-serif",
       }}
     >
-      <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
+      <div style={{ fontSize: 48, marginBottom: 12 }}></div>
       <div style={{ fontSize: 16, fontWeight: "bold", marginBottom: 6 }}>
         {pageName?.replace(/_/g, " ")}
       </div>
