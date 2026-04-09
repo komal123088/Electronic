@@ -1,78 +1,39 @@
-/* ============================================================================
-   CUSTOMERS PAGE CSS - MODERN & CLEAN
-   Same layout, improved aesthetics
-   ============================================================================ */
-
-/* CSS Variables */
-:root {
-  --cp-primary: #3b82f6;
-  --cp-primary-dark: #2563eb;
-  --cp-primary-darker: #1d4ed8;
-  --cp-danger: #ef4444;
-  --cp-danger-dark: #dc2626;
-  --cp-success: #10b981;
-  --cp-gray-50: #f9fafb;
-  --cp-gray-100: #f3f4f6;
-  --cp-gray-200: #e5e7eb;
-  --cp-gray-300: #d1d5db;
-  --cp-gray-400: #9ca3af;
-  --cp-gray-500: #6b7280;
-  --cp-gray-600: #4b5563;
-  --cp-gray-700: #374151;
-  --cp-gray-800: #1f2937;
-  --cp-border-radius: 8px;
-  --cp-border-radius-sm: 6px;
-  --cp-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --cp-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-}
-
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    PAGE SHELL
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--cp-gray-100);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-  font-size: 13px;
+  background: var(--xp-silver-1);
+  font-family: var(--xp-font);
+  font-size: var(--xp-fs-sm);
   overflow: hidden;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    HINT BAR
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cs-hint-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px 16px;
-  background: var(--cp-gray-50);
-  border-bottom: 1px solid var(--cp-gray-200);
-  font-size: 11px;
+  gap: 12px;
+  padding: 2px 10px;
+  background: var(--xp-silver-1);
+  border-bottom: 1px solid #999;
+  font-size: var(--xp-fs-xs);
   flex-shrink: 0;
 }
 
-.cs-hint-bar kbd {
-  background: var(--cp-gray-200);
-  border: 1px solid var(--cp-gray-300);
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-/* ============================================================================
-   MIDDLE — 40% left / 60% right
-   ============================================================================ */
+/* ══════════════════════════════════════════════════════════
+   MIDDLE  — 40% left / 60% right
+   ══════════════════════════════════════════════════════════ */
 .cp-middle {
   flex: 1;
   display: grid;
   grid-template-columns: 40% 60%;
-  gap: 12px;
-  padding: 12px;
+  gap: 6px;
+  padding: 6px 8px 4px;
   overflow: hidden;
   min-height: 0;
 }
@@ -80,11 +41,12 @@
 .cp-left {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
   overflow-y: auto;
   min-height: 0;
 }
 
+/* RIGHT must be a flex column so inner fieldset can stretch */
 .cp-right {
   display: flex;
   flex-direction: column;
@@ -92,6 +54,7 @@
   overflow: hidden;
 }
 
+/* Fieldset inside right must grow and pass height down */
 .cp-right > .cp-fieldset {
   flex: 1;
   min-height: 0;
@@ -104,59 +67,56 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 8px;
+  gap: 5px;
   padding-top: 4px;
 }
 
-/* ============================================================================
-   BOTTOM — 40% / 60%
-   ============================================================================ */
+/* ══════════════════════════════════════════════════════════
+   BOTTOM  — 40% / 60%
+   ══════════════════════════════════════════════════════════ */
 .cp-bottom {
   flex-shrink: 0;
   display: grid;
   grid-template-columns: 40% 60%;
-  gap: 12px;
-  padding: 8px 12px 12px;
+  gap: 6px;
+  padding: 4px 8px 6px;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    FIELDSET
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-fieldset {
-  border: 1px solid var(--cp-gray-200);
-  border-radius: var(--cp-border-radius);
-  padding: 0 12px 12px;
-  background: #ffffff;
+  border: 2px groove #b0b0b0;
+  border-radius: 0;
+  padding: 0 8px 8px;
+  background: var(--xp-silver-1);
   margin: 0;
-  box-shadow: var(--cp-shadow-sm);
 }
 
 .cp-legend {
-  padding: 0 8px;
-  font-size: 11px;
+  padding: 0 5px;
+  font-size: var(--xp-fs-xs);
   font-weight: 700;
-  color: var(--cp-gray-600);
-  background: #ffffff;
-  margin-left: 8px;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+  color: #000;
+  background: var(--xp-silver-1);
+  margin-left: 4px;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    FORM ROWS
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-frow {
   display: grid;
   grid-template-columns: 95px 1fr;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 5px;
+  margin-bottom: 4px;
 }
 
 .cp-frow label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--cp-gray-700);
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: #000;
   text-align: left;
   white-space: nowrap;
 }
@@ -165,218 +125,200 @@
   grid-template-columns: 1fr;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    ACCOUNT ROW
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-acct-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .cp-type-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  font-size: 11px;
+  gap: 3px;
+  padding: 1px 7px;
+  font-size: var(--xp-fs-xs);
   font-weight: 700;
-  background: #eff6ff;
-  color: var(--cp-primary-dark);
-  border: 1px solid #bfdbfe;
-  border-radius: 20px;
+  background: var(--xp-silver-1);
+  color: var(--xp-blue-dark);
+  border: 1px solid #999;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    INNER TABS
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-inner-tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 2px solid var(--cp-gray-200);
-  margin: 12px -12px 0;
-  padding: 0 12px;
+  gap: 2px;
+  border-bottom: 2px solid var(--xp-blue-mid);
+  margin: 6px -8px 0;
+  padding: 0 8px;
 }
 
 .cp-inner-tab {
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  padding: 0 16px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--cp-gray-600);
-  background: transparent;
-  border: none;
+  height: 22px;
+  padding: 0 11px;
+  font-family: var(--xp-font);
+  font-size: var(--xp-fs-xs);
+  font-weight: 400;
+  color: #000;
+  background: var(--xp-silver-1);
+  border: 1px solid #999;
+  border-bottom: none;
   cursor: pointer;
-  border-radius: var(--cp-border-radius-sm) var(--cp-border-radius-sm) 0 0;
+  border-radius: 3px 3px 0 0;
   margin-bottom: -2px;
-  transition: all 0.2s;
 }
-
 .cp-inner-tab:hover {
-  color: var(--cp-primary);
-  background: var(--cp-gray-50);
+  background: var(--xp-silver-3);
 }
-
 .cp-inner-tab.active {
-  color: var(--cp-primary);
-  font-weight: 600;
-  border-bottom: 2px solid var(--cp-primary);
+  background: var(--xp-silver-1);
+  font-weight: 700;
+  height: 24px;
+  border-bottom: 2px solid var(--xp-silver-1);
+  color: var(--xp-blue-dark);
+  z-index: 1;
+  position: relative;
 }
 
 .cp-tab-content {
-  padding: 12px 0 0;
+  padding: 6px 0 0;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    IMAGE UPLOAD
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-img-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  padding-top: 8px;
+  gap: 10px;
+  padding-top: 6px;
 }
-
 .cp-img-upload {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
-
 .cp-img-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--cp-gray-600);
-  letter-spacing: 0.3px;
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-
 .cp-img-preview {
   position: relative;
   width: 100%;
   aspect-ratio: 16/10;
-  background: var(--cp-gray-100);
-  border: 1px solid var(--cp-gray-200);
-  border-radius: var(--cp-border-radius-sm);
+  background: var(--xp-silver-3);
+  border: 2px groove #b0b0b0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 .cp-img-preview img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .cp-img-empty {
-  font-size: 11px;
-  color: var(--cp-gray-400);
+  font-size: var(--xp-fs-xs);
+  color: #999;
   text-align: center;
 }
-
 .cp-img-remove {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 22px;
-  height: 22px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  top: 3px;
+  right: 3px;
+  width: 17px;
+  height: 17px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
 }
-
 .cp-img-remove:hover {
-  background: var(--cp-danger);
+  background: var(--xp-red);
 }
-
 .cp-img-btns {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    OPENING BALANCE
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 .cp-ob-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
-
-.cp-ob-row:last-child {
-  margin-bottom: 0;
-}
-
 .cp-ob-row label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--cp-gray-600);
+  font-size: var(--xp-fs-xs);
+  font-weight: 700;
+  color: #000;
   min-width: 65px;
-  text-transform: uppercase;
 }
 
-/* ============================================================================
-   RIGHT — SEARCH HEADER
-   ============================================================================ */
+/* ══════════════════════════════════════════════════════════
+   RIGHT — search header
+   ══════════════════════════════════════════════════════════ */
 .cp-list-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .cp-total-due {
-  font-size: 12px;
+  font-size: var(--xp-fs-xs);
   font-weight: 700;
-  color: var(--cp-danger);
+  color: var(--xp-red);
   white-space: nowrap;
-  font-family: 'SF Mono', 'Courier New', monospace;
-  background: #fef2f2;
-  padding: 4px 12px;
-  border-radius: 20px;
+  font-family: var(--xp-mono);
 }
 
-/* ============================================================================
-   TABLE WRAP
-   ============================================================================ */
+/* ══════════════════════════════════════════════════════════
+   TABLE WRAP — scroll fix
+   cp-right-inner is flex column with flex:1
+   cp-list-table-wrap must be flex:1 + min-height:0
+   ══════════════════════════════════════════════════════════ */
 .cp-list-table-wrap {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid var(--cp-gray-200);
-  border-radius: var(--cp-border-radius-sm);
-  background: #ffffff;
+  border: 2px groove #b0b0b0;
+  background: #fff;
 }
 
 table.cp-list-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
-  font-family: inherit;
+  font-size: var(--xp-fs-sm);
+  font-family: var(--xp-font);
   table-layout: fixed;
 }
 
 table.cp-list-table .col-sr {
-  width: 40px;
+  width: 36px;
 }
-
 table.cp-list-table .col-code {
-  width: 85px;
+  width: 80px;
 }
-
 table.cp-list-table .col-name {
   width: auto;
 }
@@ -386,351 +328,115 @@ table.cp-list-table thead tr {
   top: 0;
   z-index: 1;
 }
-
 table.cp-list-table thead th {
-  padding: 10px 12px;
-  font-size: 11px;
+  padding: 5px 8px;
+  font-size: var(--xp-fs-xs);
   font-weight: 700;
-  color: var(--cp-gray-600);
+  color: #000;
   text-align: left;
-  background: var(--cp-gray-50);
-  border-bottom: 1px solid var(--cp-gray-200);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  background: var(--xp-silver-1);
+  border-right: 1px solid #c0c0c0;
+  border-bottom: 2px solid #999;
+  white-space: nowrap;
+}
+table.cp-list-table thead th:last-child {
+  border-right: none;
 }
 
 table.cp-list-table tbody tr {
-  border-bottom: 1px solid var(--cp-gray-100);
+  border-bottom: 1px solid #e8e8e8;
   cursor: pointer;
-  background: #ffffff;
-  transition: background 0.15s;
+  background: #fff;
 }
-
 table.cp-list-table tbody tr:hover {
-  background: var(--cp-gray-50);
+  background: #ddeeff;
 }
-
 table.cp-list-table tbody tr.cp-row-selected {
-  background: var(--cp-primary) !important;
+  background: #316ac5 !important;
 }
-
 table.cp-list-table tbody tr.cp-row-selected td,
 table.cp-list-table tbody tr.cp-row-selected button {
-  color: #ffffff !important;
+  color: #fff !important;
 }
 
 table.cp-list-table tbody td {
-  padding: 10px 12px;
+  padding: 4px 8px;
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--cp-gray-700);
 }
-
 table.cp-list-table tbody td.col-sr {
   text-align: center;
-  color: var(--cp-gray-400);
-  font-size: 11px;
+  color: #777;
+  font-size: var(--xp-fs-xs);
+  border-right: 1px solid #e8e8e8;
 }
-
 table.cp-list-table tbody td.col-code {
-  font-family: 'SF Mono', monospace;
-  font-size: 12px;
-  font-weight: 500;
+  border-right: 1px solid #e8e8e8;
+  font-family: var(--xp-mono);
+  font-size: var(--xp-fs-xs);
 }
 
 .cp-list-footer {
-  padding: 8px 12px;
-  background: var(--cp-gray-50);
-  border-top: 1px solid var(--cp-gray-200);
-  font-size: 11px;
-  color: var(--cp-gray-500);
+  padding: 3px 7px;
+  background: var(--xp-silver-1);
+  border-top: 1px solid #999;
+  font-size: var(--xp-fs-xs);
+  color: #555;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ============================================================================
-   COMMANDS — 3 cols x 2 rows
-   ============================================================================ */
-.cp-cmd-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  padding-top: 4px;
-}
-
-/* ============================================================================
-   TEXTAREA
-   ============================================================================ */
-.cp-textarea {
-  width: 100%;
-  padding: 8px 10px;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--cp-gray-700);
-  background: #ffffff;
-  border: 1px solid var(--cp-gray-200);
-  border-radius: var(--cp-border-radius-sm);
-  outline: none;
-  resize: vertical;
-  line-height: 1.5;
-  box-sizing: border-box;
-  transition: all 0.2s;
-}
-
-.cp-textarea:focus {
-  border-color: var(--cp-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* ============================================================================
-   INPUT STYLES (xp-input override)
-   ============================================================================ */
-.xp-input {
-  padding: 7px 10px;
-  font-size: 13px;
-  border: 1px solid var(--cp-gray-200);
-  border-radius: var(--cp-border-radius-sm);
-  background: #ffffff;
-  transition: all 0.2s;
-}
-
-.xp-input:focus {
-  border-color: var(--cp-primary);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* ============================================================================
-   BUTTON STYLES
-   ============================================================================ */
-.xp-btn {
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: var(--cp-border-radius-sm);
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid var(--cp-gray-200);
-  background: #ffffff;
-  color: var(--cp-gray-700);
-}
-
-.xp-btn:hover {
-  background: var(--cp-gray-50);
-  border-color: var(--cp-gray-300);
-  transform: translateY(-1px);
-}
-
-.xp-btn:active {
-  transform: translateY(0);
-}
-
-.xp-btn-sm {
-  padding: 5px 12px;
-  font-size: 11px;
-}
-
-.xp-btn-primary {
-  background: var(--cp-primary);
-  border-color: var(--cp-primary-dark);
-  color: white;
-}
-
-.xp-btn-primary:hover {
-  background: var(--cp-primary-dark);
-}
-
-.xp-btn-danger {
-  background: var(--cp-danger);
-  border-color: var(--cp-danger-dark);
-  color: white;
-}
-
-.xp-btn-danger:hover {
-  background: var(--cp-danger-dark);
-}
-
-.xp-btn-ico {
-  padding: 6px 10px;
-}
-
-/* ============================================================================
-   ALERT STYLES
-   ============================================================================ */
-.xp-alert {
-  margin: 8px 12px 0;
-  padding: 10px 16px;
-  border-radius: var(--cp-border-radius-sm);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.xp-alert-success {
-  background: #ecfdf5;
-  border-left: 3px solid var(--cp-success);
-  color: #065f46;
-}
-
-.xp-alert-error {
-  background: #fef2f2;
-  border-left: 3px solid var(--cp-danger);
-  color: #991b1b;
-}
-
-/* ============================================================================
-   STATUS BAR
-   ============================================================================ */
-.xp-statusbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 6px 12px;
-  background: var(--cp-gray-50);
-  border-top: 1px solid var(--cp-gray-200);
-  font-size: 11px;
-  color: var(--cp-gray-600);
-  flex-shrink: 0;
-}
-
-.xp-status-pane {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* ============================================================================
-   TITLE BAR
-   ============================================================================ */
-.xp-titlebar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, var(--cp-gray-800) 0%, var(--cp-gray-700) 100%);
-  flex-shrink: 0;
+/* ══════════════════════════════════════════════════════════
+   COMMANDS  — 3 cols x 2 rows
+   ══════════════════════════════════════════════════════════ */
+.cp-cmd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+  padding-top: 4px;
 }
 
-.xp-tb-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
-}
-
-.xp-tb-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.xp-cap-btn {
-  background: transparent;
-  border: none;
-  color: var(--cp-gray-400);
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.xp-cap-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.xp-cap-close:hover {
-  background: var(--cp-danger);
-}
-
-.xp-tb-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--cp-gray-600);
-  margin: 0 4px;
-}
-
-/* ============================================================================
-   SEARCH WRAP
-   ============================================================================ */
-.xp-search-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.xp-search-icon {
-  position: absolute;
-  left: 10px;
-  color: var(--cp-gray-400);
-}
-
-.xp-search-wrap .xp-input {
-  padding-left: 30px;
+/* ══════════════════════════════════════════════════════════
+   TEXTAREA
+   ══════════════════════════════════════════════════════════ */
+.cp-textarea {
   width: 100%;
+  padding: 5px 6px;
+  font-family: var(--xp-font);
+  font-size: var(--xp-fs-sm);
+  color: #000;
+  background: #fff;
+  border: 2px groove #b0b0b0;
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.cp-textarea:focus {
+  outline: 2px solid #3b80f0;
 }
 
-/* ============================================================================
-   LINK BUTTON
-   ============================================================================ */
-.xp-link-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  padding: 0;
-  text-align: left;
-}
-
-.xp-link-btn:hover {
-  text-decoration: underline;
-}
-
-/* ============================================================================
-   LOADING & EMPTY STATES
-   ============================================================================ */
-.xp-loading,
-.xp-empty {
-  text-align: center;
-  padding: 40px;
-  color: var(--cp-gray-400);
-}
-
-/* ============================================================================
+/* ══════════════════════════════════════════════════════════
    RESPONSIVE
-   ============================================================================ */
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   .cp-middle {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
-  
   .cp-bottom {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
-  
   .cp-right {
-    max-height: 350px;
+    max-height: 300px;
   }
-  
   .cp-img-pair {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
-  
   .cp-cmd-grid {
     grid-template-columns: 1fr 1fr;
-  }
-  
-  .cs-hint-bar {
-    flex-wrap: wrap;
-    gap: 8px;
   }
 }

@@ -1,5 +1,5 @@
 // components/Layout.jsx
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MENU_CONFIG from "./menuConfig.js";
 import TOOLBAR_CONFIG from "./toolbarConfig.js";
@@ -97,18 +97,6 @@ function MenuBar() {
     setOpenIdx(null);
   }, [location.pathname]);
 
-  const handleMenuClick = useCallback((route) => {
-    setOpenIdx(null);
-    if (route) {
-      // Force reload if clicking on the same route
-      if (location.pathname === route) {
-        window.location.reload();
-      } else {
-        navigate(route);
-      }
-    }
-  }, [navigate, location.pathname]);
-
   return (
     <div
       ref={ref}
@@ -145,7 +133,6 @@ function MenuBar() {
           >
             {menu.label}
           </button>
-          
           {openIdx === idx && (
             <div
               style={{
@@ -176,7 +163,10 @@ function MenuBar() {
                 return (
                   <div
                     key={i}
-                    onClick={() => handleMenuClick(item.route)}
+                    onClick={() => {
+                      setOpenIdx(null);
+                      if (item.route) navigate(item.route);
+                    }}
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -223,120 +213,7 @@ function MenuBar() {
 function ToolBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const buttons = useMemo(() => {
-    return TOOLBAR_CONFIG[location.pathname] || TOOLBAR_CONFIG.DEFAULT;
-  }, [location.pathname]);
-
-  const handleButtonClick = useCallback((btn) => {
-    if (btn.route) {
-      // Force reload if clicking on the current page
-      if (location.pathname === btn.route) {
-        window.location.reload();
-      } else {
-        navigate(btn.route);
-      }
-    }
-    if (btn.action === "exit") {
-      window.close();
-    }
-  }, [navigate, location.pathname]);
-
-  const renderedButtons = useMemo(() => {
-    return buttons.map((btn, i) => {
-      if (btn.divider) {
-        return (
-          <div
-            key={`divider-${i}`}
-            style={{
-              width: 1,
-              height: 42,
-              background: "#aca899",
-              boxShadow: "1px 0 0 #fff",
-              margin: "0 4px",
-            }}
-          />
-        );
-      }
-
-      const isActive = btn.route && location.pathname === btn.route;
-      const iconColor = isActive
-        ? "#316ac5"
-        : ICON_COLORS[btn.icon] || "#333";
-
-      return (
-        <button
-          key={btn.route || btn.label || i}
-          title={btn.label}
-          onClick={() => handleButtonClick(btn)}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minWidth: 54,
-            height: 48,
-            fontSize: 10,
-            fontFamily: "inherit",
-            fontWeight: isActive ? 700 : 400,
-            color: isActive ? "#0a246a" : "#222",
-            border: isActive ? "1px solid #7aabda" : "1px solid transparent",
-            background: isActive
-              ? "linear-gradient(180deg,#c5d9f1 0%,#ddeeff 100%)"
-              : "transparent",
-            cursor: "pointer",
-            padding: "3px 5px 2px",
-            gap: 2,
-            borderRadius: 3,
-            boxShadow: isActive
-              ? "inset 1px 1px 0 rgba(255,255,255,0.8), inset -1px -1px 0 rgba(0,0,100,0.1)"
-              : "none",
-          }}
-          onMouseEnter={(e) => {
-            if (!isActive) {
-              e.currentTarget.style.background =
-                "linear-gradient(180deg,#ddeeff 0%,#c5d9f1 100%)";
-              e.currentTarget.style.border = "1px solid #7aabda";
-              e.currentTarget.style.boxShadow =
-                "inset 1px 1px 0 rgba(255,255,255,0.9)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isActive) {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.border = "1px solid transparent";
-              e.currentTarget.style.boxShadow = "none";
-            }
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.background =
-              "linear-gradient(180deg,#b0ccec 0%,#c5d9f1 100%)";
-            e.currentTarget.style.boxShadow =
-              "inset 1px 1px 0 rgba(0,0,80,0.12), inset -1px -1px 0 rgba(255,255,255,0.6)";
-          }}
-          onMouseUp={(e) => {
-            if (!isActive) {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.boxShadow = "none";
-            }
-          }}
-        >
-          <span style={{ color: iconColor, lineHeight: 1, display: "flex" }}>
-            {ICONS[btn.icon] || <span style={{ fontSize: 18 }}>•</span>}
-          </span>
-          <span
-            style={{
-              whiteSpace: "nowrap",
-              fontSize: 10,
-              letterSpacing: "0.01em",
-            }}
-          >
-            {btn.label}
-          </span>
-        </button>
-      );
-    });
-  }, [buttons, location.pathname, handleButtonClick]);
+  const buttons = TOOLBAR_CONFIG[location.pathname] || TOOLBAR_CONFIG.DEFAULT;
 
   return (
     <div
@@ -353,15 +230,107 @@ function ToolBar() {
         flexShrink: 0,
       }}
     >
-      {renderedButtons}
+      {buttons.map((btn, i) => {
+        if (btn.divider)
+          return (
+            <div
+              key={i}
+              style={{
+                width: 1,
+                height: 42,
+                background: "#aca899",
+                boxShadow: "1px 0 0 #fff",
+                margin: "0 4px",
+              }}
+            />
+          );
+
+        const isActive = btn.route && location.pathname === btn.route;
+        const iconColor = isActive
+          ? "#316ac5"
+          : ICON_COLORS[btn.icon] || "#333";
+
+        return (
+          <button
+            key={i}
+            title={btn.label}
+            onClick={() => {
+              if (btn.route) navigate(btn.route);
+              if (btn.action === "exit") window.close();
+            }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 54,
+              height: 48,
+              fontSize: 10,
+              fontFamily: "inherit",
+              fontWeight: isActive ? 700 : 400,
+              color: isActive ? "#0a246a" : "#222",
+              border: isActive ? "1px solid #7aabda" : "1px solid transparent",
+              background: isActive
+                ? "linear-gradient(180deg,#c5d9f1 0%,#ddeeff 100%)"
+                : "transparent",
+              cursor: "pointer",
+              padding: "3px 5px 2px",
+              gap: 2,
+              borderRadius: 3,
+              boxShadow: isActive
+                ? "inset 1px 1px 0 rgba(255,255,255,0.8), inset -1px -1px 0 rgba(0,0,100,0.1)"
+                : "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.background =
+                  "linear-gradient(180deg,#ddeeff 0%,#c5d9f1 100%)";
+                e.currentTarget.style.border = "1px solid #7aabda";
+                e.currentTarget.style.boxShadow =
+                  "inset 1px 1px 0 rgba(255,255,255,0.9)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.border = "1px solid transparent";
+                e.currentTarget.style.boxShadow = "none";
+              }
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.background =
+                "linear-gradient(180deg,#b0ccec 0%,#c5d9f1 100%)";
+              e.currentTarget.style.boxShadow =
+                "inset 1px 1px 0 rgba(0,0,80,0.12), inset -1px -1px 0 rgba(255,255,255,0.6)";
+            }}
+            onMouseUp={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.boxShadow = "none";
+              }
+            }}
+          >
+            <span style={{ color: iconColor, lineHeight: 1, display: "flex" }}>
+              {ICONS[btn.icon] || <span style={{ fontSize: 18 }}>•</span>}
+            </span>
+            <span
+              style={{
+                whiteSpace: "nowrap",
+                fontSize: 10,
+                letterSpacing: "0.01em",
+              }}
+            >
+              {btn.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 /* ── Layout ───────────────────────────────────────────────────────────────── */
 export default function Layout({ children }) {
-  const location = useLocation();
-  
   return (
     <div
       style={{
@@ -375,7 +344,6 @@ export default function Layout({ children }) {
       <MenuBar />
       <ToolBar />
       <div
-        key={location.pathname} // This forces remount when route changes
         style={{
           flex: 1,
           overflowY: "auto",

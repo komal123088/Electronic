@@ -5,11 +5,10 @@ const MENU_CONFIG = [
     items: [
       { label: "Products", route: "/products" },
       { label: "Customers", route: "/customers" },
+      { label: "───" },
+      { label: "Categories", route: "/categories" },
+      { label: "Companies", route: "/companies" },
       { label: "Suppliers", route: "/suppliers" },
-      // { label: "───" },
-      // { label: "Categories", route: "/categories" },
-      // { label: "Companies", route: "/companies" },
-      
     ],
   },
   {
